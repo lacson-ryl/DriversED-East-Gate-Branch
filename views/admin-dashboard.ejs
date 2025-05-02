@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth overflow-x-auto overflow-y-auto">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard</title>
+    <link href="/f-css/output.css" rel="stylesheet">
+    <style>
+        .side-icons {
+            width: 30px;
+            height: 30px;
+        }
+
+        .clock {
+            font-size: 2rem;
+            font-weight: bold;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body class="flex flex-row w-full over">
+    <div id="sidebar-container">
+
+    </div>
+    <div id="main-content" class="block ml-ml-250 w-calc space-y-2">
+        <div id="top-bar" class="flex h-15 flex-row w-full sticky shadow-inner bg-white border-b-2 p-4">
+            <div id="left-side" class="flex flex-row gap-4 relative">
+                <button class="relative">
+                    <img id="notif-logo" src="/f-css/solid/bell.svg" class="w-7 h-7 inline-block" />
+                    <div
+                        class="h-3 w-3 rounded-full bg-blue-900 absolute top-2 right-2 transform translate-x-1/2 -translate-y-1/2 animate-pulse">
+                    </div>
+                </button> <img id="company-logo" src="/f-css/solid/car-front.svg" class="w-8 h-8" />
+            </div>
+            <div id="right-side" class="absolute right-4 text-lg">
+                Dashboard
+            </div>
+        </div>
+
+        <div id="content" class="flex flex-col w-full">
+            <div id="time-and-notes" class="flex flex-row gap-4 mt-5 ml-5 p-3">
+                <div class="h-44 w-80">
+                    <div id="date" class="text-3xl font-semibold mb-2 text-blue-500"></div>
+                    <div id="clock" class="text-5xl font-bold text-red-500"></div>
+                </div>
+                <div id="new-applicants-stats" class="h-48 w-full justify-items-end">
+                    <canvas id="applicantsChart" width="940" height="200"
+                        class="outline outline-1 outline-blue-900"></canvas>
+                    <div class="mt-2 absolute top-24 right-3">
+                        <button id="prevMonth" class="m-1 p-1 text-xs rounded-md bg-blue-700 text-white">Prev</button>
+                        <button id="nextMonth" class="m-1 p-1 text-xs rounded-md bg-blue-700 text-white">Next</button>
+                    </div>
+                </div>
+            </div>
+            <div class="grid grid-cols-3 gap-x-7 gap-y-4 mt-16 mb-14 ml-5 px-2 text-white text-lg">
+                <a href="/applicants-list">
+                    <div
+                        class="dashboard-placards bg-green-600 bg-opacity-95 shadow-md shadow-green-500/50 rounded-md p-5 hover:outline hover:outline-2 hover:outline-blue-900">
+                        <h4">Number of New Applicants</h4>
+                            <p class="text-right text-6xl">
+                                <%# !newusercount ? 0 : newusercount %>
+                            </p>
+                    </div>
+                </a>
+                <div
+                    class="dashboard-placards bg-cyan-600  bg-opacity-95 shadow-md shadow-cyan-500/50 rounded-md p-5 hover:outline hover:outline-2 hover:outline-blue-900">
+                    <h4">Number of Accepted Applicants</h4>
+                        <p class="text-right text-6xl">0</p>
+                </div>
+                <a href="/completed-course">
+                    <div
+                        class="dashboard-placards bg-red-600 s bg-opacity-95 shadow-md shadow-red-400/50 rounded-md p-5 hover:outline hover:outline-2 hover:outline-blue-900">
+                        <h4">Finished Applicants</h4>
+                            <p class="text-right text-6xl">0</p>
+                    </div>
+                </a>
+                <a href="/attendance">
+                    <div
+                        class="dashboard-placards bg-sky-900 s bg-opacity-95 shadow-md shadow-sky-500/50 rounded-md p-5 hover:outline hover:outline-2 hover:outline-black">
+                        <h4">TDC Takers</h4>
+                            <p class="text-right text-6xl">
+                                <%# newusercount - getpdc %>
+                            </p>
+                    </div>
+                </a>
+                <a href="/attendance">
+                    <div
+                        class="dashboard-placards bg-sky-900 s bg-opacity-95 shadow-md shadow-sky-500/50 rounded-md p-5 hover:outline hover:outline-2 hover:outline-black">
+                        <h4">PDC Takers</h4>
+                            <p class="text-right text-6xl">
+                                <%# getpdc %>
+                            </p>
+                    </div>
+                </a>
+                <a href="/vehicles">
+                    <div
+                        class="dashboard-placards bg-sky-900 s bg-opacity-95 shadow-md shadow-sky-500/50 rounded-md p-5 hover:outline hover:outline-2 hover:outline-black">
+                        <h4">Number of Owned Vehicles</h4>
+                            <p class="text-right text-6xl">1</p>
+                    </div>
+                </a>
+            </div>
+            <h3 class="text-center my-16 text-3xl">Instructor Schedule</h3>
+            <div id="instructor-schedules" class="grid grid-cols-3 gap-x-5 gap-y-7 mt-5 ml-5 px-2 text-black text-lg">
+            </div>
+
+            <div class="flex justify-between items-center mr-4 my-2">
+                <h2 class="text-lg ml-4"> Instructor Schedule</h2>
+                <div id="notification" class="hidden notification"></div>
+                <button id="add-payment-method-button"
+                    class="bg-blue-700 flex items-center hover:bg-gradient-to-t from-blue-400 to-blue-800 text-white rounded-lg px-2 py-1">
+                    <IMG src="/f-css/solid/white/plus.svg" class="w-7 h-7" />
+                    <span class="inline-block">Payment Method</span>
+                </button>
+            </div>
+            <div id="payment-method-table" class="p-4"></div>
+        </div>
+        <%# //cotent %>
+            <div id="myModal" class="fixed inset-0 z-50 items-center justify-center hidden bg-gray-900 bg-opacity-50">
+                <div class="relative bg-white rounded-lg shadow-lg min-w-screen-md max-w-screen-md p-6">
+                    <span
+                        class="close absolute top-0 right-2 text-3xl font-semibold text-gray-700 hover:text-gray-900 cursor-pointer ">&times;</span>
+                    <h2 class="text-xl font-semibold">Payment Method Details</h2>
+                    <p id="modal-details" class="mt-4">the details</p>
+                </div>
+            </div>
+    </div>
+    <%# //main-content %>
+        <script>
+
+            document.addEventListener('DOMContentLoaded', async () => {
+                console.log('Page loaded, checking admin dashboard access');
+
+                try {
+                    // Load the external script after successful authentication
+                    const indexScript = document.createElement('script');
+                    indexScript.src = '/f-jsfiles/index.js';
+                    document.body.appendChild(indexScript);
+
+                    const sidebarScript = document.createElement('script');
+                    sidebarScript.src = '/f-jsfiles/sidebar.js';
+                    document.body.appendChild(sidebarScript);
+
+                } catch (error) {
+                    console.error('Authorization error:', error);
+                    alert("You are not authorized to view this page.");
+                    window.location.href = '/adminlogin'; // Redirect to login if not authorized
+                }
+            });
+
+        </script>
+</body>
+
+</html>

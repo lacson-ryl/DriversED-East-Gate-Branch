@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth overflow-x-auto overflow-y-auto">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Profile</title>
+    <link href="/f-css/output.css" rel="stylesheet">
+    <style>
+        .side-icons {
+            width: 30px;
+            height: 30px;
+        }
+    </style>
+</head>
+
+<body class="flex flex-row w-full over">
+    <div id="sidebar-container">
+    </div>
+    <div id="main-content" class="block ml-ml-250 w-calc space-y-2 mb-5">
+        <div id="top-bar" class="flex h-15 flex-row w-full sticky shadow-inner bg-white border-b-2 p-4">
+            <div id="left-side" class="flex flex-row gap-4 relative">
+                <button class="relative">
+                    <img id="notif-logo" src="/f-css/solid/bell.svg" class="w-7 h-7 inline-block" />
+                    <div
+                        class="h-3 w-3 rounded-full bg-blue-900 absolute top-2 right-2 transform translate-x-1/2 -translate-y-1/2 animate-pulse">
+                    </div>
+                </button> <img id="company-logo" src="/f-css/solid/car-front.svg" class="w-8 h-8" />
+            </div>
+            <div id="right-side" class="absolute right-4 text-lg">
+                Profile
+            </div>
+        </div>
+
+        <div id="content" class="flex flex-col w-full items-center">
+            <div id="profile-display" class="w-full flex justify-center">
+
+            </div>
+    </div>
+    <script>
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                const script = document.createElement('script');
+                script.src = '/f-jsfiles/user-sidebar.js';
+                document.body.appendChild(script);
+
+                const profileScript = document.createElement('script');
+                profileScript.src = '/f-jsfiles/user-profile.js';
+                profileScript.onload = () => {
+                    renderDetails();
+                }
+                document.body.appendChild(profileScript);
+
+            } catch (error) {
+                console.error('Authorization error:', error);
+                alert("You are not authorized to view this page.");
+                window.location.href = '/user-login'; // Redirect to login if not authorized
+            }
+        });
+
+
+
+    </script>
+</body>
+
+</html>

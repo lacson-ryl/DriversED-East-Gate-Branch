@@ -1,0 +1,249 @@
+function getCookie(name) {
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop().split(";").shift();
+  return null; // Return null if the cookie is not found
+}
+
+function profileDetialsBlank(courseList) {
+  return `
+<div class="bg-slate-200 p-10 rounded-lg shadow-md w-full max-w-screen-md mx-4 my-2">
+    <div class=" text-center">
+        <img id="profile-picture-preview"
+            class="w-36 h-32 inline-block rounded-md border-2 content-center border-gray-300 mb-4 object-fill"
+            src="default-avatar.png" alt="Profile Picture Preview">
+        <h1 class="text-2xl text-center mb-5 font-bold text-blue-900">User Profile</h1>
+    </div>
+    <div class="flex flex-col md:flex-row mb-4 gap-3">
+        <div class="w-full md:w-1/2">
+            <label>First Name</label>
+            <p id="first-name" name="first-name" style="min-height: 2.5rem;"
+                class="shadow-md bg-white appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight hover:border-blue-900 focus:outline-none focus:border-blue-900">
+
+            </p>
+        </div>
+        <div class="w-full md:w-1/2">
+            <label>Last Name</label>
+            <p id="last-name" name="last-name" style="min-height: 2.5rem;"
+                class="shadow-md bg-white appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight hover:border-blue-900 focus:outline-none focus:border-blue-900">
+
+            </p>
+        </div>
+    </div>
+    <div class="flex flex-col md:flex-row mb-4 gap-3">
+        <div class="w-full md:w-1/2">
+            <label>Phone Number</label>
+            <p id="phone-number" name="phone-number" style="min-height: 2.5rem;" type="number"
+                class="shadow-md bg-white appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight hover:border-blue-900 focus:outline-none focus:border-blue-900">
+
+            </p>
+        </div>
+        <div class="w-full md:w-1/2">
+            <label>Email</label>
+            <p id="email" name="email" type="email" style="min-height: 2.5rem;"
+                class="shadow-md bg-white appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight hover:border-blue-900 focus:outline-none focus:border-blue-900">
+
+            </p>
+        </div>
+    </div>
+    <div class="flex flex-col md:flex-row mb-4 gap-3">
+        <div class="w-full md:w-1/3">
+            <label>Birth Date</label>
+            <p id="birth-date" name="birth-date" style="min-height: 2.5rem;" type="date"
+                class="shadow-md bg-white appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight hover:border-blue-900 focus:outline-none focus:border-blue-900">
+
+            </p>
+        </div>
+        <div class="w-full md:w-1/3">
+            <label>Nationality</label>
+            <p id="nationality" name="nationality" style="min-height: 2.5rem;" type="text"
+                class="shadow-md bg-white appearance-none border rounded w-full py-2 px-3 text-black leading-tight hover:border-blue-900 focus:outline-none focus:border-blue-900">
+
+            </p>
+        </div>
+        <div class="w-full md:w-1/3">
+            <label>Gender</label>
+            <p id="gender" name="gender" style="min-height: 2.5rem;"
+                class="shadow-md bg-white border rounded md:min-w-32 w-full py-2 px-3 text-gray-700 leading-tight hover:border-blue-900 focus:outline-none focus:border-blue-900">
+
+            </p>
+        </div>
+    </div>
+    <div class="mb-4">
+        <label>Address</label>
+        <p id="address" name="address" type="textbox"
+            class="shadow-md bg-white appearance-none border rounded w-full min-h-20 py-2 px-3 text-gray-700 leading-tight hover:border-blue-900 focus:outline-none focus:border-blue-900">
+
+        </p>
+    </div>
+    <div class="flex flex-col mb-4">
+        <label for="training-purpose" class="mb-2 text-gray-700">Training Purpose</label>
+        <p id="training-purpose" name="training-purpose" style="min-height: 2.5rem;"
+            class="shadow-md bg-white border rounded w-full py-2 px-3 text-gray-700 leading-tight hover:border-blue-900 focus:outline-none focus:border-blue-900">
+
+        </p>
+    </div>
+
+    <div class="mb-5">
+    ${renderUserCourseTaken(courseList)}
+    </div>
+
+    <a id="edit-profile-btn" href="/user-profile-form"
+        class="bg-sky-900 hover:bg-red-600 m-auto text-white font-bold py-2 px-4 rounded-lg focus:outline-none focus:shadow-outline"
+         value="edit-profile-request">
+        Edit
+    </a>
+
+</div>
+
+</div>
+`;
+}
+
+async function renderDetails() {
+  const id = getCookie("userId");
+  const response = await fetch(`/api/user-profile/${id}`);
+  const data = await response.json();
+  const profileDisplay = document.getElementById("profile-display");
+  const userCourseInfoList = data.userCourseInfoList;
+
+  if (!data.userProfileDetails) {
+    profileDisplay.innerHTML = profileDetialsBlank(userCourseInfoList);
+    return;
+  } else {
+    const profile = data.userProfileDetails;
+    const binary = new Uint8Array(profile.profile_picture.data);
+    const base64String = btoa(
+      binary.reduce((data, byte) => data + String.fromCharCode(byte), "")
+    );
+
+    profileDisplay.innerHTML = `
+    <div class="bg-slate-200 p-10 rounded-lg shadow-md w-full max-w-screen-md mx-4 my-2">
+    <div class=" text-center">
+        <img id="profile-picture-preview"
+            class="w-36 h-32 inline-block rounded-md border-2 content-center border-gray-300 mb-4 object-fill"
+             src="data:image/jpeg;base64,${base64String}" alt="Profile Picture Preview">
+        <h1 class="text-2xl text-center mb-5 font-bold text-blue-900">User Profile</h1>
+    </div>
+    <div class="flex flex-col md:flex-row mb-4 gap-3">
+        <div class="w-full md:w-1/2">
+            <label>First Name</label>
+            <p id="first-name" name="first-name" style="min-height: 2.5rem;"
+                class="shadow-md bg-white appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight hover:border-blue-900 focus:outline-none focus:border-blue-900">
+              ${profile.first_name}
+            </p>
+        </div>
+        <div class="w-full md:w-1/2">
+            <label>Last Name</label>
+            <p id="last-name" name="last-name" style="min-height: 2.5rem;"
+                class="shadow-md bg-white appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight hover:border-blue-900 focus:outline-none focus:border-blue-900">
+                ${profile.last_name}
+            </p>
+        </div>
+    </div>
+    <div class="flex flex-col md:flex-row mb-4 gap-3">
+        <div class="w-full md:w-1/2">
+            <label>Phone Number</label>
+            <p id="phone-number" name="phone-number" style="min-height: 2.5rem;" type="number"
+                class="shadow-md bg-white appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight hover:border-blue-900 focus:outline-none focus:border-blue-900">
+                ${profile.phone_number}
+            </p>
+        </div>
+        <div class="w-full md:w-1/2">
+            <label>Email</label>
+            <p id="email" name="email" type="email" style="min-height: 2.5rem;"
+                class="shadow-md bg-white appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight hover:border-blue-900 focus:outline-none focus:border-blue-900">
+                ${profile.email}
+            </p>
+        </div>
+    </div>
+    <div class="flex flex-col md:flex-row mb-4 gap-3">
+        <div class="w-full md:w-1/3">
+            <label>Birth Date</label>
+            <p id="birth-date" name="birth-date" style="min-height: 2.5rem;" type="date"
+                class="shadow-md bg-white appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight hover:border-blue-900 focus:outline-none focus:border-blue-900">
+                ${profile.birth_date}
+            </p>
+        </div>
+        <div class="w-full md:w-1/3">
+            <label>Nationality</label>
+            <p id="nationality" name="nationality" style="min-height: 2.5rem;" type="text"
+                class="shadow-md bg-white appearance-none border rounded w-full py-2 px-3 text-black leading-tight hover:border-blue-900 focus:outline-none focus:border-blue-900">
+                ${profile.nationality}
+            </p>
+        </div>
+        <div class="w-full md:w-1/3">
+            <label>Gender</label>
+            <p id="gender" name="gender" style="min-height: 2.5rem;"
+                class="shadow-md bg-white border rounded md:min-w-32 w-full py-2 px-3 text-gray-700 leading-tight hover:border-blue-900 focus:outline-none focus:border-blue-900">
+                ${profile.gender}
+            </p>
+        </div>
+    </div>
+    <div class="mb-4">
+        <label>Address</label>
+        <p id="address" name="address" type="textbox"
+            class="shadow-md bg-white appearance-none border rounded w-full min-h-20 py-2 px-3 text-gray-700 leading-tight hover:border-blue-900 focus:outline-none focus:border-blue-900">
+                ${profile.address}
+        </p>
+    </div>
+    <div class="flex flex-col mb-4">
+        <label for="training-purpose" class="mb-2 text-gray-700">Training Purpose</label>
+        <p id="training-purpose" name="training-purpose" style="min-height: 2.5rem;"
+            class="shadow-md bg-white border rounded w-full py-2 px-3 text-gray-700 leading-tight hover:border-blue-900 focus:outline-none focus:border-blue-900">
+                ${profile.training_purpose}
+        </p>
+    </div>
+
+    <div>${renderUserCourseTaken(userCourseInfoList)}</div>
+
+    <a id="edit-profile-btn" href="/user-profile-form"
+        class="bg-sky-900 hover:bg-red-600 m-auto text-white font-bold py-2 px-4 mt-9 rounded-lg focus:outline-none focus:shadow-outline"
+         value="edit-profile-request">
+        Edit
+    </a>
+
+</div>
+
+</div>
+    `;
+  }
+}
+
+function renderUserCourseTaken(courseList) {
+  if (!courseList) {
+    return "";
+  }
+  return courseList.map(
+    (course) => `
+    <h3 class="block text-xl text-center font-medium mb-2">${course.program_name}</h3>
+    <div class="flex flex-col md:flex-row mb-2 gap-3">
+        <div class="w-full md:w-1/3">
+            <label>Date started</label>
+            <p id="tdc-date-started" name="tdc-date-started" style=" min-height: 2.5rem;" type="date"
+                class="shadow-md bg-white appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight hover:border-blue-900 focus:outline-none focus:border-blue-900">
+                ${course.date_started}
+            </p>
+        </div>
+        <div class="w-full md:w-1/3">
+            <label>Date Completed</label>
+            <p id="tdc-date-completed" name="tdc-date-completed" style=" min-height: 2.5rem;" type="date"
+                class="shadow-md bg-white appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight hover:border-blue-900 focus:outline-none focus:border-blue-900">
+                ${!course.date_completed ? "" : course.date_completed}
+            </p>
+        </div>
+        <div class="w-full md:w-1/3">
+            <label>Total Hours</label>
+            <div class="flex flex-row items-center gap-4">
+                <p id="tdc-total-hours" name="tdc-total-hours" style=" min-height: 2.5rem;"
+                    class="shadow-md bg-white appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight hover:border-blue-900 focus:outline-none focus:border-blue-900">
+                    ${course.total_hours}
+                </p>
+                <span class="font-semibold text-2xl">/</span>
+                <span class="font-semibold text-lg">${course.program_duration}</span>
+            </div>
+        </div>
+    </div>
+    `
+  );
+}

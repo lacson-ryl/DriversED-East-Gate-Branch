@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth overflow-x-auto overflow-y-auto">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Requests</title>
+    <link href="/f-css/output.css" rel="stylesheet">
+    <style>
+        .side-icons {
+            width: 30px;
+            height: 30px;
+        }
+    </style>
+</head>
+
+<body class="flex flex-row w-full over">
+    <div id="sidebar-container">
+    </div>
+    <div id="main-content" class="block ml-ml-250 w-calc space-y-2">
+        <div id="top-bar" class="flex h-15 flex-row w-full sticky shadow-inner bg-white border-b-2 p-4">
+            <div id="left-side" class="flex flex-row gap-4 relative">
+                <button class="relative">
+                    <img id="notif-logo" src="/f-css/solid/bell.svg" class="w-7 h-7 inline-block" />
+                    <div
+                        class="h-3 w-3 rounded-full bg-blue-900 absolute top-2 right-2 transform translate-x-1/2 -translate-y-1/2 animate-pulse">
+                    </div>
+                </button> <img id="company-logo" src="/f-css/solid/car-front.svg" class="w-8 h-8" />
+            </div>
+            <div id="right-side" class="absolute right-4 text-lg">
+                Requests
+            </div>
+        </div>
+
+        <div id="content" class="flex flex-col w-full items-center">
+            <div
+                class="bg-slate-200 p-10 rounded-lg shadow-md w-full max-w-screen-md mx-4 my-2">
+                <h1 class="text-2xl text-center mb-5 font-bold text-blue-900">User Request</h1>
+                <form id="request-form">
+                    <div class="mb-4">
+                        <label>Title</label>
+                        <input id="title-request" name="title-request" type="text"
+                            class="shadow-md appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight hover:border-blue-900 focus:outline-none focus:border-blue-900" />
+                    </div>
+
+                    <div class="mb-4">
+                        <label>Details</label>
+                        <textarea id="details-request" name="details-request" type="textbox"
+                            class="shadow-md appearance-none border rounded w-full min-h-40 py-2 px-3 text-gray-700 leading-tight hover:border-blue-900 focus:outline-none focus:border-blue-900"></textarea>
+                    </div>
+
+                    <button id="submit-request-btn"
+                        class="bg-sky-900 hover:bg-red-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+                        type="submit" value="submit-request">
+                        Submit
+                    </button>
+
+                </form>
+
+            </div>
+            <div id="request-table" class=" mt-5 w-full px-5">
+
+            </div>
+
+        </div>
+    </div>
+    <script>
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                // Since the response is not JSON, just log the success
+                console.log('User dashboard accessed successfully');
+                const script = document.createElement('script');
+                script.src = '/f-jsfiles/user-sidebar.js';
+                document.body.appendChild(script);
+
+                const userRequestScript = document.createElement('script');
+                userRequestScript.src = '/f-jsfiles/user-request.js';
+                document.body.appendChild(userRequestScript);
+
+            } catch (error) {
+                console.error('Authorization error:', error);
+                alert("You are not authorized to view this page.");
+                window.location.href = '/user-login'; // Redirect to login if not authorized
+            }
+        });
+
+
+
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payroll History</title>
+</head>
+
+<body>
+    <div id="content" class="flex flex-col w-full">
+        <div class="flex justify-between items-center mr-4 my-2">
+            <h2 class="text-lg ml-4"> Manage Instructors</h2>
+            <div id="year-month-payroll-filter-form" class="hidden gap-4">
+                <form id="year-month-payroll-filter-form">
+                    <input type="number" id="year" name="year" placeholder="Input year"
+                        class="border-2 border-gray-300 bg-white h-8 pl-4 rounded-lg text-sm focus:outline-none">
+                    <select id="month" name="month">
+                        <option value="january">January</option>
+                        <option value="february">February</option>
+                        <option value="march">March</option>
+                        <option value="april">April</option>
+                        <option value="may">May</option>
+                        <option value="june">June</option>
+                        <option value="july">July</option>
+                        <option value="august">August</option>
+                        <option value="september">September</option>
+                        <option value="october">October</option>
+                        <option value="november">November</option>
+                        <option value="december">December</option>
+                    </select>
+                    <button type="submit"
+                        class=" bg-blue-700 hover:bg-gradient-to-t from-blue-400 to-blue-800 text-white rounded-lg px-2 py-1">
+                        Filter
+                    </button>
+                </form>
+            </div>
+
+            <table id="payroll-history-table" class="hidden mt-3 mb-5 mx-3">
+            </table>
+        </div>
+        <div id="modal" style="display: none;">
+            <div id="modal-details"></div>
+            <button id="modal-close">Close</button>
+        </div>
+
+        <script>
+            async function fetchMonthlyPayroll(monthYear) {
+
+                try {
+                    console.log(monthYear)
+                    const response = await fetch(`/api/payroll-history?monthYear=${monthYear}`);
+                    const data = await response.json();
+                    return data;
+                } catch (error) {
+                    console.error("Error fetching monthly payroll:", error);
+                }
+            }
+
+            function renderPayrollHistoryTable(data) {
+                const table = document.getElementById('payroll-history-table');
+                table.innerHTML = `
+                    <tr>
+                    <th>Month Year</th>
+                    <th>Actions</th>
+                    </tr>
+                `;
+                const uniqueMonths = [...new Set(data.map(row => row.month_year))];
+                uniqueMonths.forEach(monthYear => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+          <td>${monthYear}</td>
+          <td><button class="view-details" data-month-year="${monthYear}">View</button></td>
+        `;
+                    table.appendChild(tr);
+                });
+
+                document.querySelectorAll('.view-details').forEach(button => {
+                    button.addEventListener('click', async function () {
+                        const monthYear = this.getAttribute('data-month-year');
+                        const details = data.filter(row => row.month_year === monthYear);
+                        showModal(details);
+                    });
+                });
+            }
+
+            function showModal(details) {
+                const modal = document.getElementById('modal');
+                const modalDetails = document.getElementById('modal-details');
+                modalDetails.innerHTML = details.map(detail => `
+                    <p>Instructor Name: ${detail.instructor_name}</p>
+                    <p>Week: ${detail.date_start} to ${detail.date_end}</p>
+                    <p>Gross Income: ${detail.gross_income}</p>
+                    <p>Net Income: ${detail.net_income}</p>
+                    <p>Attended Hours: ${detail.attended_hours}</p>
+                    <p>Benefits: ${detail.benefits}</p>
+                    <hr>
+                `).join('');
+                modal.style.display = 'block';
+            }
+
+            document.getElementById('modal-close').addEventListener('click', () => {
+                document.getElementById('modal').style.display = 'none';
+            });
+
+            document
+                .getElementById("year-month-payroll-filter-form")
+                .addEventListener("submit", async (event) => {
+                    event.preventDefault();
+                    const year = document.getElementById("year").value;
+                    const month = document.getElementById("month").value;
+
+                    const month_year = `${month} ${year}`;
+                    fetchMonthlyPayroll(month_year).then(data => {
+                        renderPayrollHistoryTable(data);
+                    });
+                });
+        </script>
+</body>
+
+</html>

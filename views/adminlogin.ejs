@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DriveReady Admin Login</title>
+    <link href="/f-css/output.css" rel="stylesheet">
+</head>
+
+<body class="bg-gradient-to-t from-sky-500 to-sky-900 flex items-center justify-center min-h-screen">
+    <div class="bg-white p-10 rounded-lg shadow-md w-full max-w-sm">
+        <h1 class="text-2xl font-bold mb-5 text-blue-900 text-center">Drivers Ed Admin Login</h1>
+        <% if (error) { %>
+            <div id="error-message"
+                class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
+                <strong class="font-bold">Error:</strong>
+                <span class="block sm:inline">
+                    <%= error %>
+                </span>
+            </div>
+            <% } %>
+                <form id="adminLoginForm">
+                    <div class="mb-4">
+                        <label for="email" class="block text-gray-700 text-sm font-bold mb-2 ">
+                            EMAIL
+                        </label>
+                        <input
+                            class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight hover:border-blue-900 focus:outline-none focus:border-blue-900"
+                            id="email" type="text" placeholder="Enter your email">
+                    </div>
+                    <div class="mb-6">
+                        <label class="block text-gray-700 text-sm font-bold mb-2" for="password">
+                            PASSWORD
+                        </label>
+                        <input
+                            class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 mb-3 leading-tight hover:border-blue-900 focus:outline-none focus:blue-yellow-900"
+                            id="password" type="password" placeholder="Enter your password" />
+                    </div>
+                    <div class="flex flex-col items-center justify-between">
+                        <button id="login-btn"
+                            class="bg-sky-900 hover:bg-red-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+                            type="submit">
+                            LOGIN
+                        </button>
+                        <div class="text-sm mt-2 space-x-3">
+                            <a href="/user-register"
+                                class="text-blue-900 hover:text-blue-600 hover:underline underline-offset-2 hover:font-semibold">Forgot
+                                Password?</a>
+                            <a href="/admin-registration"
+                                class="text-blue-900 hover:text-blue-600 hover:underline underline-offset-2 hover:font-semibold">Register
+                                New Admin</a>
+                        </div>
+                    </div>
+                </form>
+                <div class="flex items-center justify-center mt-4">
+                    <button id="google-login-btn"
+                        class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
+                        Login with Google
+                    </button>
+                </div>
+    </div>
+    <script>
+        // Remove error message after 15 seconds
+        document.addEventListener('DOMContentLoaded', (event) => {
+            const errorMessage = document.getElementById('error-message');
+            if (errorMessage) {
+                setTimeout(() => {
+                    errorMessage.remove();
+                }, 10000); // 15 seconds
+            }
+        });
+
+        document.getElementById('adminLoginForm').addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            try {
+                const response = await fetch('/adminlogin', {
+                    method: "POST",
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email, password }),
+                })
+                if (response.ok) {
+                    window.location.href = '/admin-dashboard';
+                } else {
+                    const data = await response.json();
+                    alert('Error: ' + data.error);
+                }
+            } catch (error) {
+                console.log('Internal Server Error: ', error);
+                alert("Internal Server Error");
+            }
+        })
+
+        document.getElementById('google-login-btn').addEventListener('click', function () {
+            window.location.href = '/auth/google/admin';
+        })
+    </script>
+</body>
+
+</html>
