@@ -109,8 +109,8 @@ function allButtons() {
       <p>Change status of ID #${id}?</p>
       <p class="mt-3">${name} - ${date}</p>
       <div class="justify-self-end space-x-4 mt-5">
-        <label for="hours-rendered" class="text-lg font-semibold">Hours Attended: <span class="text-sm">leave blank if absent</span></label>
-        <input type="number" id="hours-attended" class="border border-gray-300 rounded-md px-2 py-1" placeholder="Enter hours attended">
+        <label for="hours-attended" class="text-lg font-semibold">Hours Attended: <span class="text-sm">leave blank if absent</span></label>
+        <input type="number" id="hours-attended" name="hours-attended" class="border border-gray-300 rounded-md px-2 py-1" placeholder="Enter hours attended">
       </div>
       <div class="justify-self-end space-x-4 mt-5">
         <button id="status-present" class="bg-green-700 hover:bg-gradient-to-t from-green-400 to-green-800 text-white text-lg rounded-md px-2">Present</button>
@@ -118,18 +118,28 @@ function allButtons() {
       </div>
     `;
       modal.style.display = "flex";
-      document
-        .getElementById("status-present")
-        .addEventListener("click", async () => {
-          const hoursAttended = document.getElementById("hours-attended").value;
-          await changeStatus(id, "Present", hoursAttended);
-        });
+      const presentBtn = document.getElementById("status-present");
+      presentBtn.addEventListener("click", async () => {
+        presentBtn.innerText = "Loading...";
+        presentBtn.classList.add(
+          "disabled",
+          "cursor-not-allowed",
+          "animate-pulse"
+        );
+        const hoursAttended = document.getElementById("hours-attended").value;
+        await changeStatus(id, "Present", hoursAttended);
+      });
 
-      document
-        .getElementById("status-absent")
-        .addEventListener("click", async () => {
-          await changeStatus(id, "Absent");
-        });
+      const absentBtn = document.getElementById("status-absent");
+      absentBtn.addEventListener("click", async () => {
+        absentBtn.innerText = "Loading...";
+        absentBtn.classList.add(
+          "disabled",
+          "cursor-not-allowed",
+          "animate-pulse"
+        );
+        await changeStatus(id, "Absent");
+      });
     });
 
     async function changeStatus(id, status, hoursAttended) {
@@ -140,8 +150,7 @@ function allButtons() {
           body: JSON.stringify({ status, hoursAttended }), // Send the status in the request body
         });
         if (response.ok) {
-          modalDetails.innerHTML =
-            "<p>An error occurred while changing status.</p>";
+          modalDetails.innerHTML = "<p>Successfully change status</p>";
           setTimeout(() => {
             modal.style.display = "none";
           }, 3000);

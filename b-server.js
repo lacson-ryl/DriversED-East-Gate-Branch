@@ -8,6 +8,7 @@ import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
 import bodyParser from "body-parser";
 import multer from "multer";
+import sharp from "sharp";
 import session from "express-session";
 import validator from "validator";
 import axios from "axios";
@@ -241,7 +242,6 @@ import {
   getApplicant,
   deleteApplication,
   getPDC,
-  getPDCorTDC,
   addProgram,
   getAllPrograms,
   editOneProgram,
@@ -278,6 +278,7 @@ import {
   applyTDC,
   getAllPdcTdcTakers,
   changeAttendanceStatus,
+  getAttendanceByInstructorId,
   getUserAttendanceSchedule,
   getInstructorDetailsForApplicants,
   getInstructors,
@@ -297,6 +298,7 @@ import {
   editTraineeCompletedCourseInfo,
   uploadTraineeCompletionCertificate,
   getTraineeCourseList,
+  getTraineeCourseInfo,
   deleteTraineeCourseInfo,
   getAllVehicle,
   updateVehicleStatus,
@@ -1068,8 +1070,6 @@ app.post("/adminlogin", async (req, res) => {
     }
 
     const admin = await adminCheckEmail(email);
-    console.log("admin", admin);
-    console.log("admin", admin.length);
     if (admin) {
       const passwordMatch = await bcrypt.compare(password, admin.user_password);
       if (passwordMatch) {
@@ -1109,16 +1109,30 @@ app.post("/adminlogin", async (req, res) => {
 app.get(
   "/admin-dashboard",
   authenticateToken,
-  authorizeRole("admin"),
+  authorizeRole(["admin", "instructor"]),
   async (req, res) => {
     try {
-      res.render("admin-dashboard");
+      const role = req.user.role;
+      return role === "admin"
+        ? res.render("admin-dashboard")
+        : role === "instructor"
+        ? res.render("instructor-dashboard")
+        : res.send("invalid role type");
     } catch (error) {
       console.error("Error in /admin-dashboard endpoint:", error);
       res.status(500).send("Internal Server Error");
     }
   }
 );
+
+app.get("/instructor-dashboard", async (req, res) => {
+  try {
+    res.render("instructor-dashboard");
+  } catch (error) {
+    console.error("Failed to render instructor dashboard", error);
+    res.status(500);
+  }
+});
 
 app.get("/api/admin-dashboard-time/:month/:year", async (req, res) => {
   try {
@@ -1229,6 +1243,32 @@ app.delete(
   }
 );
 
+app.get("/api/instructor/attendance-list", async (req, res) => {
+  try {
+    // const id = req.params.instructorId;
+    const id = 1;
+    const data = await getAttendanceByInstructorId(id);
+    res.status(200).json(data);
+  } catch (err) {
+    console.log("Error fetching data: ", err);
+    res.status(500).send("Internal Server Error");
+  }
+});
+
+app.get(
+  "/api/instructor-dashboard/trainee-info/:courseID",
+  async (req, res) => {
+    try {
+      const id = req.params.courseID;
+      const data = await getTraineeCourseInfo(id);
+      res.status(200).json(data);
+    } catch (err) {
+      console.log("Error fetching data: ", err);
+      res.status(500).send("Internal Server Error");
+    }
+  }
+);
+
 app.get(
   "/attendance",
   authenticateToken,
@@ -1257,7 +1297,7 @@ app.get(
 app.put(
   "/api/attendance/status/:id",
   authenticateToken,
-  authorizeRole("admin"),
+  authorizeRole(["admin", "instructor"]),
   async (req, res) => {
     try {
       const id = req.params.id;
@@ -1385,7 +1425,6 @@ app.post(
   }
 );
 
-//here is
 app.post(
   "/api/manage-people/assign-account/:id",
   authenticateToken,
@@ -1419,6 +1458,7 @@ app.post(
       }
 
       const temporaryPass = generateTemporaryPassword(8);
+      console.log("temporaryPass", temporaryPass);
       const hashedPassword = await bcrypt.hash(temporaryPass, 10);
 
       // Save the new user to the database
@@ -1435,14 +1475,13 @@ app.post(
 
       await assignAccountToInstructor(id, accountId);
 
-      /*
       await sendEmail("new-account", email, {
         name: userName,
         email: userEmail,
         generatedPassword: temporaryPass,
         dateCreated: new Date().toLocaleDateString(),
       });
-      */
+
       return res.status(201).json({ message: "Account assigned successfully" });
     } catch (error) {
       console.error("Error fetching Instructors Data:", error);
@@ -1541,12 +1580,10 @@ app.get(
       const weeklyHistoryArray = Object.values(weeklyHistoryData);
       const currentWeekPayrollArray = [currentWeekPayrollData]; // Wrap single object in an array
 
-      return res
-        .status(200)
-        .json({
-          weeklyHistoryData: weeklyHistoryArray,
-          currentWeekPayrollData: currentWeekPayrollArray,
-        });
+      return res.status(200).json({
+        weeklyHistoryData: weeklyHistoryArray,
+        currentWeekPayrollData: currentWeekPayrollArray,
+      });
     } catch (error) {
       return res.status(500).json({ error: "Internal Server Error" });
     }
@@ -1991,15 +2028,21 @@ app.post(
       if (!accountName || !amount || !paymentMethod || !courseSelect) {
         return res.status(400).json({ error: "Please Provide all fields!" });
       }
-      const screenshotReceipt = req.file ? req.file.buffer : null;
       const userId = req.user.role === "admin" ? id : req.user.userId;
+      let compressedReceipt = null;
+
+      if (req.file) {
+        compressedReceipt = await sharp(req.file.buffer)
+          .jpeg({ quality: 85 })
+          .toBuffer();
+      }
 
       await addPayments(
         userId,
         accountName,
         amount,
         paymentMethod,
-        screenshotReceipt,
+        compressedReceipt,
         courseSelect
       );
       res.status(200).json({ message: "Payment added successfully!" });
@@ -2017,8 +2060,14 @@ app.post(
   async (req, res) => {
     try {
       const id = req.params.id;
-      const file = req.file;
-      await uploadPhotoReceipt(id, file.buffer);
+      let compressedReceipt = null;
+
+      if (req.file) {
+        compressedReceipt = await sharp(req.file.buffer)
+          .jpeg({ quality: 85 })
+          .toBuffer();
+      }
+      await uploadPhotoReceipt(id, compressedReceipt);
       res.status(200).json({ message: "Photo Receipt uploaded successfully!" });
     } catch (error) {
       console.error("Error fetching report details:", error);
@@ -2251,15 +2300,18 @@ app.post(
   upload.single("vehicle-file"),
   async (req, res) => {
     const vehicleId = req.params.id;
-    const file = req.file;
-
-    if (!file) {
+    let compressedPhoto = null;
+    if (!req.file) {
       return res.status(400).json({ error: "No file uploaded" });
     }
 
+    compressedPhoto = await sharp(req.file.buffer)
+      .jpeg({ quality: 85 })
+      .toBuffer();
+
     try {
       // Call the database function to store the file
-      await uploadVehiclePhoto(vehicleId, file.buffer, file.mimetype);
+      await uploadVehiclePhoto(vehicleId, compressedPhoto, req.file.mimetype);
       res.status(200).json({ message: "Photo uploaded successfully!" });
     } catch (error) {
       console.error("Error storing vehicle photo:", error);

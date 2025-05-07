@@ -14,6 +14,20 @@ module.exports = {
       margin: {
         "ml-250": "220px", // Custom margin-left of 250px
       },
+      animation: {
+        fadeIn: "fadeIn 0.5s ease-in-out forwards",
+        fadeOut: "fadeOut 0.5s ease-in-out forwards",
+      },
+      keyframes: {
+        fadeIn: {
+          "0%": { opacity: "0" },
+          "100%": { opacity: "1" },
+        },
+        fadeOut: {
+          "0%": { opacity: "1" },
+          "100%": { opacity: "0" },
+        },
+      },
     },
   },
   plugins: [

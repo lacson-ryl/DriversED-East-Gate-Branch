@@ -167,6 +167,7 @@ function allButton(details) {
         <select id="instructor-type" name="instructor-type" class="mt-1 text-lg block w-full outline outline-1 outline-gray-300 rounded-sm px-1">
           <option value="PDC">PDC</option>
           <option value="TDC">TDC</option>
+          <option value="(P|T)DC">(P|T)DC</option>
         </select>
       </div>
       <div class="mb-4">
@@ -371,6 +372,9 @@ function allButton(details) {
                   <option value="TDC" ${
                     data.instructor_type === "TDC" ? "selected" : ""
                   }>TDC</option>
+                  <option value="(P|T)DC" ${
+                    data.instructor_type === "(P|T)DC" ? "selected" : ""
+                  }>(P|T)DC</option>
                 </select>
               </div>
               <div class="mb-4">

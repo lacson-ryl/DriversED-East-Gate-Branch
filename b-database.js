@@ -796,18 +796,6 @@ export async function newUserCount() {
   return result[0].count;
 }
 
-export async function getPDCorTDC(element) {
-  const result = await pool.query(
-    `
-    SELECT COUNT(*)
-    FROM new_applicants
-    WHERE course = "?"
-    `,
-    [element]
-  );
-  return result;
-}
-
 export async function getAllPrograms() {
   const result = await pool.query(
     `
@@ -1909,6 +1897,21 @@ export async function getUserAttendanceSchedule(userId) {
   }
 }
 
+export async function getAttendanceByInstructorId(id) {
+  const query = `
+  SELECT A.*, U.user_name
+  FROM attendance A
+  JOIN user U ON A.creator_id = U.user_id
+  WHERE A.instructor_id = ?
+  `;
+  const [result] = await pool.query(query, [id]);
+  const formattedResult = result.map((row) => ({
+    ...row,
+    date: formatDate(row.date),
+  }));
+  return formattedResult;
+}
+
 export async function getInstructors() {
   try {
     const [result] = await pool.query(
@@ -2271,6 +2274,45 @@ export async function getTraineeCourseList(userId) {
   `;
   try {
     const [result] = await pool.query(query, [userId]);
+    const formattedResult = result.map((row) => ({
+      ...row,
+      date_started: !row.date_started ? null : formatDate(row.date_started),
+      date_completed: !row.date_completed
+        ? null
+        : formatDate(row.date_completed),
+    }));
+    return formattedResult;
+  } catch (error) {
+    console.error("Error fetching user course list", error);
+    throw error;
+  }
+}
+
+export async function getTraineeCourseInfo(courseId) {
+  const query = `
+    SELECT 
+      user_courses.course_id,
+      user_courses.user_id,
+      user.user_name,
+      user_courses.instructor_name,
+      user_courses.program_name,
+      user_courses.isPaid,
+      user_courses.program_fee,
+      user_courses.program_duration,
+      user_courses.date_started,
+      user_courses.date_completed,
+      user_courses.grade,
+      user_courses.grading_status,
+      user_courses.grade_sheet,
+      user_courses.total_hours,
+      user_courses.certificate_file,
+      user_courses.certificate_file_type
+    FROM user_courses
+    LEFT JOIN user ON user_courses.user_id = user.user_id
+    WHERE user_courses.course_id = ?
+  `;
+  try {
+    const [result] = await pool.query(query, [courseId]);
     const formattedResult = result.map((row) => ({
       ...row,
       date_started: !row.date_started ? null : formatDate(row.date_started),

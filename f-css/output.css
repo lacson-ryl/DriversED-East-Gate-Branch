@@ -873,6 +873,10 @@ video {
   height: 100svh;
 }
 
+.h-4 {
+  height: 1rem;
+}
+
 .max-h-24 {
   max-height: 6rem;
 }
@@ -1001,8 +1005,16 @@ video {
   width: 100%;
 }
 
-.w-52 {
-  width: 13rem;
+.w-4 {
+  width: 1rem;
+}
+
+.w-5 {
+  width: 1.25rem;
+}
+
+.w-2 {
+  width: 0.5rem;
 }
 
 .min-w-40 {
@@ -1041,6 +1053,10 @@ video {
   max-width: 768px;
 }
 
+.max-w-screen-sm {
+  max-width: 640px;
+}
+
 .max-w-sm {
   max-width: 24rem;
 }
@@ -1071,6 +1087,16 @@ video {
   transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y));
 }
 
+.rotate-0 {
+  --tw-rotate: 0deg;
+  transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y));
+}
+
+.rotate-180 {
+  --tw-rotate: 180deg;
+  transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y));
+}
+
 .transform {
   transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y));
 }
@@ -1083,6 +1109,20 @@ video {
 
 .animate-pulse {
   animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+  }
+
+  100% {
+    opacity: 1;
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.5s ease-in-out forwards;
 }
 
 .cursor-not-allowed {
@@ -1542,6 +1582,16 @@ video {
 .bg-rose-700 {
   --tw-bg-opacity: 1;
   background-color: rgb(190 18 60 / var(--tw-bg-opacity));
+}
+
+.bg-sky-500 {
+  --tw-bg-opacity: 1;
+  background-color: rgb(14 165 233 / var(--tw-bg-opacity));
+}
+
+.bg-sky-700 {
+  --tw-bg-opacity: 1;
+  background-color: rgb(3 105 161 / var(--tw-bg-opacity));
 }
 
 .bg-sky-900 {
@@ -2083,6 +2133,10 @@ video {
   outline-color: #d1d5db;
 }
 
+.outline-gray-400 {
+  outline-color: #9ca3af;
+}
+
 .outline-gray-500 {
   outline-color: #6b7280;
 }
@@ -2390,6 +2444,10 @@ video {
 
 .hover\:outline-blue-900:hover {
   outline-color: #1e3a8a;
+}
+
+.hover\:outline-gray-700:hover {
+  outline-color: #374151;
 }
 
 .hover\:outline-red-500:hover {
