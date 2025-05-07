@@ -1433,32 +1433,20 @@ app.post(
     try {
       const id = req.params.id;
       const { userName, userEmail, accountRole } = req.body;
-      console.log(
-        "userName, userEmail, accountRole",
-        userName,
-        userEmail,
-        accountRole
-      );
 
       if (!validator.isEmail(userEmail)) {
         return res.status(400).json({ error: "Invalid email format." });
       }
 
       // Check if email already exists in the database
-      try {
-        const emailCheck = await adminCheckEmail(userEmail);
-        if (emailCheck) {
-          return res
-            .status(401)
-            .json({ error: "Email already assigned to an account" });
-        }
-      } catch (error) {
-        console.error("Error checking email:", error);
-        return res.status(500).json({ error: "Error checking email" });
+      const emailCheck = await adminCheckEmail(userEmail);
+      if (emailCheck) {
+        return res
+          .status(401)
+          .json({ error: "Email already assigned to an account" });
       }
 
       const temporaryPass = generateTemporaryPassword(8);
-      console.log("temporaryPass", temporaryPass);
       const hashedPassword = await bcrypt.hash(temporaryPass, 10);
 
       // Save the new user to the database
@@ -1469,13 +1457,12 @@ app.post(
         account_role: accountRole,
         isVerify: "false",
       };
-      console.log(newUser);
 
       const accountId = await saveAdminAccount(newUser);
 
       await assignAccountToInstructor(id, accountId);
 
-      await sendEmail("new-account", email, {
+      await sendEmail("new-account", userEmail, {
         name: userName,
         email: userEmail,
         generatedPassword: temporaryPass,
@@ -2622,7 +2609,7 @@ app.post("/api/change-password-email-option/send-code", async (req, res) => {
 app.get(
   "/logout",
   authenticateToken,
-  authorizeRole(["admin", "user"]),
+  authorizeRole(["admin", "user", "instructor"]),
   (req, res) => {
     const role = req.user.role;
     if (!role) {
