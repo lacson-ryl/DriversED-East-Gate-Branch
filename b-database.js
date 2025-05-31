@@ -345,36 +345,42 @@ export async function verifyOtp(userId, otp, resetType) {
 
 export async function uploadProfile(
   firstName,
+  middleName,
   lastName,
   phoneNumber,
   email,
   birthDate,
   nationality,
   gender,
+  civilStatus,
   address,
+  ltoClientId,
   trainingPurpose,
   profilePicture,
-  userID
+  userId
 ) {
   const [result] = await pool.query(
     `
     INSERT INTO user_profile (
-            first_name, last_name, phone_number, email, birth_date, nationality, gender, address, training_purpose,
+            first_name, last_name, middle_name, phone_number, lto_client_id, email, birth_date, nationality, gender, address, civil_status, training_purpose,
             profile_picture, user_id
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `,
     [
       firstName,
       lastName,
+      middleName,
       phoneNumber,
+      ltoClientId,
       email,
       birthDate,
       nationality,
       gender,
       address,
+      civilStatus,
       trainingPurpose,
       profilePicture,
-      userID,
+      userId,
     ]
   );
   return result.insertId;
@@ -393,10 +399,6 @@ export async function getProfilewithUserId(id) {
     const formattedResult = result.map((row) => ({
       ...row,
       birth_date: formatDate(row.birth_date),
-      tdc_date_started: formatDate(row.tdc_date_started),
-      tdc_date_completed: formatDate(row.tdc_date_completed),
-      pdc_date_started: formatDate(row.pdc_date_started),
-      pdc_date_completed: formatDate(row.pdc_date_completed),
     }));
     return formattedResult[0];
   } catch (error) {
@@ -1950,6 +1952,26 @@ export async function getInstructorwithId(id) {
   }
 }
 
+export async function getInstructorWithAccountId(id) {
+  try {
+    const [result] = await pool.query(
+      `SELECT *
+      FROM instructor
+      WHERE account_id = ?`,
+      [id]
+    );
+
+    const formattedResult = result.map((row) => ({
+      ...row,
+      date_started: formatDate(row.date_started),
+    }));
+    return formattedResult[0];
+  } catch (error) {
+    console.error("Failed fetching instructors!", error);
+    throw error;
+  }
+}
+
 export async function addInstructor(
   name,
   rate,
@@ -1957,15 +1979,25 @@ export async function addInstructor(
   onsite,
   manual,
   automatic,
+  accreditaionNumber,
   dateStarted
 ) {
   try {
     const [result] = await pool.query(
       `
-  INSERT INTO instructor (instructor_name, rate_per_hour, instructor_type, isTdcOnsite, isManual, isAutomatic, date_started)
-  VALUES (?, ?, ?, ?, ?, ?, ?)
+  INSERT INTO instructor (instructor_name, rate_per_hour, instructor_type, isTdcOnsite, isManual, isAutomatic, date_started, accreditation_number)
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?)
   `,
-      [name, rate, type, onsite, manual, automatic, dateStarted]
+      [
+        name,
+        rate,
+        type,
+        onsite,
+        manual,
+        automatic,
+        dateStarted,
+        accreditaionNumber,
+      ]
     );
     return result.insertId;
   } catch (error) {
@@ -2236,11 +2268,24 @@ export async function getInstructorDetailsForApplicants() {
 // Functions for Completed Courses list
 export async function getCompletedCourseList() {
   try {
-    const [result] = await pool.query(`SELECT * FROM user_courses`);
+    const [result] = await pool.query(`
+      SELECT *,
+      instructor.instructor_id AS instructor_id,
+      program_offers.program_id AS program_id,
+      user.user_name AS user_name
+      FROM user_courses
+      LEFT JOIN instructor ON user_courses.instructor_name = instructor.instructor_name
+      LEFT JOIN user ON user_courses.user_id = user.user_id
+      LEFT JOIN program_offers ON user_courses.program_name = program_offers.program_name
+      `);
+    // WHERE user_courses.grading_status = 'Completed' --- add later
+
     const formattedResult = result.map((row) => ({
       ...row,
-      date_started: formatDate(row.date_started),
-      date_completed: formatDate(row.date_completed),
+      date_started: row.date_started ? formatDate(row.date_started) : null,
+      date_completed: row.date_completed
+        ? formatDate(row.date_completed)
+        : null,
     }));
     return formattedResult;
   } catch (error) {
@@ -2287,7 +2332,6 @@ export async function getTraineeCourseList(userId) {
     throw error;
   }
 }
-
 export async function getTraineeCourseInfo(courseId) {
   const query = `
     SELECT 

@@ -6,8 +6,7 @@ function getCookie(name) {
 }
 
 async function renderDetails() {
-  const id = getCookie("userId");
-  const response = await fetch(`/api/user-profile/${id}`);
+  const response = await fetch(`/api/user-profile`);
   const data = await response.json();
   const profileDisplay = document.getElementById("profile-display");
   console.log(data);
@@ -18,12 +17,17 @@ async function renderDetails() {
         <h1 class="text-2xl text-center mb-5 font-bold text-blue-900">User Profile</h1>
         <form id="profile-form" enctype="multipart/form-data" class="w-full">
             <div class="flex flex-col md:flex-row mb-4 gap-3">
-                <div class="">
+                <div class="w-full md:w-1/3">
                     <label>First Name</label>
                     <input id="first-name" name="first-name" type="text"
                         class="shadow-md bg-white appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight hover:border-blue-900 focus:outline-none focus:border-blue-900" />
                 </div>
-                <div class="">
+                <div class="w-full md:w-1/3">
+                    <label>Middle Name</label>
+                    <input id="middle-name" name="middle-name" type="text"
+                        class="shadow-md bg-white appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight hover:border-blue-900 focus:outline-none focus:border-blue-900" />
+                </div>
+                <div class="w-full md:w-1/3">
                     <label>Last Name</label>
                     <input id="last-name" name="last-name" type="text"
                         class="shadow-md bg-white appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight hover:border-blue-900 focus:outline-none focus:border-blue-900" />
@@ -42,16 +46,25 @@ async function renderDetails() {
                 </div>
             </div>
             <div class="flex flex-col md:flex-row mb-4 gap-3">
-                <div>
+                <div class="w-full md:w-1/5">
+                    <label>Age</label>
+                    <p id="age" 
+                        class="shadow-md bg-white appearance-none border rounded w-full py-2 px-3 text-gray-500 leading-tight hover:border-blue-900 focus:outline-none focus:border-blue-900">
+                    set in birthdate
+                    </p>
+                </div>
+                <div class="w-full md:w-2/5">
                     <label>Birth Date</label>
-                    <input id="birth-date" name="birth-date" type="date"
+                    <input id="birth-date" name="birth-date" type="date" 
                         class="shadow-md bg-white appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight hover:border-blue-900 focus:outline-none focus:border-blue-900" />
                 </div>
-                <div>
+                <div class="w-full md:w-2/5">
                     <label>Nationality</label>
                     <input id="nationality" name="nationality" type="text"
                         class="shadow-md bg-white appearance-none border rounded w-full py-2 px-3 text-black leading-tight hover:border-blue-900 focus:outline-none focus:border-blue-900" />
                 </div>
+            </div>
+            <div class="flex flex-col md:flex-row mb-4 gap-3">
                 <div class="flex flex-col">
                     <label>Gender</label>
                     <select id="gender" name="gender"
@@ -61,14 +74,24 @@ async function renderDetails() {
                         <option value="LGBTQ">LGBTQ</option>
                     </select>
                 </div>
+                <div>
+                    <label>Civil Status</label>
+                    <input id="civil-status" name="civil-status" type="text"
+                        class="shadow-md bg-white appearance-none border rounded w-full py-2 px-3 text-black leading-tight hover:border-blue-900 focus:outline-none focus:border-blue-900" />
+                </div>
             </div>
             <div class="mb-4">
                 <label>Address</label>
                 <textarea id="address" name="address" type="textbox"
                     class="shadow-md bg-white appearance-none border rounded w-full min-h-20 py-2 px-3 text-gray-700 leading-tight hover:border-blue-900 focus:outline-none focus:border-blue-900"></textarea>
             </div>
+            <div class="mb-4">
+                <label>LTO Client ID</label>
+                <input id="lto-client-id" name="lto-client-id" type="text"
+                    class="shadow-md bg-white appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight hover:border-blue-900 focus:outline-none focus:border-blue-900"></textarea>
+            </div>
             <div class="flex flex-col mb-4">
-                <label for="training-purpose" class="mb-2 text-gray-700">Training Purpose</label>
+                <label for="training-purpose" class="mb-2">Training Purpose</label>
                 <select id="training-purpose" name="training-purpose"
                     class="shadow-md bg-white border rounded w-full py-2 px-3 text-gray-700 leading-tight hover:border-blue-900 focus:outline-none focus:border-blue-900">
                     <option value="New Driver's License (Non-Pro)">New Driver's License (Non-Pro)</option>
@@ -91,9 +114,6 @@ async function renderDetails() {
                 <input type="file" id="profile-picture-input" name="profile_picture" accept="image/*"
                     class="text-sm text-gray-600">
             </div>
-            <input type="hidden" id="userIDProfile" name="userID" value="${getCookie(
-              "userId"
-            )}" />
 
             <button id="submit-request-btn"
                 class="bg-sky-900 hover:bg-red-600 m-auto text-white font-bold mt-5 py-2 px-4 rounded-lg focus:outline-none focus:shadow-outline"
@@ -106,6 +126,19 @@ async function renderDetails() {
     </div>
 `;
     document
+      .getElementById("birth-date")
+      .addEventListener("input", function () {
+        const ageElem = document.getElementById("age");
+        if (this.value) {
+          ageElem.innerText = Math.floor(
+            (new Date() - new Date(this.value)) / (1000 * 60 * 60 * 24 * 365.25)
+          );
+        } else {
+          ageElem.innerText = "";
+        }
+      });
+
+    document
       .getElementById("profile-form")
       .addEventListener("submit", async function (event) {
         event.preventDefault(); // Prevent the default form submission
@@ -113,7 +146,7 @@ async function renderDetails() {
         const form = document.getElementById("profile-form");
         const formData = new FormData(form);
         try {
-          const response = await fetch("/api/use-profile-submit", {
+          const response = await fetch("/api/user-profile-submit", {
             method: "POST",
             body: formData,
           });
@@ -129,24 +162,26 @@ async function renderDetails() {
       });
   } else {
     const profile = data.userProfileDetails;
-    const binary = new Uint8Array(profile.profile_picture.data);
-    const base64String = btoa(
-      binary.reduce((data, byte) => data + String.fromCharCode(byte), "")
-    );
 
     profileDisplay.innerHTML = `
     <div class="bg-slate-200 p-10 rounded-lg shadow-md w-full max-w-screen-md mx-4 my-2">
     <h1 class="text-2xl text-center mb-5 font-bold text-blue-900">User Profile</h1>
-    <form id="edit-profile-form" class="w-full">
+    <form id="edit-profile-form" enctype="multipart/form-data" class="w-full">
         <div class="flex flex-col md:flex-row mb-4 gap-3">
-            <div class="">
+            <div class="w-full md:w-1/3">
                 <label>First Name</label>
                 <input id="first-name" name="first-name" type="text" value="${
                   profile.first_name ? profile.first_name : ""
                 }"
                     class="shadow-md bg-white appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight hover:border-blue-900 focus:outline-none focus:border-blue-900" />
             </div>
-            <div class="">
+            <div class="w-full md:w-1/3">
+                <label>Middle Name</label>
+                <input id="middle-name" name="middle-name" style="min-height: 2.5rem;"
+                    value="${profile.middle_name}"
+                class="shadow-md bg-white appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight hover:border-blue-900 focus:outline-none focus:border-blue-900" />
+            </div>
+            <div class="w-full md:w-1/3">
                 <label>Last Name</label>
                 <input id="last-name" name="last-name" type="text"  value="${
                   profile.last_name ? profile.last_name : ""
@@ -171,36 +206,50 @@ async function renderDetails() {
             </div>
         </div>
         <div class="flex flex-col md:flex-row mb-4 gap-3">
-            <div>
+            <div class="w-full md:w-1/2">
+              <label>Age</label>
+              <p id="age" name="age" style="min-height: 2.5rem;" type="Number"
+                  class="shadow-md bg-white appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight hover:border-blue-900 focus:outline-none focus:border-blue-900">
+                  ${profile.age}
+              </p>
+            </div>
+            <div class="w-full md:w-1/3">
                 <label>Birth Date</label>
                 <input id="birth-date" name="birth-date" type="date" value="${
                   profile.birth_date ? profile.birth_date : ""
                 }"
                     class="shadow-md bg-white appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight hover:border-blue-900 focus:outline-none focus:border-blue-900" />
             </div>
-            <div>
+            <div class="w-full md:w-1/3">
                 <label>Nationality</label>
                 <input id="nationality" name="nationality" type="text" value="${
                   profile.nationality ? profile.nationality : ""
                 }"
                     class="shadow-md bg-white appearance-none border rounded w-full py-2 px-3 text-black leading-tight hover:border-blue-900 focus:outline-none focus:border-blue-900" />
             </div>
-            <div class="flex flex-col">
-                <label>Gender</label>
-                <select id="gender" name="gender"
-                    class="shadow-md bg-white border rounded md:min-w-32 w-full py-2 px-3 text-gray-700 leading-tight hover:border-blue-900 focus:outline-none focus:border-blue-900">
-                    <option value="Male" ${
-                      profile.gender === "Male" ? "selected" : ""
-                    }>Male</option>
-                    <option value="Female" ${
-                      profile.gender === "Female" ? "selected" : ""
-                    }>Female</option>
-                    <option value="LGBTQ" ${
-                      profile.gender === "LGBTQ" ? "selected" : ""
-                    }>LGBTQ</option>
-                </select>
-
-            </div>
+        </div>
+        <div class="flex flex-col md:flex-row mb-4 gap-3">
+          <div class="w-full md:w-1/2">
+            <label>Gender</label>
+            <select id="gender" name="gender"
+              class="shadow-md bg-white border rounded md:min-w-32 w-full py-2 px-3 text-gray-700 leading-tight hover:border-blue-900 focus:outline-none focus:border-blue-900">
+              <option value="Male" ${
+                profile.gender === "Male" ? "selected" : ""
+              }>Male</option>
+              <option value="Female" ${
+                profile.gender === "Female" ? "selected" : ""
+              }>Female</option>
+              <option value="LGBTQ" ${
+                profile.gender === "LGBTQ" ? "selected" : ""
+              }>LGBTQ</option>
+            </select>
+          </div>
+          <div class="w-full md:w-1/2">
+              <label>Civil Status</label>
+              <input id="civil-status" name="civil-status" style="min-height: 2.5rem;" type="text"
+                    value="${profile.civil_status}"
+                  class="shadow-md bg-white appearance-none border rounded w-full py-2 px-3 text-black leading-tight hover:border-blue-900 focus:outline-none focus:border-blue-900" />
+          </div>
         </div>
         <div class="mb-4">
             <label>Address</label>
@@ -208,6 +257,13 @@ async function renderDetails() {
                 class="shadow-md bg-white appearance-none border rounded w-full min-h-20 py-2 px-3 text-gray-700 leading-tight hover:border-blue-900 focus:outline-none focus:border-blue-900">${
                   profile.address ? profile.address : ""
                 }</textarea>
+        </div>
+        
+        <div class=" mb-4">
+            <label>LTO Client ID</label>
+            <input id="lto-client-id" name="lto-client-id" style="min-height: 2.5rem;"
+                value="${profile.lto_client_id}"
+            class="shadow-md bg-white appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight hover:border-blue-900 focus:outline-none focus:border-blue-900" />
         </div>
         <div class="flex flex-col mb-4">
             <label for="training-purpose" class="mb-2 text-gray-700">Training Purpose</label>
@@ -268,74 +324,15 @@ async function renderDetails() {
 
         </div>
 
-
-        <h3 class="block text-xl text-center font-medium mb-3">TDC</h3>
-        <div class="flex flex-col md:flex-row mb-4 gap-3">
-            <div>
-                <label>Date started</label>
-                <input id="tdc-date-started" name="tdc-date-started" type="date" value="${
-                  profile.tdc_date_started ? profile.tdc_date_started : ""
-                }"
-                    class="shadow-md bg-white appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight hover:border-blue-900 focus:outline-none focus:border-blue-900" />
-            </div>
-            <div>
-                <label>Date Completed</label>
-                <input id="tdc-date-completed" name="tdc-date-completed" type="date" value="${
-                  profile.tdc_date_completed ? profile.tdc_date_completed : ""
-                }"
-                    class="shadow-md bg-white appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight hover:border-blue-900 focus:outline-none focus:border-blue-900" />
-            </div>
-            <div>
-                <label>Total Hours</label>
-                <div class="flex flex-row text-center justify-items-center gap-4"> 
-                    <input id="tdc-total-hours" name="tdc-total-hours" type="number" value="${
-                      profile.tdc_total_hours ? profile.tdc_total_hours : ""
-                    }"
-                        class="shadow-md bg-white appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight hover:border-blue-900 focus:outline-none focus:border-blue-900" />
-                    <span class="">/</span><span>15</span>
-                </div>
-            </div>
-        </div>
-
-        <h3 class="block text-xl text-center font-medium mb-3">PDC</h3>
-        <div class="flex flex-col md:flex-row mb-4 gap-3">
-            <div>
-                <label>Date Started</label>
-                <input id="pdc-date-started" name="pdc-date-started" type="date" value="${
-                  profile.pdc_date_started ? profile.pdc_date_started : ""
-                }"
-                    class="shadow-md bg-white appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight hover:border-blue-900 focus:outline-none focus:border-blue-900" />
-            </div>
-            <div>
-                <label>Date Completed</label>
-                <input id="pdc-date-completed" name="pdc-date-completed" type="date" value="${
-                  profile.pdc_date_completed ? profile.pdc_date_completed : ""
-                }"
-                    class="shadow-md bg-white appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight hover:border-blue-900 focus:outline-none focus:border-blue-900" />
-            </div>
-            <div>
-                <label>Total Hours</label>
-                <div class="flex flex-row text-center gap-4">
-                    <input id="pdc-total-hours" name="pdc-total-hours" type="number" value="${
-                      profile.pdc_total_hours ? profile.pdc_total_hours : ""
-                    }"
-                        class="shadow-md bg-white appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight hover:border-blue-900 focus:outline-none focus:border-blue-900" />
-                    <span class="">/</span><span>8</span>
-                </div>
-            </div>
-        </div>
         <div>
             <img id="profile-picture-preview"
                 class="w-36 h-32 rounded-md border-2 content-center border-gray-300 mb-4 object-fill"
-                src="data:image/jpeg;base64,${
-                  base64String ? base64String : ""
+                src="${
+                  profile.profile_picture ? profile.profile_picture : ""
                 }" alt="Profile Picture Preview">
             <input type="file" id="profile-picture-input" name="profile_picture" accept="image/*"
                 class="text-sm text-gray-600">
             </div>
-        <input type="hidden" id="userIDProfile" name="userID" value="${getCookie(
-          "userId"
-        )}" />
 
         <button id="edit-request-btn"
             class="bg-sky-900 hover:bg-red-600 m-auto text-white font-bold mt-5 py-2 px-4 rounded-lg focus:outline-none focus:shadow-outline"
@@ -353,57 +350,12 @@ async function renderDetails() {
       .addEventListener("submit", async function (event) {
         event.preventDefault(); // Prevent the default form submission
 
-        // Fetch the values from the form
-        const firstName = document.getElementById("first-name").value;
-        const lastName = document.getElementById("last-name").value;
-        const phoneNumber = document.getElementById("phone-number").value;
-        const email = document.getElementById("email").value;
-        const birthDate = document.getElementById("birth-date").value;
-        const nationality = document.getElementById("nationality").value;
-        const gender = document.getElementById("gender").value;
-        const address = document.getElementById("address").value;
-        const trainingPurpose =
-          document.getElementById("training-purpose").value;
-        const tdcDateStarted =
-          document.getElementById("tdc-date-started").value;
-        const tdcDateCompleted =
-          document.getElementById("tdc-date-completed").value;
-        const tdcTotalHours = document.getElementById("tdc-total-hours").value;
-        const pdcDateStarted =
-          document.getElementById("pdc-date-started").value;
-        const pdcDateCompleted =
-          document.getElementById("pdc-date-completed").value;
-        const pdcTotalHours = document.getElementById("pdc-total-hours").value;
-        const profilePicture = document.getElementById("profile-picture-input")
-          .files[0];
-        const userID = document.getElementById("userIDProfile").value;
-
-        // Prepare data for JSON body
-        const profileData = {
-          "first-name": firstName,
-          "last-name": lastName,
-          "phone-number": phoneNumber,
-          email,
-          "birth-date": birthDate,
-          nationality,
-          gender,
-          address,
-          "training-purpose": trainingPurpose,
-          "tdc-date-started": tdcDateStarted,
-          "tdc-date-completed": tdcDateCompleted,
-          "tdc-total-hours": tdcTotalHours,
-          "pdc-date-started": pdcDateStarted,
-          "pdc-date-completed": pdcDateCompleted,
-          "pdc-total-hours": pdcTotalHours,
-          profile_picture: profilePicture,
-          userID,
-        };
-        console.log(profileData);
+        const form = document.getElementById("edit-profile-form");
+        const formData = new FormData(form);
         try {
           const response = await fetch("/api/user-profile-edit", {
             method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(profileData),
+            body: formData,
           });
           if (response.ok) {
             alert("Profile submitted successfully!");

@@ -9,6 +9,8 @@ import cookieParser from "cookie-parser";
 import bodyParser from "body-parser";
 import multer from "multer";
 import sharp from "sharp";
+import fs from "fs";
+import puppeteer from "puppeteer";
 import session from "express-session";
 import validator from "validator";
 import axios from "axios";
@@ -34,6 +36,7 @@ app.use(express.json());
 app.use(express.static(__dirname));
 app.use(express.static("f-jsfiles"));
 app.set("view engine", "ejs");
+app.set("views", path.join(__dirname, "views"));
 app.use("/f-css", express.static("f-css"));
 app.use(cors());
 app.use(cookieParser());
@@ -284,6 +287,7 @@ import {
   getInstructors,
   addInstructor,
   getInstructorwithId,
+  getInstructorWithAccountId,
   updateInstructorInfo,
   assignAccountToInstructor,
   getInstructorPayroll,
@@ -335,38 +339,46 @@ app.get("/user-profile-form", (req, res) => {
 });
 
 app.post(
-  "/api/use-profile-submit",
+  "/api/user-profile-submit",
   authenticateToken,
   upload.single("profile_picture"),
   async (req, res) => {
     try {
       const {
         "first-name": firstName,
+        "middle-name": middleName,
         "last-name": lastName,
         "phone-number": phoneNumber,
         email,
         nationality,
         gender,
+        "civil-status": civilStatus,
         address,
         "birth-date": birthDate,
+        "lto-client-id": ltoClientId,
         "training-purpose": trainingPurpose,
-        userID,
       } = req.body;
+      const { userId } = req.user;
+      console.log("userId", userId);
+      console.log("req.body", req.body);
 
       const profilePicture = req.file ? req.file.buffer : null;
 
       await uploadProfile(
         firstName,
+        middleName,
         lastName,
         phoneNumber,
         email,
         birthDate,
         nationality,
         gender,
+        civilStatus,
         address,
+        ltoClientId,
         trainingPurpose,
         profilePicture,
-        userID
+        userId
       );
       return res.status(200).json({ message: "Profile Submitted" });
     } catch (error) {
@@ -376,89 +388,93 @@ app.post(
   }
 );
 
-app.put("/api/user-profile-edit", authenticateToken, async (req, res) => {
-  try {
-    const {
-      "first-name": firstName,
-      "last-name": lastName,
-      "phone-number": phoneNumber,
-      email,
-      "birth-date": birthDate,
-      nationality,
-      gender,
-      address,
-      "training-purpose": trainingPurpose,
-      "tdc-date-started": tdcDateStarted,
-      "tdc-date-completed": tdcDateCompleted,
-      "tdc-total-hours": tdcTotalHours,
-      "pdc-date-started": pdcDateStarted,
-      "pdc-date-completed": pdcDateCompleted,
-      "pdc-total-hours": pdcTotalHours,
-      userID,
-    } = req.body;
+app.put(
+  "/api/user-profile-edit",
+  authenticateToken,
+  upload.single("profile_picture"),
+  async (req, res) => {
+    try {
+      const {
+        "first-name": firstName,
+        "middle-name": middleName,
+        "last-name": lastName,
+        "phone-number": phoneNumber,
+        email,
+        nationality,
+        gender,
+        "civil-status": civilStatus,
+        address,
+        "birth-date": birthDate,
+        "lto-client-id": ltoClientId,
+        "training-purpose": trainingPurpose,
+      } = req.body;
+      const { userId } = req.user;
+      console.log("userId", userId);
+      console.log("req.body", req.body);
 
-    // Fetch existing user profile from the database
-    const existingProfile = await getProfilewithUserId(userID);
+      const profilePicture = req.file ? req.file.buffer : null;
+      // Fetch existing user profile from the database
+      const existingProfile = await getProfilewithUserId(userId);
 
-    // Log the existing profile
-    //console.log("Existing Profile:", existingProfile);
+      // Log the existing profile
+      //console.log("Existing Profile:", existingProfile);
 
-    // Create an object with only the changed fields
-    const updatedProfile = {};
+      // Create an object with only the changed fields
+      const updatedProfile = {};
 
-    if (firstName && firstName !== existingProfile.first_name)
-      updatedProfile.first_name = firstName;
-    if (lastName && lastName !== existingProfile.last_name)
-      updatedProfile.last_name = lastName;
-    if (phoneNumber && phoneNumber !== existingProfile.phone_number)
-      updatedProfile.phone_number = phoneNumber;
-    if (email && email !== existingProfile.email) updatedProfile.email = email;
-    if (birthDate && birthDate !== existingProfile.birth_date)
-      updatedProfile.birth_date = birthDate;
-    if (nationality && nationality !== existingProfile.nationality)
-      updatedProfile.nationality = nationality;
-    if (gender && gender !== existingProfile.gender)
-      updatedProfile.gender = gender;
-    if (address && address !== existingProfile.address)
-      updatedProfile.address = address;
-    if (trainingPurpose && trainingPurpose !== existingProfile.training_purpose)
-      updatedProfile.training_purpose = trainingPurpose;
-    if (tdcDateStarted && tdcDateStarted !== existingProfile.tdc_date_started)
-      updatedProfile.tdc_date_started = tdcDateStarted;
-    if (
-      tdcDateCompleted &&
-      tdcDateCompleted !== existingProfile.tdc_date_completed
-    )
-      updatedProfile.tdc_date_completed = tdcDateCompleted;
-    if (tdcTotalHours && tdcTotalHours !== existingProfile.tdc_total_hours)
-      updatedProfile.tdc_total_hours = tdcTotalHours;
-    if (pdcDateStarted && pdcDateStarted !== existingProfile.pdc_date_started)
-      updatedProfile.pdc_date_started = pdcDateStarted;
-    if (
-      pdcDateCompleted &&
-      pdcDateCompleted !== existingProfile.pdc_date_completed
-    )
-      updatedProfile.pdc_date_completed = pdcDateCompleted;
-    if (pdcTotalHours && pdcTotalHours !== existingProfile.pdc_total_hours)
-      updatedProfile.pdc_total_hours = pdcTotalHours;
+      if (firstName && firstName !== existingProfile.first_name)
+        updatedProfile.first_name = firstName;
+      if (middleName && middleName !== existingProfile.middle_name)
+        updatedProfile.middle_name = middleName;
+      if (lastName && lastName !== existingProfile.last_name)
+        updatedProfile.last_name = lastName;
+      if (phoneNumber && phoneNumber !== existingProfile.phone_number)
+        updatedProfile.phone_number = phoneNumber;
+      if (email && email !== existingProfile.email)
+        updatedProfile.email = email;
+      if (birthDate && birthDate !== existingProfile.birth_date)
+        updatedProfile.birth_date = birthDate;
+      if (nationality && nationality !== existingProfile.nationality)
+        updatedProfile.nationality = nationality;
+      if (gender && gender !== existingProfile.gender)
+        updatedProfile.gender = gender;
+      if (address && address !== existingProfile.address)
+        updatedProfile.address = address;
+      if (
+        trainingPurpose &&
+        trainingPurpose !== existingProfile.training_purpose
+      )
+        updatedProfile.training_purpose = trainingPurpose;
+      if (civilStatus && civilStatus !== existingProfile.civil_status)
+        updatedProfile.civil_status = civilStatus;
+      if (ltoClientId && ltoClientId !== existingProfile.lto_client_id)
+        updatedProfile.lto_client_id = ltoClientId;
+      if (profilePicture) updatedProfile.profile_picture = profilePicture;
 
-    await updateUserProfile(userID, updatedProfile);
+      await updateUserProfile(userId, updatedProfile);
 
-    return res.status(200).json({ message: "Profile updated successfully!" });
-  } catch (error) {
-    console.error("Error Updating Profile:", error);
-    return res.status(400).json({ error: "Error Updating Profile!" });
+      return res.status(200).json({ message: "Profile updated successfully!" });
+    } catch (error) {
+      console.error("Error Updating Profile:", error);
+      return res.status(400).json({ error: "Error Updating Profile!" });
+    }
   }
-});
+);
 
 app.get("/user-profile", authenticateToken, async (req, res) => {
   res.render("user-profile");
 });
 
-app.get("/api/user-profile/:id", authenticateToken, async (req, res) => {
+app.get("/api/user-profile", authenticateToken, async (req, res) => {
   try {
-    const id = req.params.id;
+    const id = req.user.userId;
     const userProfileDetails = await getProfilewithUserId(id);
+    console.log("userProfileDetails1", userProfileDetails);
+    const profilePicture = `data:image/png;base64,${userProfileDetails.profile_picture.toString(
+      "base64"
+    )}`;
+    userProfileDetails.profile_picture = profilePicture;
+
     const courseList = await getTraineeCourseList(id);
     const userCourseInfoList = courseList.map((course) => ({
       program_name: course.program_name,
@@ -467,6 +483,7 @@ app.get("/api/user-profile/:id", authenticateToken, async (req, res) => {
       total_hours: course.total_hours,
       program_duration: course.program_duration,
     }));
+
     return res.status(200).json({
       message: "Fetch Complete!",
       userProfileDetails,
@@ -1125,15 +1142,6 @@ app.get(
   }
 );
 
-app.get("/instructor-dashboard", async (req, res) => {
-  try {
-    res.render("instructor-dashboard");
-  } catch (error) {
-    console.error("Failed to render instructor dashboard", error);
-    res.status(500);
-  }
-});
-
 app.get("/api/admin-dashboard-time/:month/:year", async (req, res) => {
   try {
     const month = req.params.month;
@@ -1243,17 +1251,24 @@ app.delete(
   }
 );
 
-app.get("/api/instructor/attendance-list", async (req, res) => {
-  try {
-    // const id = req.params.instructorId;
-    const id = 1;
-    const data = await getAttendanceByInstructorId(id);
-    res.status(200).json(data);
-  } catch (err) {
-    console.log("Error fetching data: ", err);
-    res.status(500).send("Internal Server Error");
+app.get(
+  "/api/instructor/attendance-list",
+  authenticateToken,
+  authorizeRole("instructor"),
+  async (req, res) => {
+    try {
+      // const id = req.params.instructorId;
+      const { userId } = req.user;
+      const instructor = await getInstructorWithAccountId(userId);
+      const instructorId = instructor.instructor_id;
+      const data = await getAttendanceByInstructorId(instructorId);
+      res.status(200).json(data);
+    } catch (err) {
+      console.log("Error fetching data: ", err);
+      res.status(500).send("Internal Server Error");
+    }
   }
-});
+);
 
 app.get(
   "/api/instructor-dashboard/trainee-info/:courseID",
@@ -1406,18 +1421,20 @@ app.post(
         "tdc-onsite": onsite,
         "is-manual": manual,
         "is-automatic": automatic,
+        "accreditaion-number": accreditationNumber,
         "date-started": dateStarted,
       } = req.body;
-      const addResponse = await addInstructor(
+      await addInstructor(
         name,
         rate,
         type,
         onsite,
         manual,
         automatic,
+        accreditationNumber,
         dateStarted
       );
-      return res.status(200).json({ addResponse });
+      return res.status(200);
     } catch (error) {
       console.error("Error fetching Instructors Data:", error);
       res.status(500).send("Internal Server Error");
@@ -1502,6 +1519,7 @@ app.put(
         "tdc-onsite": onsite,
         "is-manual": manual,
         "is-automatic": automatic,
+        "accreditaion-number": accreditationNumber,
         "date-started": dateStarted,
       } = req.body;
 
@@ -1526,6 +1544,11 @@ app.put(
         updatedProfile.isManual = manual;
       if (automatic && automatic !== existingInstructor.isAutomatic)
         updatedProfile.isAutomatic = automatic;
+      if (
+        accreditationNumber &&
+        accreditationNumber !== existingInstructor.accreditationNumber
+      )
+        updatedProfile.accreditationNumber = accreditationNumber;
       if (dateStarted && dateStarted !== existingInstructor.date_started)
         updatedProfile.date_started = dateStarted;
       await updateInstructorInfo(userID, updatedProfile);
@@ -2640,6 +2663,483 @@ app.get(
     }
   }
 );
+
+let browserInstance; // Singleton browser instance
+
+async function getBrowser() {
+  if (!browserInstance) {
+    browserInstance = await puppeteer.launch();
+  }
+  return browserInstance;
+}
+
+app.get("/certificates-completion-pdc", async (req, res) => {
+  const { userId, courseId, instructorId } = req.query;
+
+  const logoPath = path.join(
+    __dirname,
+    "/f-css/solid/drivers_ed_logo-no-bg.png"
+  );
+  const driversEdLogo = `data:image/png;base64,${fs.readFileSync(
+    logoPath,
+    "base64"
+  )}`;
+
+  // Example data to pass to the EJS template
+  const dlCodesLeft = [
+    { code: "A (L1,L2,L3)", mt: false, at: false },
+    { code: "A1 (L4,L5,L6,L7)", mt: false, at: false },
+    { code: "B (M1)", mt: false, at: false },
+    { code: "B1 (M2)", mt: false, at: false },
+    { code: "B2 (N1)", mt: false, at: false },
+  ];
+
+  const dlCodesRight = [
+    { code: "BE (01, 02)", mt: false, at: false },
+    { code: "C (N2, N3)", mt: false, at: false },
+    { code: "CE (03, 04)", mt: false, at: false },
+    { code: "D (M3)", mt: false, at: false },
+  ];
+  const instructor = await getInstructorwithId(instructorId);
+  const user = await getProfilewithUserId(userId);
+  const trainee_course = await getTraineeCourseInfo(courseId);
+
+  const genControlNumber = generateTemporaryPassword(32); //re-use a randomize genenerator
+  const genCertificateNumber = generateTemporaryPassword(14);
+
+  const certificateInputs = [
+    {
+      controlNumber: genControlNumber,
+      certificateNumber: genCertificateNumber,
+      accredNumOfBranch: "123456789",
+      driversEdLogo: driversEdLogo,
+    },
+  ];
+
+  const userProfile = [
+    {
+      firstName: user.first_name,
+      lastName: user.last_name,
+      middleName: user.middle_name,
+      address: user.address,
+      ltoClientId: user.lto_client_id,
+      birthday: user.birth_date,
+      gender: user.gender,
+      civilStatus: user.civil_status,
+      nationality: user.nationality,
+    },
+  ];
+
+  // Calculate the age after defining the userProfile
+  userProfile[0].age = user.birth_date
+    ? Math.floor(
+        (new Date() - new Date(user.birth_date)) /
+          (1000 * 60 * 60 * 24 * 365.25)
+      )
+    : null;
+
+  const profilePicture = user.profile_picture
+    ? `data:image/jpeg;base64,${user.profile_picture.toString("base64")}`
+    : null;
+  userProfile[0].picture = profilePicture;
+
+  const userCourse = [
+    {
+      courseName: trainee_course.program_name,
+      date_started: trainee_course.date_started,
+      date_finished: trainee_course.date_completed,
+      total_hours: trainee_course.total_hours,
+    },
+  ];
+
+  const instructorProfile = [
+    {
+      name: instructor.instructor_name,
+      accredNumOfInstructor: instructor.accreditation_number,
+    },
+  ];
+
+  res.render("certificate-of-completion-PDC", {
+    dlCodesLeft,
+    dlCodesRight,
+    certificateInputs,
+    userProfile,
+    userCourse,
+    instructorProfile,
+    userId,
+    courseId,
+    instructorId,
+  });
+});
+
+app.post("/certificates-completion-pdc/:type", async (req, res) => {
+  try {
+    const { userId, instructorId, courseId, dlCodesLeft, dlCodesRight } =
+      req.body;
+    console.log(
+      "userId, courseId, instructorId, dlCodesRight, dlCodesLeft",
+      userId,
+      courseId,
+      instructorId,
+      dlCodesRight,
+      dlCodesLeft
+    );
+
+    const logoPath = path.join(
+      __dirname,
+      "/f-css/solid/drivers_ed_logo-no-bg.png"
+    );
+    const driversEdLogo = `data:image/png;base64,${fs.readFileSync(
+      logoPath,
+      "base64"
+    )}`;
+
+    const instructor = await getInstructorwithId(instructorId);
+    const user = await getProfilewithUserId(userId);
+    const trainee_course = await getTraineeCourseInfo(courseId);
+
+    const genControlNumber = generateTemporaryPassword(32); //re-use a randomize genenerator
+    const genCertificateNumber = generateTemporaryPassword(14);
+
+    const certificateInputs = [
+      {
+        controlNumber: genControlNumber,
+        certificateNumber: genCertificateNumber,
+        accredNumOfBranch: "123456789",
+        driversEdLogo: driversEdLogo,
+      },
+    ];
+
+    const userProfile = [
+      {
+        firstName: user.first_name,
+        lastName: user.last_name,
+        middleName: user.middle_name,
+        address: user.address,
+        ltoClientId: user.lto_client_id,
+        birthday: user.birth_date,
+        gender: user.gender,
+        civilStatus: user.civil_status,
+        nationality: user.nationality,
+      },
+    ];
+
+    // Calculate the age after defining the userProfile
+    userProfile[0].age = user.birth_date
+      ? Math.floor(
+          (new Date() - new Date(user.birth_date)) /
+            (1000 * 60 * 60 * 24 * 365.25)
+        )
+      : null;
+
+    const profilePicture = user.profile_picture
+      ? `data:image/jpeg;base64,${user.profile_picture.toString("base64")}`
+      : null;
+    userProfile[0].picture = profilePicture;
+
+    const userCourse = [
+      {
+        courseName: trainee_course.program_name,
+        date_started: trainee_course.date_started,
+        date_finished: trainee_course.date_completed,
+        total_hours: trainee_course.total_hours,
+      },
+    ];
+
+    const instructorProfile = [
+      {
+        name: instructor.instructor_name,
+        accredNumOfInstructor: instructor.accreditation_number,
+      },
+    ];
+
+    const html = await new Promise((resolve, reject) => {
+      req.app.render(
+        "certificate-of-completion-PDC",
+        {
+          dlCodesLeft,
+          dlCodesRight,
+          certificateInputs,
+          userProfile,
+          userCourse,
+          instructorProfile,
+          userId,
+          courseId,
+          instructorId,
+        },
+        (err, renderedHtml) => {
+          if (err) reject(err);
+          else resolve(renderedHtml);
+        }
+      );
+    });
+
+    const tailwindCSS = fs.readFileSync(
+      path.join(__dirname, "/f-css/output.css"),
+      "utf8"
+    );
+    const compiled = html.replace(
+      "</head>",
+      `<style>${tailwindCSS}</style></head>`
+    );
+
+    const browser = await getBrowser();
+    const page = await browser.newPage();
+
+    await page.setContent(compiled, {
+      waitUntil: "networkidle0",
+    });
+
+    await page.evaluate(() => {
+      document.querySelectorAll(".hide-on-print").forEach((el) => el.remove());
+    });
+
+    const pdfBuffer = await page.pdf({
+      format: "A4", // Change A4 to Letter
+      printBackground: true,
+    });
+
+    await page.close(); // Closing the page instead of browser
+
+    if (type == "database") {
+      await saveCertificateToDatabase(courseId, pdfBuffer, "application/pdf");
+      await sendEmail("completion-certificate", user.email, {
+        name: user.first_name,
+        certificate: pdfBuffer,
+      });
+    }
+
+    res.setHeader(
+      "Content-Disposition",
+      'attachment; filename="certificate-pdc.pdf"'
+    );
+    res.setHeader("Content-Type", "application/pdf");
+    res.status(200).end(Buffer.from(pdfBuffer));
+  } catch (error) {
+    console.error("Error generating PDF:", error);
+    res.status(500).send("An error occurred while generating the PDF.");
+  }
+});
+
+app.get("/certificates-completion-tdc", async (req, res) => {
+  try {
+    const { userId, courseId, instructorId } = req.query;
+
+    const instructor = await getInstructorwithId(instructorId);
+    const user = await getProfilewithUserId(userId);
+    const trainee_course = await getTraineeCourseInfo(courseId);
+
+    const logoPath = path.join(
+      __dirname,
+      "/f-css/solid/drivers_ed_logo-no-bg.png"
+    );
+    const driversEdLogo = `data:image/png;base64,${fs.readFileSync(
+      logoPath,
+      "base64"
+    )}`;
+    const genControlNumber = generateTemporaryPassword(32); // Re-use a random generator
+    const genCertificateNumber = generateTemporaryPassword(14);
+
+    const certificateInputs = [
+      {
+        controlNumber: genControlNumber,
+        certificateNumber: genCertificateNumber,
+        accredNumOfBranch: "123456789",
+        driversEdLogo: driversEdLogo,
+      },
+    ];
+    const userProfile = [
+      {
+        firstName: user.first_name,
+        lastName: user.last_name,
+        middleName: user.middle_name,
+        address: user.address,
+        ltoClientId: user.lto_client_id,
+        birthday: user.birth_date,
+        gender: user.gender,
+        civilStatus: user.civil_status,
+        nationality: user.nationality,
+      },
+    ];
+
+    // Calculate the age after defining the userProfile
+    userProfile[0].age = user.birth_date
+      ? Math.floor(
+          (new Date() - new Date(user.birth_date)) /
+            (1000 * 60 * 60 * 24 * 365.25)
+        )
+      : null;
+
+    const profilePicture = user.profile_picture
+      ? `data:image/jpeg;base64,${user.profile_picture.toString("base64")}`
+      : null;
+    userProfile[0].picture = profilePicture;
+
+    const userCourse = [
+      {
+        courseName: trainee_course.program_name,
+        date_started: trainee_course.date_started,
+        date_finished: trainee_course.date_completed,
+        total_hours: trainee_course.total_hours,
+      },
+    ];
+
+    const instructorProfile = [
+      {
+        name: instructor.instructor_name,
+        accredNumOfInstructor: instructor.accreditation_number,
+      },
+    ];
+
+    res.render("certificate-of-completion-TDC", {
+      certificateInputs,
+      userProfile,
+      userCourse,
+      instructorProfile,
+      userId,
+      courseId,
+      instructorId,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Internal Server Error");
+  }
+});
+
+app.post("/certificates-completion-tdc/:type", async (req, res) => {
+  try {
+    const { userId, courseId, instructorId, onsite, online } = req.body;
+
+    const instructor = await getInstructorwithId(instructorId);
+    const user = await getProfilewithUserId(userId);
+    const trainee_course = await getTraineeCourseInfo(courseId);
+
+    const logoPath = path.join(
+      __dirname,
+      "/f-css/solid/drivers_ed_logo-no-bg.png"
+    );
+    const driversEdLogo = `data:image/png;base64,${fs.readFileSync(
+      logoPath,
+      "base64"
+    )}`;
+
+    const genControlNumber = generateTemporaryPassword(32);
+    const genCertificateNumber = generateTemporaryPassword(14);
+
+    const certificateInputs = [
+      {
+        controlNumber: genControlNumber,
+        certificateNumber: genCertificateNumber,
+        accredNumOfBranch: "123456789",
+        driversEdLogo: driversEdLogo,
+      },
+    ];
+    const userProfile = [
+      {
+        firstName: user.first_name,
+        lastName: user.last_name,
+        middleName: user.middle_name,
+        address: user.address,
+        ltoClientId: user.lto_client_id,
+        birthday: user.birth_date,
+        gender: user.gender,
+        civilStatus: user.civil_status,
+        nationality: user.nationality,
+      },
+    ];
+
+    // Calculate the age after defining the userProfile
+    userProfile[0].age = Math.floor(
+      (new Date() - new Date(userProfile[0].birthday)) /
+        (1000 * 60 * 60 * 24 * 365.25)
+    );
+    const profilePicture = `data:image/jpeg;base64,${user.profile_picture.toString(
+      "base64"
+    )}`;
+    userProfile[0].picture = profilePicture;
+
+    const userCourse = [
+      {
+        courseName: trainee_course.program_name,
+        date_started: trainee_course.date_started,
+        date_finished: trainee_course.date_completed,
+        total_hours: trainee_course.total_hours,
+        modality: onsite ? "onsite" : online ? "online" : "",
+      },
+    ];
+
+    const instructorProfile = [
+      {
+        name: instructor.instructor_name,
+        accredNumOfInstructor: instructor.accreditation_number,
+      },
+    ];
+
+    const html = await new Promise((resolve, reject) => {
+      req.app.render(
+        "certificate-of-completion-TDC",
+        {
+          certificateInputs,
+          userProfile,
+          userCourse,
+          instructorProfile,
+          userId,
+          courseId,
+          instructorId,
+        },
+        (err, renderedHtml) => {
+          if (err) reject(err);
+          else resolve(renderedHtml);
+        }
+      );
+    });
+
+    const tailwindCSS = fs.readFileSync(
+      path.join(__dirname, "/f-css/output.css"),
+      "utf8"
+    );
+    const compiled = html.replace(
+      "</head>",
+      `<style>${tailwindCSS}</style></head>`
+    );
+
+    const browser = await getBrowser();
+    const page = await browser.newPage();
+
+    await page.setContent(compiled, {
+      waitUntil: "networkidle0",
+    });
+
+    await page.evaluate(() => {
+      document.querySelectorAll(".hide-on-print").forEach((el) => el.remove());
+    });
+
+    const pdfBuffer = await page.pdf({
+      format: "A4", // Change A4 to Letter
+      printBackground: true,
+    });
+
+    await page.close(); // Closing the page instead of browser
+
+    if (type === "database") {
+      await saveCertificateToDatabase(courseId, pdfBuffer, "application/pdf");
+      await sendEmail("completion-certificate", user.email, {
+        name: user.first_name,
+        certificate: pdfBuffer,
+      });
+    }
+
+    res.setHeader(
+      "Content-Disposition",
+      'attachment; filename="certificate-tdc.pdf"'
+    );
+    res.setHeader("Content-Type", "application/pdf");
+    res.status(200).end(Buffer.from(pdfBuffer));
+  } catch (error) {
+    console.error("Error generating PDF:", error);
+    res.status(500).send("An error occurred while generating the PDF.");
+  }
+});
 
 app.listen(PORT, () => {
   console.log(`Server is running at ${PORT}`);

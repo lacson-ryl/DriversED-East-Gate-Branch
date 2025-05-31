@@ -15,14 +15,20 @@ function profileDetialsBlank(courseList) {
         <h1 class="text-2xl text-center mb-5 font-bold text-blue-900">User Profile</h1>
     </div>
     <div class="flex flex-col md:flex-row mb-4 gap-3">
-        <div class="w-full md:w-1/2">
+        <div class="w-full md:w-1/3">
             <label>First Name</label>
             <p id="first-name" name="first-name" style="min-height: 2.5rem;"
                 class="shadow-md bg-white appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight hover:border-blue-900 focus:outline-none focus:border-blue-900">
 
             </p>
         </div>
-        <div class="w-full md:w-1/2">
+        <div class="w-full md:w-1/3">
+            <label>Middle Name</label>
+            <p id="middle-name" name="middle-name" style="min-height: 2.5rem;"
+                class="shadow-md bg-white appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight hover:border-blue-900 focus:outline-none focus:border-blue-900">
+            </p>
+        </div>
+        <div class="w-full md:w-1/3">
             <label>Last Name</label>
             <p id="last-name" name="last-name" style="min-height: 2.5rem;"
                 class="shadow-md bg-white appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight hover:border-blue-900 focus:outline-none focus:border-blue-900">
@@ -48,6 +54,12 @@ function profileDetialsBlank(courseList) {
     </div>
     <div class="flex flex-col md:flex-row mb-4 gap-3">
         <div class="w-full md:w-1/3">
+            <label>Age</label>
+            <p id="age" name="age" style="min-height: 2.5rem;" type="Number"
+                class="shadow-md bg-white appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight hover:border-blue-900 focus:outline-none focus:border-blue-900">
+            </p>
+        </div>
+        <div class="w-full md:w-1/3">
             <label>Birth Date</label>
             <p id="birth-date" name="birth-date" style="min-height: 2.5rem;" type="date"
                 class="shadow-md bg-white appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight hover:border-blue-900 focus:outline-none focus:border-blue-900">
@@ -61,11 +73,21 @@ function profileDetialsBlank(courseList) {
 
             </p>
         </div>
-        <div class="w-full md:w-1/3">
+
+    </div>
+    <div class="flex flex-col md:flex-row mb-4 gap-3">
+        
+        <div class="w-full md:w-1/2">
             <label>Gender</label>
             <p id="gender" name="gender" style="min-height: 2.5rem;"
                 class="shadow-md bg-white border rounded md:min-w-32 w-full py-2 px-3 text-gray-700 leading-tight hover:border-blue-900 focus:outline-none focus:border-blue-900">
 
+            </p>
+        </div>
+        <div class="w-full md:w-1/2">
+            <label>Civil Status</label>
+            <p id="civil-status" name="civil-status" style="min-height: 2.5rem;" type="text"
+                class="shadow-md bg-white appearance-none border rounded w-full py-2 px-3 text-black leading-tight hover:border-blue-900 focus:outline-none focus:border-blue-900">
             </p>
         </div>
     </div>
@@ -76,8 +98,15 @@ function profileDetialsBlank(courseList) {
 
         </p>
     </div>
+    <div class="mb-4">
+        <label>LTO Client ID</label>
+        <p id="lto-client-id" name="lto-client-id" style="min-height: 2.5rem;"
+            class="shadow-md bg-white appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight hover:border-blue-900 focus:outline-none focus:border-blue-900">
+
+        </p>
+    </div>
     <div class="flex flex-col mb-4">
-        <label for="training-purpose" class="mb-2 text-gray-700">Training Purpose</label>
+        <label for="training-purpose" class="mb-2">Training Purpose</label>
         <p id="training-purpose" name="training-purpose" style="min-height: 2.5rem;"
             class="shadow-md bg-white border rounded w-full py-2 px-3 text-gray-700 leading-tight hover:border-blue-900 focus:outline-none focus:border-blue-900">
 
@@ -101,8 +130,7 @@ function profileDetialsBlank(courseList) {
 }
 
 async function renderDetails() {
-  const id = getCookie("userId");
-  const response = await fetch(`/api/user-profile/${id}`);
+  const response = await fetch("/api/user-profile");
   const data = await response.json();
   const profileDisplay = document.getElementById("profile-display");
   const userCourseInfoList = data.userCourseInfoList;
@@ -112,28 +140,33 @@ async function renderDetails() {
     return;
   } else {
     const profile = data.userProfileDetails;
-    const binary = new Uint8Array(profile.profile_picture.data);
-    const base64String = btoa(
-      binary.reduce((data, byte) => data + String.fromCharCode(byte), "")
-    );
 
     profileDisplay.innerHTML = `
     <div class="bg-slate-200 p-10 rounded-lg shadow-md w-full max-w-screen-md mx-4 my-2">
     <div class=" text-center">
         <img id="profile-picture-preview"
             class="w-36 h-32 inline-block rounded-md border-2 content-center border-gray-300 mb-4 object-fill"
-             src="data:image/jpeg;base64,${base64String}" alt="Profile Picture Preview">
+             src="${
+               profile.profile_picture ? profile.profile_picture : ""
+             }" alt="Profile Picture Preview">
         <h1 class="text-2xl text-center mb-5 font-bold text-blue-900">User Profile</h1>
     </div>
     <div class="flex flex-col md:flex-row mb-4 gap-3">
-        <div class="w-full md:w-1/2">
+        <div class="w-full md:w-1/3">
             <label>First Name</label>
             <p id="first-name" name="first-name" style="min-height: 2.5rem;"
                 class="shadow-md bg-white appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight hover:border-blue-900 focus:outline-none focus:border-blue-900">
               ${profile.first_name}
             </p>
         </div>
-        <div class="w-full md:w-1/2">
+        <div class="w-full md:w-1/3">
+            <label>Middle Name</label>
+            <p id="middle-name" name="middle-name" style="min-height: 2.5rem;"
+                class="shadow-md bg-white appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight hover:border-blue-900 focus:outline-none focus:border-blue-900">
+              ${profile.middle_name}
+            </p>
+        </div>
+        <div class="w-full md:w-1/3">
             <label>Last Name</label>
             <p id="last-name" name="last-name" style="min-height: 2.5rem;"
                 class="shadow-md bg-white appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight hover:border-blue-900 focus:outline-none focus:border-blue-900">
@@ -158,6 +191,13 @@ async function renderDetails() {
         </div>
     </div>
     <div class="flex flex-col md:flex-row mb-4 gap-3">
+        <div class="w-full md:w-1/2">
+            <label>Age</label>
+            <p id="age" name="age" style="min-height: 2.5rem;" type="Number"
+                class="shadow-md bg-white appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight hover:border-blue-900 focus:outline-none focus:border-blue-900">
+                ${profile.age}
+            </p>
+        </div>
         <div class="w-full md:w-1/3">
             <label>Birth Date</label>
             <p id="birth-date" name="birth-date" style="min-height: 2.5rem;" type="date"
@@ -172,11 +212,20 @@ async function renderDetails() {
                 ${profile.nationality}
             </p>
         </div>
-        <div class="w-full md:w-1/3">
+    </div>
+    <div class="flex flex-col md:flex-row mb-4 gap-3">
+        <div class="w-full md:w-1/2">
             <label>Gender</label>
             <p id="gender" name="gender" style="min-height: 2.5rem;"
                 class="shadow-md bg-white border rounded md:min-w-32 w-full py-2 px-3 text-gray-700 leading-tight hover:border-blue-900 focus:outline-none focus:border-blue-900">
                 ${profile.gender}
+            </p>
+        </div>
+        <div class="w-full md:w-1/2">
+            <label>Civil Status</label>
+            <p id="civil-status" name="civil-status" style="min-height: 2.5rem;" type="text"
+                class="shadow-md bg-white appearance-none border rounded w-full py-2 px-3 text-black leading-tight hover:border-blue-900 focus:outline-none focus:border-blue-900">
+                ${profile.civil_status}
             </p>
         </div>
     </div>
@@ -185,6 +234,13 @@ async function renderDetails() {
         <p id="address" name="address" type="textbox"
             class="shadow-md bg-white appearance-none border rounded w-full min-h-20 py-2 px-3 text-gray-700 leading-tight hover:border-blue-900 focus:outline-none focus:border-blue-900">
                 ${profile.address}
+        </p>
+    </div>
+    <div class="mb-4">
+        <label>LTO Client ID</label>
+        <p id="lto-client-id" name="lto-client-id" style="min-height: 2.5rem;"
+            class="shadow-md bg-white appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight hover:border-blue-900 focus:outline-none focus:border-blue-900">
+                ${profile.lto_client_id}
         </p>
     </div>
     <div class="flex flex-col mb-4">
@@ -216,7 +272,9 @@ function renderUserCourseTaken(courseList) {
   }
   return courseList.map(
     (course) => `
-    <h3 class="block text-xl text-center font-medium mb-2">${course.program_name}</h3>
+    <h3 class="block text-xl text-center font-medium mb-2">${
+      course.program_name
+    }</h3>
     <div class="flex flex-col md:flex-row mb-2 gap-3">
         <div class="w-full md:w-1/3">
             <label>Date started</label>
@@ -240,7 +298,9 @@ function renderUserCourseTaken(courseList) {
                     ${course.total_hours}
                 </p>
                 <span class="font-semibold text-2xl">/</span>
-                <span class="font-semibold text-lg">${course.program_duration}</span>
+                <span class="font-semibold text-lg">${
+                  course.program_duration
+                }</span>
             </div>
         </div>
     </div>

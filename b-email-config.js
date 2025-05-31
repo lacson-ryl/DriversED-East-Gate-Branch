@@ -85,6 +85,19 @@ export async function sendEmail(type, recipient, data) {
         `;
       break;
 
+    case "completion-certificate":
+      subject = "Congratulations on Completing Your Course!";
+      textBody = `
+        Hi ${data.name || "Trainee"},
+        Congratulations on successfully completing your course at ${businessName}!
+        Your completion certificate is attached to this email.
+        Please keep it safe for your records.
+
+        Best regards,
+        The ${businessName} Team
+        `;
+      break;
+
     default:
       throw new Error("Invalid email type specified.");
   }
@@ -95,6 +108,16 @@ export async function sendEmail(type, recipient, data) {
     subject: subject,
     text: textBody,
   };
+
+  if (type === "completion-certificate" && data.certificate) {
+    mailOptions.attachments = [
+      {
+        filename: "certificate.pdf",
+        content: data.certificate, // Buffer or base64 string
+        contentType: "application/pdf",
+      },
+    ];
+  }
 
   // Return a promise so the calling function can handle errors/responses
   return new Promise((resolve, reject) => {

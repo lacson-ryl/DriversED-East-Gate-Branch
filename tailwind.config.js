@@ -12,7 +12,8 @@ module.exports = {
         "hidden-scrollbar": "hidden",
       },
       margin: {
-        "ml-250": "220px", // Custom margin-left of 250px
+        "ml-250": "220px",
+        "ml-64": "64px", // For phone main content width considering sidebar
       },
       animation: {
         fadeIn: "fadeIn 0.5s ease-in-out forwards",
@@ -27,6 +28,9 @@ module.exports = {
           "0%": { opacity: "1" },
           "100%": { opacity: "0" },
         },
+        zIndex: {
+          50: "50",
+        },
       },
     },
   },
@@ -40,6 +44,9 @@ module.exports = {
           ".h-calc": {
             heigth: "calc(100% - 56px)",
           },
+          ".phone-w-calc": {
+            width: "calc(100% - 64px)", // Example for phone main content width considering sidebar
+          },
           ".max-h-data-table": {
             maxHeight: "30rem",
           },
@@ -51,18 +58,19 @@ module.exports = {
             "scrollbar-width": "none" /* Firefox */,
           },
           ".custom-scrollbar": {
-            "scrollbar-width": "thin", /* For Firefox */
-            "scrollbar-color": "rgba(255, 255, 255, 0.5) transparent", /* Thumb and track colors */
+            "scrollbar-width": "thin" /* For Firefox */,
+            "scrollbar-color":
+              "rgba(255, 255, 255, 0.5) transparent" /* Thumb and track colors */,
           },
           ".custom-scrollbar::-webkit-scrollbar": {
-            width: "8px", /* Width of the scrollbar */
+            width: "8px" /* Width of the scrollbar */,
           },
           ".custom-scrollbar::-webkit-scrollbar-thumb": {
-            backgroundColor: "rgba(255, 255, 255, 0.5)", /* Thumb color */
-            borderRadius: "4px", /* Rounded corners */
+            backgroundColor: "rgba(255, 255, 255, 0.5)" /* Thumb color */,
+            borderRadius: "4px" /* Rounded corners */,
           },
           ".custom-scrollbar::-webkit-scrollbar-track": {
-            backgroundColor: "transparent", /* Transparent track */
+            backgroundColor: "transparent" /* Transparent track */,
           },
           ".sidebar-width": {
             width: "220px",

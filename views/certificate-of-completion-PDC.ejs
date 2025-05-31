@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Certificate</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet" />
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="/f-css/output.css" />
+  <style>
+    body {
+      font-family: 'Roboto', sans-serif;
+    }
+
+    /* Hide the button when printing or saving as PDF */
+    @media print {
+      * {
+        color: black !important;
+        /* Ensures legibility */
+      }
+
+      .hide-on-print {
+        display: none !important;
+      }
+    }
+  </style>
+</head>
+
+<body class="bg-white">
+  <div class="fixed">
+    <div class="flex flex-col items-start gap-3 mx-10 pt-5 text-xs">
+      <button id="save-to-pdf" data-user-id="<%= userId %>" data-instructor-id="<%= instructorId %>"
+        data-course-id="<%= courseId %>" class="hover:underline underline-offset-1 hide-on-print ">Save to
+        PDF</button>
+      <button id="save-to-database" data-user-id="<%= userId %>" data-instructor-id="<%= instructorId %>"
+        data-course-id="<%= courseId %>" class="hover:underline underline-offset-1 hide-on-print">Save to
+        Database</button>
+    </div>
+  </div>
+  <div class="w-[780px] h-[932px] mx-auto py-4 text-black text-sm">
+    <!-- Header -->
+    <div class="flex flex-row justify-between items-center px-10">
+      <div class="w-28">
+        <img src="https://www.seekpng.com/png/full/923-9234404_lto-logo-vector-land-transportation-office-logo-png.png"
+          alt="LTO Logo" />
+      </div>
+      <div class="text-center mx-auto">
+        <p class="text-xs mt-1">Republic of the Philippines</p>
+        <p class="text-xs font-semibold">DEPARTMENT OF TRANSPORTATION</p>
+        <p class="text-base font-bold text-black">LAND TRANSPORTATION OFFICE</p>
+        <p class="text-xs">East Avenue, Quezon City</p>
+        <h1 class="text-xl font-bold mt-2">CERTIFICATE OF COMPLETION</h1>
+        <h2 class="text-lg font-bold">PRACTICAL DRIVING COURSE</h2>
+      </div>
+      <div class="w-32 ">
+        <img src="<%=  certificateInputs[0].driversEdLogo %>" alt="Driver's ED Logo" />
+      </div>
+    </div>
+
+    <!-- Student Info -->
+    <div class="border-t  border-gray-400 mt-4">
+      <p class="bg-gray-200 px-2 py-1 font-semibold">
+        Student Driver's Details
+      </p>
+      <div class="flex flex-row w-full items-start mt-2 px-2 pt-4 pb-3">
+        <div class="text-sm leading-6 w-4/5 ">
+          <p>
+            Certificate No:
+            <span class="font-semibold ml-2">
+              <%= certificateInputs[0].certificateNumber.toUpperCase() %>
+            </span>
+          </p>
+          <div class="flex flex-row w-full text-start ">
+            <p class="w-1/2">
+              LTO Client ID:
+              <span class="font-semibold ml-2">
+                <%= userProfile[0].ltoClientId %>
+              </span>
+            </p>
+            <p>
+              SP No:
+              <span class="font-semibold ml-2">
+                N5022S39895
+              </span>
+            </p>
+          </div>
+          <p>
+            Name:
+            <span class="font-semibold ml-2">
+              <%= userProfile[0].lastName.toUpperCase() + ", " + userProfile[0].firstName.toUpperCase() + ", " +
+                userProfile[0].middleName.toUpperCase() %>
+            </span>
+          </p>
+          <p>
+            Address:
+            <span class="font-semibold ml-2">
+              <%= userProfile[0].address.toUpperCase() %>
+            </span>
+          </p>
+          <div class="flex flex-wrap w-full">
+            <p class="w-1/2">Date of Birth: <span class="ml-2 font-semibold">
+                <%= userProfile[0].birthday %>
+              </span> </p>
+            <p">Nationality: <span class="ml-2 font-semibold">
+                <%= userProfile[0].nationality.toUpperCase() %>
+              </span> </p>
+          </div>
+          </p>
+          <div class="flex flex-wrap w-full">
+            <p class="w-1/3">Age: <span class="ml-2 font-semibold">
+                <%= userProfile[0].age %>
+              </span></p>
+            <p class="w-1/3">Gender: <span class="ml-2 font-semibold">
+                <%= userProfile[0].gender.toUpperCase() %>
+              </span></p>
+            <p>Civil Status:
+              <span class="font-semibold ml-2">
+                <%= userProfile[0].civilStatus.toUpperCase() %>
+              </span>
+            </p>
+          </div>
+        </div>
+        <div class="aspect-square w-32 border">
+          <% if (!userProfile[0].picture) { %>
+            <img src="" alt="Photo 2x2" class="object-contain bg-white border border-black w-full h-full" />
+            <% } else { %>
+              <img src="<%= userProfile[0].picture %>" alt="Photo 2x2"
+                class="object-contain bg-white border border-black w-full h-full" />
+              <% } %>
+        </div>
+      </div>
+    </div>
+
+    <!-- Training Info -->
+    <div class="mt-4 border-t border-gray-400">
+      <p class="bg-gray-200 px-2 py-1 font-semibold">
+        Driving Course Training Information
+      </p>
+      <div class="flex flex-row justify-between mt-2 px-2">
+        <p>Date Started:
+          <span class="font-semibold ml-2">
+            <%= userCourse[0].date_started %>
+          </span>
+        </p>
+        <p>Date Completed:
+          <span class="font-semibold ml-2">
+            <%= userCourse[0].date_finished %>
+          </span>
+        </p>
+        <p>Total Number of hours:<span class="font-semibold ml-2">
+            <%= userCourse[0].total_hours %>
+          </span></p>
+      </div>
+
+
+      <!-- DL Codes -->
+      <div class="flex my-16 px-2 gap-6 text-xs">
+        <div class="flex-1">
+          <table data-dl="left" class="table-fixed w-full border border-black text-left">
+            <thead>
+              <tr class="bg-gray-100 text-center">
+                <th class="border border-black px-2 py-1 w-7"></th>
+                <th class="border border-black px-2 py-1">
+                  DL Code (Vehicle Category)
+                </th>
+                <th class="border border-black px-2 py-1 w-10">MT</th>
+                <th class="border border-black px-2 py-1 w-10">AT</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% dlCodesLeft.forEach((dlCode, index)=> { %>
+                <tr>
+                  <td class="border border-black px-2 py-1 text-center">
+                    <input type="checkbox" name="dlCodeSelected" value="<%= dlCode.code %>" <%=dlCode.mt || dlCode.at
+                      ? "checked" : "" %>
+                    />
+                  </td>
+                  <td class="border border-black px-2 py-1">
+                    <%= dlCode.code %>
+                  </td>
+                  <td class="border border-black px-2 py-1 text-center">
+                    <input type="checkbox" name="mt_<%= index %>" <%=dlCode.mt ? "checked" : "" %>
+                    />
+                  </td>
+                  <td class="border border-black px-2 py-1 text-center">
+                    <input type="checkbox" name="at_<%= index %>" <%=dlCode.at ? "checked" : "" %>
+                    />
+                  </td>
+                </tr>
+                <% }); %>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Right DL Codes -->
+        <div class="flex-1">
+          <table data-dl="right" class="table-fixed w-full border border-black text-left">
+            <thead>
+              <tr class="bg-gray-100">
+                <th class="border border-black px-2 py-1 w-7"></th>
+                <th class="border border-black px-2 py-1">
+                  DL Code (Vehicle Category)
+                </th>
+                <th class="border border-black px-2 py-1 w-10">MT</th>
+                <th class="border border-black px-2 py-1 w-10">AT</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% dlCodesRight.forEach((dlCode, index)=> { %>
+                <tr>
+                  <td class="border border-black px-2 py-1 text-center">
+                    <input type="checkbox" name="dlCodeSelected" value="<%= dlCode.code %>" <%=dlCode.mt || dlCode.at
+                      ? "checked" : "" %>
+                    />
+                  </td>
+                  <td class="border border-black px-2 py-1">
+                    <%= dlCode.code %>
+                  </td>
+                  <td class="border border-black px-2 py-1 text-center">
+                    <input type="checkbox" name="mt_<%= index + dlCodesLeft.length %>" <%=dlCode.mt ? "checked" : "" %>
+                    />
+                  </td>
+                  <td class="border border-black px-2 py-1 text-center">
+                    <input type="checkbox" name="at_<%= index + dlCodesLeft.length %>" <%=dlCode.at ? "checked" : "" %>
+                    />
+                  </td>
+                </tr>
+                <% }); %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="mt-4 text-xs px-2 text-center items-center ">
+      <p class="w-[600px] mx-auto">
+        This Certificate With Control Number
+        <span class="font-bold">
+          <%= !certificateInputs[0].controlNumber ? 123456789 : certificateInputs[0].controlNumber.toUpperCase() %>
+        </span>
+        has been issued <br> in compliance with the Supplemental IRR of Republic
+        Act No. 10930 and Memorandum <br> Circular No. 2021-2284 of Land
+        Transportation Office.
+      </p>
+
+      <div class="mt-9">
+        <p>
+          Prepared and issued by:
+          <span class="font-bold">DRIVER'S ED EAST GATE BRANCH</span>
+        </p>
+        <p>Accreditation Number: <span>
+            <%= certificateInputs[0].accredNumOfBranch.toUpperCase() %>
+          </span></p>
+        <p class="mt-4">
+          Authorized Representative:
+          <span class="font-bold">
+            <%= instructorProfile[0].name.toUpperCase() %>
+          </span>
+        </p>
+        <p>Accreditation Number: <span>
+            <%= instructorProfile[0].accredNumOfInstructor.toUpperCase() %>
+          </span></p>
+      </div>
+    </div>
+
+  </div>
+  <script>
+    document.getElementById("save-to-pdf").addEventListener("click", handleSave());
+    document.getElementById("save-to-database").addEventListener("click", handleSave());
+
+    async function handleSave() {
+      const userId = this.getAttribute("data-user-id");
+      const instructorId = this.getAttribute("data-instructor-id");
+      const courseId = this.getAttribute("data-course-id");
+
+      // Collect DL Codes Left (first table)
+      const dlCodesLeft = [];
+      document.querySelectorAll('table[data-dl="left"] tbody tr').forEach((row, idx) => {
+        const code = row.querySelector('td:nth-child(2)').innerText.trim();
+        const mtBox = row.querySelector('input[name="mt_' + idx + '"]');
+        const atBox = row.querySelector('input[name="at_' + idx + '"]');
+        const mt = mtBox ? mtBox.checked : false;
+        const at = atBox ? atBox.checked : false;
+        dlCodesLeft.push({ code, mt, at });
+      });
+
+      // Collect DL Codes Right (second table)
+      const dlCodesRight = [];
+      const leftLength = dlCodesLeft.length;
+      document.querySelectorAll('table[data-dl="right"] tbody tr').forEach((row, idx) => {
+        const code = row.querySelector('td:nth-child(2)').innerText.trim();
+        const mtBox = row.querySelector('input[name="mt_' + (idx + leftLength) + '"]');
+        const atBox = row.querySelector('input[name="at_' + (idx + leftLength) + '"]');
+        const mt = mtBox ? mtBox.checked : false;
+        const at = atBox ? atBox.checked : false;
+        dlCodesRight.push({ code, mt, at });
+      });
+
+      try {
+        const response = await fetch("/certificates-completion-pdc/pdf", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            userId: userId,
+            instructorId: instructorId,
+            courseId: courseId,
+            dlCodesLeft: dlCodesLeft,
+            dlCodesRight: dlCodesRight
+          })
+        });
+
+        if (!response.ok) {
+          alert("Failed to generate PDF.");
+          return;
+        }
+
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "certificate-pdc.pdf";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
+      } catch (error) {
+        alert("An error occurred while generating the PDF.");
+        console.error(error);
+      }
+    }
+  </script>
+</body>
+
+</html>

@@ -25,13 +25,15 @@
         .collapsible-content {
             max-height: 0;
             overflow: hidden;
-            transition: max-height 0.6s ease-in-out;
+            transition: max-height 0.6s ease-in-out, opacity 0.3s ease-in-out;
+            opacity: 0;
         }
 
         .collapsible-content.expanded {
             max-height: 500px;
-            /* Set a large enough value to accommodate the content */
+            opacity: 1;
         }
+
 
         .rotate-180 {
             transform: rotate(180deg);
@@ -50,8 +52,8 @@
 </head>
 
 <body class="flex flex-row w-full animate-fadeIn">
-    <div id="sidebar-container"></div>
-    <div id="main-content" class="block ml-ml-250 w-calc space-y-2">
+    <div id="sidebar-container" class="block"></div>
+    <div id="main-content" class="block ml-ml-64 phone-w-calc md:ml-[160px] space-y-2">
         <div id="top-bar" class="flex h-15 flex-row w-full sticky shadow-inner bg-white border-b-2 p-4">
             <div id="left-side" class="flex flex-row gap-4 relative">
                 <button class="relative">
@@ -63,13 +65,13 @@
                 <img id="company-logo" src="/f-css/solid/car-front.svg" class="w-8 h-8" />
             </div>
             <div id="right-side" class="absolute right-4 text-lg">
-                Attendance
+                Applicants
             </div>
         </div>
 
         <div id="content" class="flex flex-col w-full animate-fadeIn">
             <div class="flex w-full justify-between pr-4 my-2">
-                <h2 class="text-lg ml-4 my-2">Manage Applicants</h2>
+                <h2 class="text-lg ml-4">Manage Applicants</h2>
                 <a id="back-btn" style="display: none;"
                     class="bg-sky-900 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg focus:outline-none focus:shadow-outline">
                     Back

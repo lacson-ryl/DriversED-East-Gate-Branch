@@ -153,7 +153,7 @@ function filterPayrollByYear(details) {
 function allButton(details) {
   // Modal form template for adding a instructor
   const modalForm = `
-    <form id="add-instructor-form" enctype="multipart/form-data" class="w-96">
+    <form id="add-instructor-form" enctype="multipart/form-data" class="min-w-96">
       <div class="mb-4">
         <h3 class="text-xl font-semibold mb-3">Instructor Name</h3>
         <input type="text" id="instructor-name" name="instructor-name" required class="w-full outline outline-1 outline-gray-300 rounded-md text-lg px-1" placeholder="Enter Instructor Name" />
@@ -170,30 +170,37 @@ function allButton(details) {
           <option value="(P|T)DC">(P|T)DC</option>
         </select>
       </div>
-      <div class="mb-4">
-        <h3 class="text-xl font-semibold mb-3">TDC Onsite</h3>
-        <select id="tdc-onsite" name="tdc-onsite" required class="mt-1 text-lg block w-full outline outline-1 outline-gray-300 rounded-sm px-1">
-          <option value="0">False</option>
-          <option value="1">True</option>
-        </select>
+      <div class="flex flex-col md:flex-row gap-4 mb-4">
+        <div class="">
+          <h3 class="text-xl font-semibold mb-3">TDC Onsite</h3>
+          <select id="tdc-onsite" name="tdc-onsite" required class="mt-1 text-lg block w-full outline outline-1 outline-gray-300 rounded-sm px-1">
+            <option value="0">False</option>
+            <option value="1">True</option>
+          </select>
+        </div>
+        <div class="">
+          <h3 class="text-xl font-semibold mb-3">Manual</h3>
+          <select id="is-manual" name="is-manual" required class="mt-1 text-lg block w-full outline outline-1 outline-gray-300 rounded-sm px-1">
+            <option value="0">False</option>
+            <option value="1">True</option>
+          </select>
+        </div>
+        <div class="">
+          <h3 class="text-xl font-semibold mb-3">Automatic</h3>
+          <select id="is-automatic" name="is-automatic" required class="mt-1 text-lg block w-full outline outline-1 outline-gray-300 rounded-sm px-1">
+            <option value="0">False</option>
+            <option value="1">True</option>
+          </select>
+        </div>
       </div>
       <div class="mb-4">
-        <h3 class="text-xl font-semibold mb-3">Manual</h3>
-        <select id="is-manual" name="is-manual" required class="mt-1 text-lg block w-full outline outline-1 outline-gray-300 rounded-sm px-1">
-          <option value="0">False</option>
-          <option value="1">True</option>
-        </select>
-      </div>
-      <div class="mb-4">
-        <h3 class="text-xl font-semibold mb-3">Automatic</h3>
-        <select id="is-automatic" name="is-automatic" required class="mt-1 text-lg block w-full outline outline-1 outline-gray-300 rounded-sm px-1">
-          <option value="0">False</option>
-          <option value="1">True</option>
-        </select>
+        <h3 class="text-xl font-semibold mb-3">Accreditation Number</h3>
+        <input type="text" id="accreditation-number" name="accreditation-number" class="w-full outline outline-1 outline-gray-300 rounded-md text-lg px-1"   />
       </div>
       <div class="mb-4">
         <h3 class="text-xl font-semibold mb-3">Date Started</h3>
         <input type="date" id="date-started" name="date-started" class="w-full outline outline-1 outline-gray-300 rounded-md text-lg px-1" placeholder="Enter Program Name" />
+      </div>
       </div>
       <button id="instructor-submit-button" type="submit" class="bg-blue-800 text-white rounded-md px-2">Submit</button>
     </form>
@@ -409,6 +416,12 @@ function allButton(details) {
                     data.isAutomatic === 1 ? "selected" : ""
                   }>True</option>
                 </select>
+              </div>
+              <div class="mb-4">
+                <h3 class="text-xl font-semibold mb-3">Accreditation Number</h3>
+                <input type="text" id="accreditation-number" name="accreditation-number" value="${
+                  data.accreditaion_number ? data.accreditaion_number : ""
+                }" class="w-full outline outline-1 outline-gray-300 rounded-md text-lg px-1" />
               </div>
               <div class="mb-4">
                 <h3 class="text-xl font-semibold mb-3">Date Started</h3>

@@ -19,7 +19,7 @@ async function renderCompletedCourseList() {
                     <th class="border border-gray-300 px-4 py-2">Program ID - Name</th>
                     <th class="border border-gray-300 px-4 py-2">Date</th>
                     <th class="border border-gray-300 px-3 py-2 w-16">Hours</th>
-                    <th class="border border-gray-300 px-4 py-2">Certificate</th>
+                    <th class="border border-gray-300 px-4 py-2 w-32">Certificate</th>
                     <th class="border border-gray-300 px-4 py-2">Action</th>
                 </tr>
             </thead>
@@ -64,9 +64,19 @@ async function renderCompletedCourseList() {
                                   <button data-id="${
                                     arr.course_id
                                   }" class="certification-upload-btn text-yellow-600 rounded-md px-2 hover:underline">Re-upload</button>
+                                  <button data-id="${
+                                    arr.course_id
+                                  }" data-user-id="${
+                                      arr.user_id
+                                    }" data-instructor-id="${
+                                      arr.instructor_id
+                                    }" class="certification-create-btn text-yellow-600 rounded-md px-2 hover:underline">Create</button>
                                   `
                                   : `
-                                  <button data-id="${arr.course_id}" class="certification-upload-btn text-yellow-600 rounded-md px-2 hover:underline">Upload</button>
+                                  <button data-id="${arr.course_id}"
+                                  class="certification-upload-btn text-yellow-600 rounded-md px-2 hover:underline">Upload</button>
+                                  <button data-id="${arr.course_id}" data-user-id="${arr.user_id}" data-instructor-id="${arr.instructor_id}" 
+                                  class="certification-create-btn text-blue-600 rounded-md px-2 hover:underline">Create</button>
                                   `
                               }
                           </div>
@@ -168,6 +178,56 @@ function allButtons(data) {
             alert("An error occurred while updating the certificate.");
           }
         });
+    });
+  });
+
+  //Create Certificate
+  document.querySelectorAll(".certification-create-btn").forEach((button) => {
+    button.addEventListener("click", function () {
+      const courseId = this.getAttribute("data-id");
+      const userId = this.getAttribute("data-user-id");
+      const instructorId = this.getAttribute("data-instructor-id");
+
+      if (!courseId || !userId || !instructorId) {
+        console.error("ID not found");
+        modalDetails.innerText = "ID not found.";
+        modal.style.display = "flex";
+        setTimeout(() => {
+          modal.style.display = "none";
+        }, 4000);
+        return;
+      }
+
+      modalDetails.innerHTML = `
+        <h5 class="mt-2 mb-4">For user:${userId} | course:${courseId} | instructor:${instructorId}</h5>
+        <h5 class=" mb-4">Choose which certificate type:</h5>
+        <div class="flex justify-around">
+          <button id="tdc" class="bg-blue-700 hover:bg-gradient-to-t from-sky-400 to-sky-800 text-white text-lg rounded-md px-2">TDC</button>
+          <button id="pdc" class="bg-rose-700 hover:bg-gradient-to-t from-rose-400 to-rose-800 text-white text-lg rounded-md px-2">PDC</button>
+        </div>
+      `;
+      modal.style.display = "flex";
+
+      // Add event listeners for the TDC and PDC buttons
+      document.getElementById("tdc").addEventListener("click", function () {
+        const url = `/certificates-completion-tdc?userId=${encodeURIComponent(
+          userId
+        )}&courseId=${encodeURIComponent(
+          courseId
+        )}&instructorId=${encodeURIComponent(instructorId)}`;
+        window.open(url, "_blank");
+        modal.style.display = "none";
+      });
+
+      document.getElementById("pdc").addEventListener("click", function () {
+        const url = `/certificates-completion-pdc?userId=${encodeURIComponent(
+          userId
+        )}&courseId=${encodeURIComponent(
+          courseId
+        )}&instructorId=${encodeURIComponent(instructorId)}`;
+        window.open(url, "_blank");
+        modal.style.display = "none";
+      });
     });
   });
 

@@ -4,21 +4,6 @@ use drivereadydb;
 /* use this code */
 /* A;TER TABLE user MODIFY emmail VARCHAR(255) COLLATE utf8mb4_bin; */
 CREATE TABLE
-    new_Applicants (
-        user_id INT PRIMARY KEY AUTO_INCREMENT,
-        first_name VARCHAR(40) NOT NULL,
-        last_name VARCHAR(40) NOT NULL,
-        date_applied DATE,
-        course VARCHAR(20),
-        email VARCHAR(100),
-        current_status INT,
-        instructor INT,
-        created TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (current_status) REFERENCES current_Status (status_id),
-        FOREIGN KEY (instructor) REFERENCES instructor (instructor_id)
-    );
-
-CREATE TABLE
     monthly_applicants (
         currDay DATE PRIMARY KEY,
         currMonth VARCHAR(20),
@@ -46,11 +31,16 @@ CREATE TABLE
         date_started DATE,
         SSS DECIMAL(10, 2),
         Philhealth DECIMAL(10, 2),
-        Pag_ibig DECIMAL(10, 2)
+        Pag_ibig DECIMAL(10, 2),
+        instructor_profile_picture MEDIUMBLOB,
+        prn VARCHAR(50),
+        accreditation_number VARCHAR(50),
+        account_id INT,
+        FOREIGN KEY (account_id) REFERENCES admin_account (account_id)
     );
 
 ALTER TABLE instructor
-ADD COLUMN instructor_profile_picture MEDIUMBLOB;
+ADD COLUMN accreditation_number VARCHAR(50);
 
 ALTER TABLE instructor
 ADD COLUMN prn VARCHAR(50);
@@ -172,7 +162,6 @@ CREATE TABLE
         FOREIGN KEY (instructor_id) REFERENCES instructor (instructor_id)
     );
 
-
 CREATE TABLE
     IF NOT EXISTS availability (
         availability_id INT AUTO_INCREMENT PRIMARY KEY,
@@ -190,13 +179,16 @@ CREATE TABLE
     user_profile (
         profile_id INT AUTO_INCREMENT PRIMARY KEY,
         first_name VARCHAR(75),
-        last_name VARCHAR(25),
+        last_name VARCHAR(50),
+        middle_name VARCHAR(25),
         phone_number VARCHAR(15),
+        lto_client_id VARCHAR(100),
         email VARCHAR(50),
         birth_date DATE,
         nationality VARCHAR(20),
         gender VARCHAR(10),
         address TEXT,
+        civil_status VARCHAR(25),
         training_purpose VARCHAR(50),
         profile_picture MEDIUMBLOB,
         user_id INT,

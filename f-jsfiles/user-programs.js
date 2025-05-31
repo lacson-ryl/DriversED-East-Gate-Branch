@@ -250,7 +250,7 @@ async function updateCalendar(instructorId) {
             "font-light"
           );
 
-          if (slots.onsite >= 0) {
+          if (slots.onsite >= 0 && slots.onsite != null) {
             const onsiteCircle = document.createElement("div");
             onsiteCircle.classList.add("circle", "onsite-tdc");
             onsiteCircle.textContent = `${slots.onsite}`;

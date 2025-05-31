@@ -26,6 +26,7 @@ async function fetchAttendanceList() {
 fetchAttendanceList();
 
 function renderAttendanceTable(dataList) {
+  console.log("dataList", dataList);
   // Group data by date
   const groupedData = dataList.reduce((acc, item) => {
     const date = item.date; // Assuming `date` is the field for attendance date
@@ -39,70 +40,130 @@ function renderAttendanceTable(dataList) {
   // Generate HTML for collapsible sections
   const tableHTML = Object.keys(groupedData)
     .map((date) => {
-      const rows = groupedData[date]
+      let desktopRows = "";
+      desktopRows = groupedData[date]
         .map(
           (trainee) => `
-          <tr class="text-left hover:outline outline-1 outline-black">
-            <td class="border border-gray-300 px-4 py-2">${
-              trainee.attendance_id
-            }</td>
-            <td class="border border-gray-300 px-4 py-2">${
-              trainee.creator_id
-            } - ${trainee.user_name}</td>
-            <td class="border border-gray-300 px-4 py-2">${
-              trainee.hours_attended
-            }</td>
-            <td class="text-center border border-gray-300 px-4 py-2">
-              <button class="request-status-btn hover:outline outline-2 outline-gray-500 rounded-md px-1" data-id="${
-                trainee.attendance_id
-              }">
-                ${
-                  trainee.status === "Attended"
-                    ? '<div class="text-green-700 hover:font-semibold rounded-md">Attended</div>'
-                    : trainee.status === "Absent"
-                    ? '<div class="text-red-700 hover:font-semibold rounded-md">Absent</div>'
-                    : '<div class="text-gray-700 hover:font-semibold rounded-md">Pending</div>'
-                }
-              </button>
-            </td>
-            <td class="border flex flex-row items-center justify-center border-gray-300 px-4 py-2 space-x-2">
-              <button data-id="${
-                trainee.attendance_id
-              }" class="view-applicant-btn bg-rose-500 hover:bg-gradient-to-t from-rose-400 to-rose-800 text-white rounded-md p-px">
-                <img src="/f-css/solid/icons_for_buttons/view-boards.svg" class="w-6 h-6 reverse-colorII" />
-              </button>
-              <button data-id="${
-                trainee.attendance_id
-              }" class="delete-applicant-btn bg-rose-500 hover:bg-gradient-to-t from-rose-400 to-rose-800 text-white rounded-md p-px">
-                <img src="/f-css/solid/icons_for_buttons/trash.svg" class="w-6 h-6 reverse-colorII" />
-              </button>
-            </td>
-          </tr>
-        `
+              <!-- Desktop Row -->
+              <tr class="hidden md:table-row text-left hover:outline outline-1 outline-black">
+                <td class="border border-gray-300 px-4 py-2">${
+                  trainee.attendance_id
+                }</td>
+                <td class="border border-gray-300 px-4 py-2">${
+                  trainee.creator_id
+                } - ${trainee.user_name}</td>
+                <td class="border border-gray-300 px-4 py-2">${
+                  trainee.hours_attended
+                }</td>
+                <td class="text-center border border-gray-300 px-4 py-2">
+                  <button class="request-status-btn hover:outline outline-2 outline-gray-500 rounded-md px-1" data-id="${
+                    trainee.attendance_id
+                  }">
+                    ${
+                      trainee.status === "Attended"
+                        ? '<div class="text-green-700 hover:font-semibold rounded-md">Attended</div>'
+                        : trainee.status === "Absent"
+                        ? '<div class="text-red-700 hover:font-semibold rounded-md">Absent</div>'
+                        : '<div class="text-gray-700 hover:font-semibold rounded-md">Pending</div>'
+                    }
+                  </button>
+                </td>
+                <td class="border border-gray-300 px-4 py-2 text-center space-x-2">
+                  <button data-id="${
+                    trainee.attendance_id
+                  }" class="block view-applicant-btn bg-rose-500 hover:bg-gradient-to-t from-rose-400 to-rose-800 text-white rounded-md p-px">
+                    <img src="/f-css/solid/icons_for_buttons/view-boards.svg" class="w-6 h-6 reverse-colorII" />
+                  </button>
+                  <button data-id="${
+                    trainee.attendance_id
+                  }" class="inline-block delete-applicant-btn bg-rose-500 hover:bg-gradient-to-t from-rose-400 to-rose-800 text-white rounded-md p-px">
+                    <img src="/f-css/solid/icons_for_buttons/trash.svg" class="w-6 h-6 reverse-colorII" />
+                  </button>
+                </td>
+              </tr>
+            `
         )
+        .join("");
+
+      let mobileRows = "";
+      mobileRows = groupedData[date]
+        .map((trainee) => {
+          return `
+              <!-- Mobile Row -->
+            <tr class="md:hidden border-b">
+              <td colspan="5" class="px-2 py-2">
+                <div class="flex flex-col gap-1">
+                  <div class="flex justify-between">
+                    <div>
+                      <span class="font-semibold">ID:</span>
+                      <span>${trainee.attendance_id}</span>
+                    </div>
+                    <div>Hours: ${trainee.hours_attended}</div>
+                  </div>
+                  <div class="flex gap-5">
+                    <span class="font-semibold">Profile:</span>
+                    <div class="ml-2 text-sm flex gap-5">
+                      <div>${trainee.user_name}</div>
+                      <div class="text-xs text-gray-500">${
+                        trainee.program_name || ""
+                      }</div>
+                      <div>Status: 
+                        ${
+                          trainee.status === "Attended"
+                            ? '<span class="text-green-700 font-semibold">Attended</span>'
+                            : trainee.status === "Absent"
+                            ? '<span class="text-red-700 font-semibold">Absent</span>'
+                            : '<span class="text-gray-700 font-semibold">Pending</span>'
+                        }
+                      </div>
+                    </div>
+                  </div>
+                  <div class="flex gap-2 mt-2">
+                    <button data-id="${
+                      trainee.attendance_id
+                    }" class="request-status-btn bg-blue-500 text-white rounded px-2 py-1 text-xs">Status</button>
+                    <button data-id="${
+                      trainee.attendance_id
+                    }" class="view-applicant-btn bg-rose-500 text-white rounded px-2 py-1 text-xs">
+                      <img src="/f-css/solid/icons_for_buttons/view-boards.svg" class="w-5 h-5 inline" />
+                    </button>
+                    <button data-id="${
+                      trainee.attendance_id
+                    }" class="delete-applicant-btn bg-rose-500 text-white rounded px-2 py-1 text-xs">
+                      <img src="/f-css/solid/icons_for_buttons/trash.svg" class="w-5 h-5 inline" />
+                    </button>
+                  </div>
+                </div>
+              </td>
+            </tr>
+            `;
+        })
         .join("");
 
       return `
         <div class="collapsible-section">
           <button class="flex justify-between collapsible-header bg-sky-500 text-white px-4 py-2 w-full text-left font-semibold">
-            ${date}
+            ${date} - ${groupedData[date].length}
             <img id="collapsible-icon" src="/f-css/solid/icons_for_buttons/chevron-down.svg" class="w-4 h-4 place-self-center" />
           </button>
-          <div class="collapsible-content">
-            <table class="w-full text-left text-sm table-fixed border-collapse border-2 border-gray-300 mt-2">
-              <thead>
-                <tr>
-                  <th class="border border-gray-300 px-4 py-2 w-12">ID</th>
-                  <th class="border border-gray-300 px-4 py-2">User ID - Name</th>
-                  <th class="border border-gray-300 px-4 py-2 w-36">Attended Hours</th>
-                  <th class="border border-gray-300 px-4 py-2 w-24">Status</th>
-                  <th class="border border-gray-300 px-4 py-2 w-24">Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${rows}
-              </tbody>
-            </table>
+          <div class="collapsible-content overflow-auto max-h-data-table">
+            <div class="overflow-auto max-h-data-table">
+              <table class="w-full text-left text-sm border-collapse border-2 border-gray-300 mt-2">
+                <thead>
+                  <tr class="hidden md:table-row">
+                    <th class="border border-gray-300 px-4 py-2 w-12">ID</th>
+                    <th class="border border-gray-300 px-4 py-2">User ID - Name</th>
+                    <th class="border border-gray-300 px-4 py-2 w-36">Attended Hours</th>
+                    <th class="border border-gray-300 px-4 py-2 w-24">Status</th>
+                    <th class="border border-gray-300 px-4 py-2 w-24">Action</th>
+                  </tr>
+                </thead>
+                <tbody class="">
+                  ${desktopRows}
+                  ${mobileRows}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       `;
@@ -111,6 +172,7 @@ function renderAttendanceTable(dataList) {
 
   // Inject the generated HTML into the DOM
   const attendanceTable = document.getElementById("attendance-table");
+  attendanceTable.innerHTML = "";
   attendanceTable.innerHTML = tableHTML;
 
   // Attach event listeners for collapsible functionality
@@ -124,11 +186,22 @@ function attachCollapsibleListeners() {
 
   collapsibleHeaders.forEach((header) => {
     header.addEventListener("click", () => {
-      const content = header.nextElementSibling;
+      const content = header.parentElement.querySelector(
+        ".collapsible-content"
+      );
+
       const icon = header.querySelector("#collapsible-icon");
 
       // Toggle visibility of the collapsible content
       content.classList.toggle("expanded");
+
+      if (window.innerWidth > 768) {
+        const rows = content.querySelectorAll("tr.hidden"); // Select hidden desktop rows
+        rows.forEach((row) => {
+          row.classList.remove("hidden");
+          row.classList.add("md:table-row");
+        });
+      }
 
       header.setAttribute(
         "aria-expanded",
@@ -336,7 +409,7 @@ function allButtons(dataList) {
 function traineesInfo(profile) {
   console.log("profile", profile);
   traineeInfoBox.innerHTML = `
-          <div class="flex flex-row gap-5">
+          <div class="flex flex-col md:flex-row gap-5">
               <div class="flex flex-col place-self-center">
                   <img src="/f-css/solid/user-bg.jpg" alt="" class="w-28 h-28">
                   <div>
@@ -364,7 +437,7 @@ function traineesInfo(profile) {
                           : `<span class="text-xl font-semibold text-red">NO</span>`
                       }</p>
                   </div>
-                  <div class="flex flex-row gap-5">
+                  <div class="flex flex-col md:flex-row  gap-5">
                       <p>Date Started: <span class="text-xl font-semibold">${
                         profile.date_started
                       }</span></p>
@@ -375,7 +448,7 @@ function traineesInfo(profile) {
                   <p>Hours Attended: <span class="text-xl font-semibold">${
                     profile.total_hours
                   }</span> Hours</p>
-                  <div class="flex flex-row gap-5">
+                  <div class="flex flex-col md:flex-row gap-5">
                       <p>Grade Status: ${
                         profile.grading_status === "Completed"
                           ? `<span class="text-green-700 hover:font-semibold rounded-md">${profile.grade}</span>`
