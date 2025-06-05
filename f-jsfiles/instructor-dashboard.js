@@ -60,15 +60,15 @@ function renderAttendanceTable(dataList) {
                     trainee.attendance_id
                   }">
                     ${
-                      trainee.status === "Attended"
+                      trainee.status == "Present"
                         ? '<div class="text-green-700 hover:font-semibold rounded-md">Attended</div>'
-                        : trainee.status === "Absent"
+                        : trainee.status == "Absent"
                         ? '<div class="text-red-700 hover:font-semibold rounded-md">Absent</div>'
                         : '<div class="text-gray-700 hover:font-semibold rounded-md">Pending</div>'
                     }
                   </button>
                 </td>
-                <td class="border border-gray-300 px-4 py-2 text-center space-x-2">
+                <td class="flex border border-gray-300 px-4 py-2 text-center space-x-2">
                   <button data-id="${
                     trainee.attendance_id
                   }" class="block view-applicant-btn bg-rose-500 hover:bg-gradient-to-t from-rose-400 to-rose-800 text-white rounded-md p-px">
@@ -104,16 +104,13 @@ function renderAttendanceTable(dataList) {
                     <span class="font-semibold">Profile:</span>
                     <div class="ml-2 text-sm flex gap-5">
                       <div>${trainee.user_name}</div>
-                      <div class="text-xs text-gray-500">${
-                        trainee.program_name || ""
-                      }</div>
                       <div>Status: 
                         ${
-                          trainee.status === "Attended"
+                          trainee.status === "Present"
                             ? '<span class="text-green-700 font-semibold">Attended</span>'
                             : trainee.status === "Absent"
                             ? '<span class="text-red-700 font-semibold">Absent</span>'
-                            : '<span class="text-gray-700 font-semibold">Pending</span>'
+                            : '<span class="text-gray-600 font-semibold">Pending</span>'
                         }
                       </div>
                     </div>
@@ -273,7 +270,7 @@ function allButtons(dataList) {
           "cursor-not-allowed",
           "animate-pulse"
         );
-        const hoursAttended = document.getElementById("hours-attended");
+        const hoursAttended = document.getElementById("hours-attended").value;
         await changeStatus(rowId, "Present", hoursAttended);
       });
 
@@ -301,7 +298,7 @@ function allButtons(dataList) {
           setTimeout(() => {
             modal.style.display = "none";
           }, 3000);
-          renderAttendanceTable();
+          renderAttendanceTable(dataList);
         } else {
           alert(`Can't change status of ID no. ${id}`);
         }

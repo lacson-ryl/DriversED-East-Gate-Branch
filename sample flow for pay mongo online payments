@@ -1,0 +1,100 @@
+/*To integrate PayMongo for payments in your app, you need to:
+
+Create a PayMongo account and get your API keys.
+Add a "Pay with PayMongo" option in your payment method select.
+When selected, show a "Pay Now" button that triggers the PayMongo payment flow.
+On the backend, create a PaymentIntent or Source using PayMongo's API.
+Redirect the user to PayMongo's checkout URL or show the payment QR/code.
+Listen for webhook/callback to confirm payment and update your database.
+1. Add "PayMongo" to Payment Methods
+In your backend, add "PayMongo" to your payment methods list, or add it manually in your frontend for now.
+
+2. Show "Pay Now" Button
+In your form, when "PayMongo" is selected, show a "Pay Now" button instead of the upload.
+
+3. Frontend: Call Your Backend to Create a PaymentIntent/Source
+When the user clicks "Pay Now", send a request to your backend to create a PayMongo payment.
+
+Example:
+*/
+// On Pay Now button click
+async function payWithPayMongo(amount, description) {
+  const response = await fetch('/api/paymongo/create-payment', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ amount, description })
+  });
+  const data = await response.json();
+  // Redirect to checkout or show QR
+  window.location.href = data.checkout_url; // or show data.source_url for GCash/QR
+}
+
+
+/*4. Backend: Create PayMongo PaymentIntent/Source
+Install axios:*/
+
+//npm install axios
+
+//Example Express route:
+
+const axios = require('axios');
+
+app.post('/api/paymongo/create-payment', authenticateToken, async (req, res) => {
+  const { amount, description } = req.body;
+  try {
+    // PayMongo expects amount in centavos (PHP * 100)
+    const response = await axios.post(
+      'https://api.paymongo.com/v1/checkout_sessions',
+      {
+        data: {
+          attributes: {
+            send_email_receipt: false,
+            show_description: true,
+            show_line_items: true,
+            line_items: [
+              {
+                currency: 'PHP',
+                amount: amount * 100,
+                name: description,
+                quantity: 1,
+              },
+            ],
+            payment_method_types: ['gcash', 'card', 'paymaya'],
+            success_url: 'https://yourdomain.com/payment-success',
+            cancel_url: 'https://yourdomain.com/payment-cancel',
+          },
+        },
+      },
+      {
+        headers: {
+          Authorization: `Basic ${Buffer.from('YOUR_PAYMONGO_SECRET_KEY:').toString('base64')}`,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+    res.json({ checkout_url: response.data.data.attributes.checkout_url });
+  } catch (error) {
+    console.error(error.response?.data || error.message);
+    res.status(500).json({ error: 'PayMongo payment failed' });
+  }
+});
+
+/*
+Replace YOUR_PAYMONGO_SECRET_KEY with your actual secret key.
+Update success_url and cancel_url to your app's URLs.
+*/
+
+/*
+5. Handle Success/Cancel
+On your success_url page, verify the payment and update your database.
+
+6. (Optional) Webhook
+Set up a webhook endpoint to listen for PayMongo payment events and update your records automatically.
+
+Summary
+Add "PayMongo" as a payment method.
+When selected, show a "Pay Now" button.
+On click, call your backend to create a PayMongo checkout session.
+Redirect the user to the returned checkout_url.
+Handle success/cancel in your app.
+*/

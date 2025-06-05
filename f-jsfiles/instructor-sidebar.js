@@ -38,7 +38,7 @@ const sidebarContent = `
                             </a>
                         </li>
                         <li id="payments" class="flex justify-items-center items-center rounded-3xl hover:font-bold py-1 px-2 hover:hover-bg-custom">
-                            <a class="side-nav-link flex justify-items-center items-center w-full gap-5" href="/instructor-payments">
+                            <a class="side-nav-link flex justify-items-center items-center w-full gap-5" href="/payments">
                                 <img src="/f-css/solid/white/cash.svg" class="side-icons" />
                             <span class="sidebar-label">Payments</span>
                             </a>
@@ -94,7 +94,7 @@ iconMap = {
   "/instructor-profile": "/f-css/solid/black/user.svg",
   "/instructor-requests": "/f-css/solid/black/question-mark-circle.svg",
   "/instructor-reports": "/f-css/solid/black/exclamation-circle.svg",
-  "/instructor-payments": "/f-css/solid/black/cash.svg",
+  "/payments": "/f-css/solid/black/cash.svg",
   "/logout": "/f-css/solid/black/logout.svg",
 };
 

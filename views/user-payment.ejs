@@ -47,7 +47,7 @@
                                 <label>Payment Method</label>
                                 <select id="payment-method" name="payment-method" required
                                     class="shadow-md bg-white border rounded w-full py-2 px-3 text-gray-700 leading-tight hover:border-yellow-500 focus:border-yellow-500">
-
+                                    <option value="" disabled selected >Select payment option</option>
                                 </select>
                                 <input id="Other-payment-method" name="Other-payment-method" style="min-height: 2rem;"
                                     type="text"
@@ -87,11 +87,11 @@
                         </button>
                     </form>
                 </div>
-                <div id="payment-method-preview" class="hidden my-2 ">
-                    <img id="payment-picture-preview"
-                        class="w-80 min-h-40 max-h-96 rounded-md border-2 content-center border-gray-300 mb-4 object-fill"
-                        alt="Payment Picture Preview">
+                <div id="method-preview" class=" my-2 ">
                     <p class="text-left ">Payment Method</p>
+                    <img id="payment-method-preview"
+                        class="w-80 min-h-40 max-h-96 hidden rounded-md border-2 content-center border-gray-300 mb-4 object-fill"
+                        alt="Payment Picture Preview">
                 </div>
             </div>
             <div>

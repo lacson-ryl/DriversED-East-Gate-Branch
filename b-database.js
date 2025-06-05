@@ -1867,7 +1867,7 @@ export async function getAllPdcTdcTakers(type) {
 export async function changeAttendanceStatus(id, status, hours) {
   try {
     const [result] = await pool.query(
-      `UPDATE attendance SET status = ? AND hours_attended = ? WHERE attendance_id = ?`,
+      `UPDATE attendance SET status = ?, hours_attended = ? WHERE attendance_id = ?`,
       [status, hours, id]
     );
     return result;
@@ -2086,23 +2086,25 @@ export async function getWeeklyPayroll(instructorId) {
       `
       SELECT 
         i.instructor_name, 
-        i.rate_per_hour,
-        SUM(a.hours_attended) AS attended_hours
+        COALESCE(i.rate_per_hour, 0) AS rate_per_hour,
+        COALESCE(SUM(a.hours_attended), 0) AS attended_hours
       FROM 
         instructor i
-      JOIN 
+      LEFT JOIN 
         attendance a ON i.instructor_id = a.instructor_id
+        AND a.date BETWEEN DATE_SUB(CURDATE(), INTERVAL WEEKDAY(CURDATE()) DAY)
+                        AND DATE_ADD(DATE_SUB(CURDATE(), INTERVAL WEEKDAY(CURDATE()) DAY), INTERVAL 5 DAY)
       WHERE 
-        i.instructor_id = ? AND
-        a.date BETWEEN DATE_SUB(CURDATE(), INTERVAL WEEKDAY(CURDATE()) DAY) 
-                    AND CURDATE()
+        i.instructor_id = ?
+      GROUP BY i.instructor_id
       `,
       [instructorId]
     );
 
-    if (result.length === 0 || !result[0].attended_hours) {
+    if (result.length === 0) {
+      // Instructor not found
       return {
-        instructor_name: "No data available",
+        instructor_name: null,
         rate_per_hour: 0,
         attended_hours: 0,
       };

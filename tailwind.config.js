@@ -134,6 +134,34 @@ module.exports = {
             backgroundColor: "red",
             color: "gold",
           },
+          // Collapsible header
+          ".collapsible-header": {
+            cursor: "pointer",
+            transition: "background-color 0.4s ease",
+          },
+          ".collapsible-header:hover": {
+            backgroundColor: "#2563eb",
+          },
+          // Collapsible content
+          ".collapsible-content": {
+            maxHeight: "0",
+            overflow: "hidden",
+            transition: "max-height 0.6s ease-in-out, opacity 0.3s ease-in-out",
+            opacity: "0",
+          },
+          ".collapsible-content.expanded": {
+            maxHeight: "500px",
+            opacity: "1",
+          },
+          // Rotations
+          ".rotate-180": {
+            transform: "rotate(180deg)",
+            transition: "transform 0.6s ease",
+          },
+          ".rotate-0": {
+            transform: "rotate(0deg)",
+            transition: "transform 0.6s ease",
+          },
         },
         ["responsive", "hover", "focus"]
       );

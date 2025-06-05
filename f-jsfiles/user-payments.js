@@ -31,6 +31,8 @@ async function renderUserPaymentsForm() {
   paymentMethods.forEach((method) => {
     const methodOption = document.createElement("option");
     methodOption.value = method.method_name;
+    methodOption.id = method.method_id;
+    methodOption.setAttribute("data-file", method.method_file || "");
     methodOption.innerText = method.method_name;
     paymentMethodSelect.appendChild(methodOption);
   });
@@ -92,20 +94,17 @@ async function renderUserPaymentsForm() {
       }
     });
 
-  // Picture preview
-  document
-    .getElementById("screenshot-receipt")
-    .addEventListener("change", function (event) {
-      const file = event.target.files[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = function (e) {
-          document.getElementById("payment-picture-preview").src =
-            e.target.result;
-        };
-        reader.readAsDataURL(file);
-      }
-    });
+  paymentMethodSelect.addEventListener("change", function (event) {
+    const selectedOption = this.options[this.selectedIndex];
+    const file = selectedOption.getAttribute("data-file");
+    if (file) {
+      // If file is a base64 string or URL, set it directly
+      document.getElementById("payment-method-preview").src = file;
+      document.getElementById("payment-method-preview").style.display = "flex";
+    } else {
+      document.getElementById("payment-method-preview").src = "";
+    }
+  });
 }
 renderUserPaymentsForm();
 

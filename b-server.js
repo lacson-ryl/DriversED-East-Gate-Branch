@@ -989,13 +989,22 @@ app.get(
     try {
       const id = req.user.userId;
       const courseList = await getTraineeCourseList(id);
-      const paymentMethods = await getAllPaymentMethods();
+      const methodList = await getAllPaymentMethods();
       const paymentCourses = courseList.map((payment) => ({
         course_id: payment.course_id,
         course_name: payment.program_name,
         course_price: payment.program_fee,
         isPaid: payment.isPaid,
       }));
+      const paymentMethods = methodList.map((method) => ({
+        ...method,
+        method_file: method.method_file
+          ? `data:${
+              method.method_file_type
+            };base64,${method.method_file.toString("base64")}`
+          : "",
+      }));
+
       res.status(200).json({ paymentMethods, paymentCourses });
     } catch (error) {
       res.status(500).json({ error: "Internal Server Error" });
@@ -1011,7 +1020,6 @@ app.get("/admin-registration", async (req, res) => {
   }
 });
 
-// here is
 app.post("/api/admin-registration", async (req, res) => {
   try {
     const { admin_name, user_email, user_password } = req.body;
@@ -1216,7 +1224,7 @@ app.post(
   "/api/payment-methods/upload/:methodId",
   authenticateToken,
   authorizeRole("admin"),
-  upload.single("methodFile"),
+  upload.single("method-file"),
   async (req, res) => {
     try {
       const methodId = req.params.methodId;
@@ -1317,6 +1325,7 @@ app.put(
     try {
       const id = req.params.id;
       const { status, hoursAttended } = req.body;
+      console.log("status, hoursAttended", status, hoursAttended);
       const changeStatus = await changeAttendanceStatus(
         id,
         status,
@@ -1600,24 +1609,47 @@ app.get(
   }
 );
 
-app.get("/payroll", authenticateToken, async (req, res) => {
-  try {
-    res.render("payroll");
-  } catch (error) {
-    res.status(500).send("Internal Server Error");
+app.get(
+  "/api/instructor-payments/monthly",
+  authenticateToken,
+  authorizeRole("instructor"),
+  async (req, res) => {
+    try {
+      const userId = req.user.userId;
+      const id = await getInstructorWithAccountId(userId);
+      const instructorPayroll = await getInstructorPayroll(id.instructor_id);
+      return res.status(200).json(instructorPayroll);
+    } catch (error) {
+      return res.status(500).json({ error: "Internal Server Error" });
+    }
   }
-});
+);
 
-app.get("/api/payroll-history", async (req, res) => {
-  const { monthYear } = req.query;
-  try {
-    const data = await monthYear;
-    res.status(200).json(data);
-  } catch (error) {
-    console.error("Error fetching monthly payroll:", error);
-    res.status(500).json({ error: "Error fetching monthly payroll" });
+app.get(
+  "/api/instructor-payments/weekly",
+  authenticateToken,
+  authorizeRole("instructor"),
+  async (req, res) => {
+    try {
+      const userId = req.user.userId;
+      const id = await getInstructorWithAccountId(userId);
+
+      const weeklyHistoryData = await getCurrentPayroll(id.instructor_id);
+      const currentWeekPayrollData = await getWeeklyPayroll(id.instructor_id);
+
+      // Convert objects to arrays if needed
+      const weeklyHistoryArray = Object.values(weeklyHistoryData);
+      const currentWeekPayrollArray = [currentWeekPayrollData]; // Wrap single object in an array
+
+      return res.status(200).json({
+        weeklyHistoryData: weeklyHistoryArray,
+        currentWeekPayrollData: currentWeekPayrollArray,
+      });
+    } catch (error) {
+      return res.status(500).json({ error: "Internal Server Error" });
+    }
   }
-});
+);
 
 app.delete("/api/manage-people/:rowID", authenticateToken, async (req, res) => {
   try {
@@ -2003,10 +2035,15 @@ app.put(
 app.get(
   "/payments",
   authenticateToken,
-  authorizeRole("admin"),
+  authorizeRole(["admin", "instructor"]),
   async (req, res) => {
     try {
-      res.render("payments");
+      const role = req.user.role;
+      if (role === "admin") {
+        return res.render("payments");
+      } else {
+        return res.render("instructor-payments");
+      }
     } catch (error) {
       res.status(500).send("Internal Server Error");
     }
@@ -2357,6 +2394,19 @@ app.delete("/api/vehicles/:rowID", authenticateToken, async (req, res) => {
     return res.status(500).json({ error: "Internal Server Error" });
   }
 });
+
+app.get(
+  "/instructor-payment",
+  authenticateToken,
+  authorizeRole("instructor"),
+  async (req, res) => {
+    try {
+      res.render("instructor-payments");
+    } catch (error) {
+      res.status(500).send("Internal Server Error");
+    }
+  }
+);
 
 app.get("/change-password-email-option", async (req, res) => {
   try {

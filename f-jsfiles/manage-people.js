@@ -479,6 +479,7 @@ function allButton(details) {
     "instructors-current-payroll-table"
   );
   const backButton = document.getElementById("back-button");
+  
   //Event listeners for payroll buttons
   document.querySelectorAll(".instructor-payroll-btn").forEach((button) => {
     button.addEventListener("click", async function () {
@@ -507,6 +508,8 @@ function allButton(details) {
         event.preventDefault();
         document.getElementById("year-filter").style.display = "none";
         const rowId = this.getAttribute("data-id");
+        backButton.style.display = "flex";
+        addButton.style.display = "none";
         renderCurrentPayroll(rowId);
       });
     });
@@ -516,6 +519,7 @@ function allButton(details) {
     backButton.style.display = "none";
     addButton.style.display = "flex";
     document.getElementById("year-filter").style.display = "none";
+    instructorTable.innerHTML = "";
     instructorTable.style.display = "none";
   });
 
@@ -573,6 +577,7 @@ function renderMonthlyPayrollTable(data) {
   const instructorTable = document.getElementById(
     "instructors-current-payroll-table"
   );
+  instructorTable.innerHTML = "";
   const details = data;
   let tableRows = details
     .map(
@@ -638,7 +643,6 @@ function renderMonthlyPayrollTable(data) {
 async function renderCurrentPayroll(id) {
   const response = await fetch(`/api/manage-people/current-payroll/${id}`);
   const data = await response.json();
-  console.log("data", data);
 
   const currentPayrollTable = document.getElementById(
     "instructors-current-payroll-table"
@@ -649,7 +653,9 @@ async function renderCurrentPayroll(id) {
     return;
   }
 
+  currentPayrollTable.innerHTML = "";
   currentPayrollTable.innerHTML = renderWeeklyPayrollTable(data);
+  currentPayrollTable.style.display = "flex";
 }
 
 function renderCurrentWeekPayrollTable(data) {
@@ -704,10 +710,8 @@ function renderWeeklyPayrollTable(data) {
             <td class="border border-gray-300 px-4 py-2">${arr.payroll_id}</td>
             <td class="border border-gray-300 px-4 py-2">${
               arr.instructor_name
-            }</td>
-            <td class="border border-gray-300 px-4 py-2">${
-              arr.rate_per_hour
-            }</td>
+            } - ${arr.rate_per_hour}
+            </td>
             <td class="border border-gray-300 px-4 py-2">${
               arr.date_start
             } <hr class="border border-black"> ${arr.date_end}</td>
@@ -740,13 +744,12 @@ function renderWeeklyPayrollTable(data) {
           <p>Current Week </p>
           ${renderCurrentWeekPayrollTable(currentWeekPayrollData)}
           
-          <p class="mt-7">Weekly History</p>
+          <p class="mt-5">Weekly History</p>
           <table id="weekly-payroll-table" class="w-full mt-7 text-sm text-center font-normal justify-items-start table-fixed border-collapse border-2 border-gray-300">
             <thead>
               <tr>
                 <th class="border border-gray-300 px-4 py-2 w-10">ID</th>
-                <th class="border border-gray-300 px-4 py-2">Instructor Name</th>
-                <th class="border border-gray-300 px-4 py-2 w-28">Rate / Hour</th>
+                <th class="border border-gray-300 px-4 py-2">Instructor Name - Rate / Hour</th>
                 <th class="border border-gray-300 px-4 py-2 w-32">Date</th>
                 <th class="border border-gray-300 px-4 py-2 w-32">Attended Hours</th>
                 <th class="border border-gray-300 px-4 py-2 w-24">Gross Income</th>

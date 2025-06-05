@@ -46,7 +46,9 @@ let chart;
 
 const fetchMonthYear = async (monthName, currYear) => {
   try {
-    const response = await fetch(`/api/admin-dashboard-time/${monthName}/${currYear}`);
+    const response = await fetch(
+      `/api/admin-dashboard-time/${monthName}/${currYear}`
+    );
     const data = await response.json();
     return data;
   } catch (error) {
@@ -214,7 +216,12 @@ async function renderPaymentMethodsList() {
                             method.method_file
                           )}' data-file-type="${method.method_file_type}">
                             View
-                          </a>`
+                          </a>
+                          <button data-id="${
+                            method.method_id
+                          }" class="upload-file-btn text-yellow-600 rounded-md px-2 hover:underline">
+                            Upload
+                          </button`
                         : `<button data-id="${method.method_id}" class="upload-file-btn text-yellow-600 rounded-md px-2 hover:underline">
                             Upload
                           </button>`
