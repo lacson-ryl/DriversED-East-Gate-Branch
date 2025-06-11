@@ -81,3 +81,4 @@ navLinks.forEach((link) => {
     icon.src = iconMap[href]; // Update the src attribute
   }
 });
+

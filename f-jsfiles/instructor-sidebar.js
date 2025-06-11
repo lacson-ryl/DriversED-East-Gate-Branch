@@ -107,3 +107,129 @@ navLinks.forEach((link) => {
     icon.src = iconMap[href]; // Update the src attribute
   }
 });
+
+const notifBtn = document.getElementById("notif-button");
+const notifDropDown = document.getElementById("notificationDropdown");
+notifBtn.addEventListener("click", (event) => {
+  event.preventDefault();
+  const notifList = document.getElementById("notificationList");
+  if (notifDropDown.classList.contains("hidden")) {
+    notifDropDown.classList.remove("hidden");
+    notifList.classList.remove("hidden");
+    renderNotificationsList();
+  } else {
+    notifDropDown.classList.add("hidden");
+    notifList.classList.add("hidden");
+    const notifNewIndicator = document.getElementById("notif-new-indicator");
+    if (notifNewIndicator) {
+      notifNewIndicator.classList.add("hidden");
+    }
+  }
+});
+// Close notif when clicking outside of it
+window.addEventListener("click", function (event) {
+  // If the click is outside both the button and the dropdown, close it
+  if (
+    notifDropDown &&
+    !notifDropDown.contains(event.target) &&
+    notifBtn &&
+    !notifBtn.contains(event.target)
+  ) {
+    notifDropDown.classList.add("hidden");
+  }
+});
+
+async function renderNotificationsList() {
+  const response = await fetch("/api/notifications");
+  if (!response.ok) {
+    console.error("Failed to fetch notifications");
+    return "Failed to fetch notifications.";
+  }
+
+  const notifData = await response.json();
+  const notifList = document.getElementById("notificationList");
+  notifList.innerHTML = ""; // Clear previous notifications
+
+  notifData.forEach((notif) => {
+    const notifItem = document.createElement("li");
+    notifItem.className =
+      "flex items-center justify-between p-2 hover:bg-gray-100";
+    notifItem.innerHTML = `
+    <div class="flex w-full items-center">
+      <div class="flex-shrink-0 mr-2">
+        <div class="h-4 w-4 ${
+          notif.isRead ? "hidden" : ""
+        } rounded-full bg-blue-900 animate-pulse"></div>
+      </div>
+      <div class="flex flex-col flex-1 min-w-0">
+        <h1 class="font-semibold text-sm">${notif.notif_type}</h1>
+        <p class="block text-xs text-ellipsis break-words overflow-hidden">${
+          notif.message
+        }</p>
+      </div>
+      <span class="text-xs w-20 flex-shrink-0 text-gray-500 text-right">
+        ${notif.date_created}
+      </span>
+    </div>
+    `;
+    notifList.appendChild(notifItem);
+  });
+}
+
+function renderSampleNotifications() {
+  const notifList = document.getElementById("notificationList");
+  notifList.innerHTML = ""; // Clear previous notifications
+
+  const sampleNotifs = [
+    {
+      notif_type: "Payment",
+      message: "Your payroll for June is now available.",
+      date_created: "2025-06-10",
+      isRead: false,
+    },
+    {
+      notif_type: "Request",
+      message: "A new leave request has been submitted.",
+      date_created: "2025-06-09",
+      isRead: true,
+    },
+    {
+      notif_type: "System",
+      message:
+        "System maintenance scheduled for June 12. dgfssssssssssssssssssssssssssssss addafd asdfsaf  asfaea fefewwegrgdrs",
+      date_created: "2025-06-08",
+      isRead: false,
+    },
+    {
+      notif_type: "Reminder",
+      message: "Please update your profile information.",
+      date_created: "2025-06-07",
+      isRead: true,
+    },
+  ];
+
+  sampleNotifs.forEach((notif) => {
+    const notifItem = document.createElement("li");
+    notifItem.className =
+      "flex items-center justify-between p-2 hover:bg-gray-100";
+    notifItem.innerHTML = `
+    <div class="flex w-full items-center">
+      <div class="flex-shrink-0 mr-2">
+        <div class="h-4 w-4 ${
+          notif.isRead ? "hidden" : ""
+        } rounded-full bg-blue-900 animate-pulse"></div>
+      </div>
+      <div class="flex flex-col flex-1 min-w-0">
+        <h1 class="font-semibold text-sm">${notif.notif_type}</h1>
+        <p class="block text-xs text-ellipsis break-words overflow-hidden">${
+          notif.message
+        }</p>
+      </div>
+      <span class="text-xs w-20 flex-shrink-0 text-gray-500 text-right">
+        ${notif.date_created}
+      </span>
+    </div>
+    `;
+    notifList.appendChild(notifItem);
+  });
+}

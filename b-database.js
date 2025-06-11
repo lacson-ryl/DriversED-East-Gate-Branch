@@ -2531,3 +2531,52 @@ export async function deleteVehicle(rowID) {
     throw error;
   }
 }
+
+export async function addNotification(userId, role, type, message) {
+  try {
+    const query = `
+    INSERT INTO notifications (user_role, user_id, notif_type, message)
+    VALUES (?, ?, ?, ?)
+    `;
+    const [result] = await pool.query(query, [role, userId, type, message]);
+    return result;
+  } catch (error) {
+    console.error("Error marking notifications as read:", error);
+    throw error;
+  }
+}
+
+export async function getNotifications(userId, role) {
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+
+    const [result] = await connection.query(
+      `SELECT notif_type, message, DATE_FORMAT(date_created, '%Y-%m-%d') AS date_created, isRead
+       FROM notifications
+       WHERE user_id = ? AND user_role = ?
+       ORDER BY date_created DESC`,
+      [userId, role]
+    );
+
+    // Pass the connection to the helper!
+    await markReadNotifications(userId, role, connection);
+
+    await connection.commit();
+    return result;
+  } catch (error) {
+    await connection.rollback();
+    throw error;
+  } finally {
+    connection.release();
+  }
+}
+
+// Helper function that uses the same connection
+export async function markReadNotifications(userId, role, connection) {
+  const [result] = await connection.query(
+    `UPDATE notifications SET isRead = 1 WHERE user_id = ? AND user_role = ? AND isRead = 0`,
+    [userId, role]
+  );
+  return result;
+}

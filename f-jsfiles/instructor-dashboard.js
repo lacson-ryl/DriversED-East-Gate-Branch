@@ -139,7 +139,7 @@ function renderAttendanceTable(dataList) {
 
       return `
         <div class="collapsible-section">
-          <button class="flex justify-between collapsible-header bg-sky-500 text-white px-4 py-2 w-full text-left font-semibold">
+          <button class="flex justify-between collapsible-header bg-sky-500 text-white px-4 py-2 w-full text-left font-semibold z-10">
             ${date} - ${groupedData[date].length}
             <img id="collapsible-icon" src="/f-css/solid/icons_for_buttons/chevron-down.svg" class="w-4 h-4 place-self-center" />
           </button>

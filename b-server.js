@@ -318,6 +318,7 @@ import {
   deletePaymentInfo,
   getUserPaymentsLogs,
   saveAdminAccount,
+  getNotifications,
 } from "./b-database.js";
 
 import {
@@ -2394,6 +2395,23 @@ app.delete("/api/vehicles/:rowID", authenticateToken, async (req, res) => {
     return res.status(500).json({ error: "Internal Server Error" });
   }
 });
+
+app.get(
+  "/api/notifications",
+  authenticateToken,
+  authorizeRole(["user", "admin", "instructor"]),
+  async (req, res) => {
+    try {
+      const { userId, role } = req.user;
+
+      const notifData = await getNotifications(userId, role);
+      res.status(200).json(notifData);
+    } catch (error) {
+      console.error("failed to fetch notifications", error);
+      res.status(500).json({ message: "failed to fetch notifications" });
+    }
+  }
+);
 
 app.get(
   "/instructor-payment",

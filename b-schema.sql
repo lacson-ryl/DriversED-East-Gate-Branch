@@ -326,7 +326,16 @@ CREATE TABLE
         date_created TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
 
-
+CREATE TABLE
+    notifications (
+        notification_id INT AUTO_INCREMENT PRIMARY KEY,
+        user_role VARCHAR(20) NOT NULL,
+        user_id INT NOT NULL,
+        notif_type VARCHAR(50) NOT NULL,
+        message TEXT NOT NULL,
+        isRead BOOLEAN DEFAULT false,
+        date_created TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
 
 INSERT INTO
     instructor_payroll_history (

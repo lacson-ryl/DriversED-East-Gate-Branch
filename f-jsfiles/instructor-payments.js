@@ -44,7 +44,8 @@ function renderWeeklyPayments(data) {
   const weeklyHistoryData = details.weeklyHistoryData;
   const currentWeekPayrollData = details.currentWeekPayrollData;
 
-  let tableRows = weeklyHistoryData
+  let desktopRows = "";
+  desktopRows = weeklyHistoryData
     .map(
       (arr) => `
           <tr class="text-center hover:outline outline-1 outline-black">
@@ -64,7 +65,7 @@ function renderWeeklyPayments(data) {
             }</td>
             <td class="border border-gray-300 px-4 py-2">${arr.benefits}</td>
              <td class=" border border-gray-300 px-4 py-2">
-              <button class="request-status-btn hover:outline outline-2 outline-gray-500 rounded-md px-1" data-id="${
+              <button class="paid-status-btn hover:outline outline-2 outline-gray-500 rounded-md px-1" data-id="${
                 arr.payroll_id
               }">
                 ${
@@ -74,13 +75,62 @@ function renderWeeklyPayments(data) {
                 }</button></td>
             <td class="border border-gray-300 px-4 py-2">
               <button data-id="${arr.instructor_id}"
-                class="instructor-edit-btn bg-blue-700 hover:bg-gradient-to-t from-sky-400 to-sky-800 text-white rounded-md px-2">Edit</button>
+                class="weekly-payroll-edit-btn bg-blue-700 hover:bg-gradient-to-t from-sky-400 to-sky-800 text-white rounded-md px-2">Edit</button>
             </td>
           </tr>
         `
     )
     .join("");
 
+  let mobileRows = "";
+  mobileRows = weeklyHistoryData
+    .map((arr) => {
+      return `
+        <!-- Mobile Row -->
+        <tr class="border-b">
+          <td colspan="5" class="px-2 py-2">
+            <div class="flex flex-col gap-3">
+              <div class="flex justify-between">
+                <div>
+                  <span>ID:</span>
+                  <span class="font-semibold">${arr.payroll_id}</span>
+                </div>
+                <div>Date Started: <br><strong>${arr.date_start}</strong> </div>
+                <div>Date Ended: <br><strong>${arr.date_end}</strong></div>
+              </div>
+              <div class="flex justify-between">
+                <div>Rate per Hour: ${arr.rate_per_hour}</div>
+                <div>Attended Hours: ${arr.attended_hours}</div>
+                <div>Income: ${arr.attended_hours * arr.rate_per_hour}</div>
+              </div>
+              <div class="flex justify-between">
+                <button data-id="${arr.instructor_id}"
+                  class="weekly-payroll-edit-btn bg-blue-700 hover:bg-gradient-to-t from-sky-400 to-sky-800 text-white rounded-md px-2">Edit
+                </button>
+                <div>
+                  <span>Paid:</span>
+                  <button class="paid-status-btn hover:outline outline-2 outline-gray-500 rounded-md px-1" data-id="${
+                    arr.payroll_id
+                  }">
+                    ${
+                      arr.isPaid == "TRUE"
+                        ? '<div class="text-green-700 hover:font-semibold rounded-md">Yes</div>'
+                        : '<div class="text-red-700 hover:font-semibold rounded-md">No</div>'
+                    }
+                  </button>
+                </div>
+                
+                <div>Benefits: ${arr.benefits}</div>
+
+              </div>
+            </div>
+          </td>
+        </tr>
+        `;
+    })
+    .join("");
+
+  const tableRows = window.innerWidth > 768 ? desktopRows : mobileRows;
   return `
           <p>Current Week </p>
           ${renderCurrentWeekPayTable(currentWeekPayrollData)}
@@ -88,7 +138,7 @@ function renderWeeklyPayments(data) {
           <p class="mt-5">Weekly History</p>
           <table id="weekly-payroll-table" class="w-full mt-7 text-sm text-center font-normal justify-items-start table-fixed border-collapse border-2 border-gray-300">
             <thead>
-              <tr>
+              <tr class=" md:table-row hidden">
                 <th class="border border-gray-300 px-4 py-2 w-10">ID</th>
                 <th class="border border-gray-300 px-4 py-2">Instructor Name - Rate / Hour</th>
                 <th class="border border-gray-300 px-4 py-2 w-32">Date</th>
@@ -173,7 +223,9 @@ function renderMonthlyPayments(data) {
   if (!data) {
     return "<p>No payroll data available.</p>";
   }
-  let tableRows = details
+
+  let desktopRows = "";
+  desktopRows = details
     .map(
       (arr) => `
           <tr class="text-center hover:outline outline-1 outline-black">
@@ -211,10 +263,55 @@ function renderMonthlyPayments(data) {
     )
     .join("");
 
+  let mobileRows = "";
+  mobileRows = details
+    .map((arr) => {
+      return `
+        <!-- Mobile Row -->
+        <tr class="border-b border-b-gray-700">
+          <td colspan="5" class="px-2 py-2">
+            <div class="flex flex-col gap-3">
+              <div class="flex justify-between">
+                <div>
+                  <span>ID:</span>
+                  <span class="font-semibold">${arr.payroll_id}</span>
+                </div>
+                <div>Date Started: <br><strong>${arr.date_start}</strong> </div>
+                <div>Date Ended: <br><strong>${arr.date_end}</strong></div>
+              </div>
+              <div class="flex justify-between">
+                <div>Rate per Hour: <br> ${arr.rate_per_hour}</div>
+                <div>Attended Hours: <br> ${arr.attended_hours}</div>
+                <div>Income: <br> ${arr.gross_income}</div>
+                <div>Benefits: <br> ${arr.benefits}</div>
+              </div>
+              <div class="flex justify-between">
+                <div>
+                  <span>Paid:</span>
+                  <button class="paid-status-btn hover:outline outline-2 outline-gray-500 rounded-md px-1" data-id="${
+                    arr.payroll_id
+                  }">
+                    ${
+                      arr.isPaid == "TRUE"
+                        ? '<div class="text-green-700 hover:font-semibold rounded-md">Yes</div>'
+                        : '<div class="text-red-700 hover:font-semibold rounded-md">No</div>'
+                    }
+                  </button>
+                </div>
+                <div>Net Income: ${arr.net_income}</div>
+              </div>
+            </div>
+          </td>
+        </tr>
+        `;
+    })
+    .join("");
+
+  const tableRows = window.innerWidth > 768 ? desktopRows : mobileRows;
   return `
           <table id="monthly-payroll-table" class="w-full text-sm text-center font-normal justify-items-start table-fixed border-collapse border-2 border-gray-300">
             <thead>
-              <tr>
+              <tr class="hidden md:table-row">
                 <th class="border border-gray-300 px-4 py-2 w-10">ID</th>
                 <th class="border border-gray-300 px-4 py-2">Instructor Name - Rate / Hour</th>
                 <th class="border border-gray-300 px-4 py-2 w-32">Date</th>
