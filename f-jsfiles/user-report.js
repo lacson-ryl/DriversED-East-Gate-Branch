@@ -1,19 +1,6 @@
-function getCookie(name) {
-  const value = `; ${document.cookie}`;
-  const parts = value.split(`; ${name}=`);
-  if (parts.length === 2) return parts.pop().split(";").shift();
-  return null; // Return null if the cookie is not found
-}
-
 const fetchUserReportList = async () => {
-  const userId = getCookie("userId"); // Get the userId from the cookie
-  if (!userId) {
-    console.error("User ID not found in cookies");
-    return;
-  }
-
   try {
-    const response = await fetch(`/api/user-reports/${userId}`, {
+    const response = await fetch(`/api/user-reports`, {
       headers: { "Content-Type": "application/json" },
     });
     const data = await response.json();
@@ -26,13 +13,111 @@ const fetchUserReportList = async () => {
 async function renderReportTable() {
   const reportTable = document.getElementById("reportTable");
   const reportList = await fetchUserReportList();
-  if (!reportList) return;
+  if (!Array.isArray(reportList) || reportList.length === 0) {
+    reportTable.innerText = "No report found.";
+  } else {
+    const desktopRows = reportList
+      .map(
+        (arr) =>
+          `
+          <tr class="text-center hover:outline outline-1 outline-black">
+            <td class="border border-gray-300 px-4 py-2">${arr.report_id}</td>
+            <td class="border border-gray-300 px-4 py-2 truncate">${
+              arr.report_title
+            }</td>
+            <td class="border border-gray-300 px-4 py-2">
+              <button
+                class="report-details-btn outline outline-2 outline-gray-500 hover:font-semibold text-black rounded-md px-2"
+                data-id="${arr.report_id}">
+                Details
+              </button>
+            </td>
+            <td class="border border-gray-300 px-4 py-2 truncate">${
+              arr.date_created
+            }</td>
+            <td class="border border-gray-300 px-4 py-2 truncate">
+              ${
+                arr.status == "Accept"
+                  ? '<div class="text-green-600 font-semibold rounded-md px-2">Accepted</div>'
+                  : arr.status == "Deny"
+                  ? '<div class="text-red-600 font-semibold rounded-md px-2">Denied</div>'
+                  : '<div class="text-gray-600 font-semibold rounded-md px-2">Pending</div>'
+              }
+            </td>
+            <td class="border border-gray-300 px-4 py-2 truncate">
+              ${!arr.reason ? "Waiting for the admin's response" : arr.reason}
+            </td>
+          </tr>
+        `
+      )
+      .join("");
 
-  const reportTableContents = `
+    const mobileRows = reportList
+      .map(
+        (arr) => `
+    <tr class="border-b">
+      <td colspan="6" class="p-3">
+        <div class="flex flex-col gap-3 text-sm">
+
+          <!-- Top Info: ID and Title -->
+          <div class="flex justify-between">
+            <div>
+              <p class="text-gray-500">Report ID</p>
+              <p class="font-semibold">${arr.report_id}</p>
+            </div>
+            <div>
+              <p class="text-gray-500">Title</p>
+              <p class="truncate">${arr.report_title}</p>
+            </div>
+          </div>
+
+          <!-- Date and Status -->
+          <div class="flex justify-between items-center">
+            <div>
+              <p class="text-gray-500">Created</p>
+              <p class="text-xs">${arr.date_created}</p>
+            </div>
+            <div class="">
+              <button class="report-details-btn outline outline-2 outline-gray-500 hover:font-semibold text-black rounded-md px-2"
+                data-id="${arr.report_id}">
+                Details
+              </button>
+            </div>
+            <div>
+              <p class="text-gray-500">Status</p>
+              <div class="px-2 py-1 rounded-md text-xs font-medium">
+              ${
+                arr.status == "Accept"
+                  ? '<div class="text-green-600 font-semibold rounded-md px-2">Accepted</div>'
+                  : arr.status == "Deny"
+                  ? '<div class="text-red-600 font-semibold rounded-md px-2">Denied</div>'
+                  : '<div class="text-gray-600 font-semibold rounded-md px-2">Pending</div>'
+              }
+              </div>
+            </div>
+          </div>
+
+          <!-- Reason -->
+          <div>
+            <p class="text-gray-500">Admin Response</p>
+            <p class="text-xs truncate">${
+              !arr.reason ? "Waiting for the admin's response" : arr.reason
+            }</p>
+          </div>
+
+        </div>
+      </td>
+    </tr>
+  `
+      )
+      .join("");
+
+    const tableRows = window.innerWidth > 768 ? desktopRows : mobileRows;
+    const reportTableContents = `
         <h2 class="text-lg ml-4 my-2"> Manage Reports</h2>
         <table id="user-report-table" class="w-full mt-3 mb-5 table-fixed border-collapse border-2 border-gray-300">
           <thead class="">
-            <tr>
+            <tr class="text-center hidden md:table-row">
                 <th class="w-10 border border-gray-300 px-4 py-2">ID</th>
                 <th class="border border-gray-300 px-4 py-2">Title</th>
                 <th class="w-24 border border-gray-300 px-4 py-2">Details</th>
@@ -42,52 +127,16 @@ async function renderReportTable() {
             </tr>
           </thead>
           <tbody class="">
-            ${reportList
-              .map(
-                (arr) => `
-              <tr class="text-center hover:outline outline-1 outline-black">
-                <td class="border border-gray-300 px-4 py-2">${
-                  arr.report_id
-                }</td>
-                <td class="border border-gray-300 px-4 py-2 truncate">${
-                  arr.report_title
-                }</td>
-                <td class="border border-gray-300 px-4 py-2">
-                  <button class="report-details-btn outline outline-2 outline-gray-500 hover:font-semibold text-black rounded-md px-2" data-id="${
-                    arr.report_id
-                  }">
-                    Details
-                  </button>
-                </td>
-                <td class="border border-gray-300 px-4 py-2 truncate">${
-                  arr.date_created
-                }</td>
-                <td class="border border-gray-300 px-4 py-2 truncate">${
-                  arr.status == "Accept"
-                    ? '<div class="text-green-600 font-semibold rounded-md px-2">Accepted</div>'
-                    : arr.status == "Deny"
-                    ? '<div class="text-red-600 font-semibold rounded-md px-2">Denied</div>'
-                    : '<div class="text-gray-600 font-semibold rounded-md px-2">Pending</div>'
-                }</td>
-                <td class="border border-gray-300 px-4 py-2 truncate">${
-                  !arr.reason ? "Waiting for the admin's response" : arr.reason
-                }</td>
-              </tr>`
-              )
-              .join("")}
+            ${tableRows}
           </tbody>
         </table>
-        <div id="myModal" class="fixed inset-0 z-50 items-center justify-center hidden bg-gray-900 bg-opacity-50">
-          <div class="relative bg-white rounded-lg shadow-lg min-w-screen-md max-w-screen-md p-6">
-            <span class="close absolute top-0 right-2 text-3xl font-semibold text-gray-700 hover:text-gray-900 cursor-pointer">&times;</span>
-            <h2 class="text-xl font-semibold">Report Details</h2>
-            <p id="modal-details" class="min-w-96 mt-4">the details</p>
-          </div>
-        </div>
         `;
-  reportTable.innerHTML = reportTableContents;
+    reportTable.innerHTML = reportTableContents;
+  }
   allButtons();
 }
+
+renderReportTable();
 
 function allButtons() {
   const modal = document.getElementById("myModal");
@@ -100,19 +149,19 @@ function allButtons() {
       event.preventDefault();
       const titleReport = document.getElementById("title-report").value;
       const detailsReport = document.getElementById("details-report").value;
-      const userID = getCookie("userId");
 
       try {
         const response = await fetch("/api/submit-report", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ titleReport, detailsReport, userID }),
+          body: JSON.stringify({ titleReport, detailsReport }),
         });
 
         if (response.ok) {
           alert(`Report Successfully Submitted`);
           renderReportTable();
         } else {
+          const data = await response.json();
           alert(`Error: ${data.error}`);
         }
       } catch (error) {
@@ -124,11 +173,9 @@ function allButtons() {
   document.querySelectorAll(".report-details-btn").forEach((button) => {
     button.addEventListener("click", async function () {
       const reportId = this.getAttribute("data-id");
-      const userId = getCookie("userId");
-      console.log(`Button clicked for report ID: ${reportId}`); // Debugging log
 
       try {
-        const response = await fetch(`api/user-reports/${userId}/${reportId}`);
+        const response = await fetch(`api/user-reports/${reportId}`);
         const data = await response.json();
         console.log(`Fetched details for report ID ${reportId}:`, data); // Debugging log
         if (response.ok) {
@@ -138,8 +185,10 @@ function allButtons() {
                     <p>${data.report_title}</p>
                 </div>
                 <div class="mb-4">
-                    <h3 class="text-xl font-semibold">Details</h3>
-                    <p>${data.report_details}</p>
+                    <h3 class="text-xl font-semibold ">Details</h3>
+                    <p class="overflow-clip text-clip">${
+                      data.report_details
+                    }</p>
                 </div>
                   <div class="mb-4">
                       <h3 class="text-xl font-semibold">Status</h3>
@@ -186,5 +235,3 @@ function allButtons() {
     }
   };
 }
-
-renderReportTable();

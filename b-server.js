@@ -21,6 +21,13 @@ import {
   changePasswordPassport,
   userPassport,
 } from "./b-passport.js";
+
+import {
+  encryptData,
+  decryptData,
+  generateKeyPair,
+  handlePrivateKey,
+} from "./b-encrypt-decrypt.js";
 dotenv.config();
 
 const PORT = process.env.port;
@@ -89,7 +96,12 @@ app.use((req, res, next) => {
     resave: false,
     saveUninitialized: true,
     name: req.sessionName || "defaultSession", // Dynamically set session name
-    cookie: { maxAge: 3600000, httpOnly: true },
+    cookie: {
+      maxAge: 3600000,
+      httpOnly: true,
+      //secure: true, // Requires HTTPS
+      sameSite: "Lax", // Protect against CSRF attacks // (Strict)
+    },
   });
 
   sessionMiddleware(req, res, next);
@@ -134,7 +146,7 @@ app.get(
       { expiresIn: "1h" }
     );
     res.cookie("jwtToken", token, { maxAge: 3600000, httpOnly: true });
-    res.redirect("/admin-dashboard");
+    res.redirect(`/login-success`);
   }
 );
 
@@ -158,7 +170,7 @@ app.get(
     );
 
     res.cookie("jwtToken", token, { maxAge: 3600000, httpOnly: true });
-    res.redirect("/user-dashboard");
+    res.redirect(`/login-success`);
   }
 );
 
@@ -202,7 +214,6 @@ app.get(
         secretKey,
         { expiresIn: "20m" } // Token expires in 20 minutes
       );
-      console.log("token", token);
 
       // Set the JWT as a cookie
       res.cookie("changePasswordToken", token, {
@@ -215,8 +226,32 @@ app.get(
   }
 );
 
+app.post(
+  "/api/public-key/share",
+  authenticateToken,
+  authorizeRole(["user", "instructor", "admin"]),
+  async (req, res) => {
+    try {
+      const clientPublicKey = req.body.clientPublicKey;
+      const { publicKey, privateKey } = generateKeyPair();
+      const { encrypted, iv } = handlePrivateKey(
+        "encrypt",
+        secretKey,
+        privateKey
+      );
+      const { userId, role } = req.user;
+
+      await addPrivKeyForUser(userId, role, encrypted, iv, clientPublicKey);
+      res.status(200).json({ serverPublicKey: publicKey });
+    } catch (error) {
+      console.error("Error sharing public key:", error);
+      res.status(500).json({ error: "Failed to share public key." });
+    }
+  }
+);
+
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
+  windowMs: 5 * 60 * 1000, // 15 minutes
   max: 100, // Limit each IP to 100 requests per windowMs
   message: "Too many requests, please try again later.",
 });
@@ -228,6 +263,8 @@ const upload = multer({ storage: storage });
 
 // import database queries
 import {
+  addPrivKeyForUser,
+  getPrivKeyWithUserId,
   findAccountForChangingPassOrEmail,
   findAccountByPRN,
   updateUserCredential,
@@ -330,6 +367,12 @@ import {
 
 import { sendEmail } from "./b-email-config.js";
 import { get } from "http";
+
+app.get("/login-success", authenticateToken, (req, res) => {
+  res.render("login-loading", {
+    role: req.user.role,
+  });
+});
 
 app.get("/user-registration-form", (req, res) => {
   res.render("user-registration-form");
@@ -470,11 +513,13 @@ app.get("/api/user-profile", authenticateToken, async (req, res) => {
   try {
     const id = req.user.userId;
     const userProfileDetails = await getProfilewithUserId(id);
-    console.log("userProfileDetails1", userProfileDetails);
-    const profilePicture = `data:image/png;base64,${userProfileDetails.profile_picture.toString(
-      "base64"
-    )}`;
-    userProfileDetails.profile_picture = profilePicture;
+    console.log("userProfileDetails", userProfileDetails);
+    const profilePicture = userProfileDetails
+      ? `data:image/png;base64,${userProfileDetails.profile_picture.toString(
+          "base64"
+        )}`
+      : null;
+    if (profilePicture) userProfileDetails.profile_picture = profilePicture;
 
     const courseList = await getTraineeCourseList(id);
     const userCourseInfoList = courseList.map((course) => ({
@@ -508,8 +553,6 @@ app.post("/api/user-registration", async (req, res) => {
     // Check if email already exists in the database
     try {
       const existingUser = await checkEmail(email);
-      console.log("existingUser", existingUser);
-
       if (existingUser) {
         return res.status(400).json({ error: "Email already exists" });
       }
@@ -578,13 +621,8 @@ app.post("/user-login", async (req, res) => {
           maxAge: 3600000,
           httpOnly: true,
         });
-        res.cookie("userId", user.user_id, { maxAge: 3600000 });
-
-        console.log("Token set in cookie:", token); // Add logging for token
-
         return res.status(200).json({
           message: "User login successful",
-          token: token,
         });
       } else {
         return res
@@ -865,31 +903,26 @@ app.get(
 
 app.post("/api/submit-request", authenticateToken, async (req, res) => {
   try {
-    const { titleRequest, detailsRequest, userID } = req.body;
+    console.log(req.user);
+    const userID = req.user.userId;
+    const { titleRequest, detailsRequest } = req.body;
     if (!titleRequest || !detailsRequest) {
       res.status(400).json({ error: "Please Provide all fields!" });
       return;
-    } else {
-      const requestId = await addUserRequest(
-        titleRequest,
-        detailsRequest,
-        userID
-      );
-      res
-        .status(201)
-        .json({ message: "Request added successfully", requestId });
     }
+    await addUserRequest(titleRequest, detailsRequest, userID);
+    res.status(200).json({ message: "Request added successfully" });
   } catch (error) {
     console.error("Internal server error:", error);
     return res.status(500).json({ error: "Internal server error!" });
   }
 });
 
-app.get("/api/user-requests/:id", authenticateToken, async (req, res) => {
+app.get("/api/user-requests", authenticateToken, async (req, res) => {
   try {
-    const id = req.params.id;
+    const id = req.user.userId;
     const data = await getUserRequest(id);
-    res.json(data);
+    res.status(200).json(data);
   } catch (err) {
     console.log("Error fetching data: ", err);
     res.status(500).send("Internal Server Error");
@@ -897,14 +930,14 @@ app.get("/api/user-requests/:id", authenticateToken, async (req, res) => {
 });
 
 app.get(
-  "/api/user-requests/:userId/:requestId",
+  "/api/user-requests/:requestId",
   authenticateToken,
   async (req, res) => {
     try {
-      const userID = req.params.userId;
+      const userID = req.user.userId;
       const requestId = req.params.requestId;
       const data = await getUserDetailRequest(userID, requestId);
-      res.json(data);
+      res.status(200).json(data);
     } catch (err) {
       console.log("Error fetching data: ", err);
       res.status(500).send("Internal Server Error");
@@ -928,7 +961,8 @@ app.get(
 
 app.post("/api/submit-report", authenticateToken, async (req, res) => {
   try {
-    const { titleReport, detailsReport, userID } = req.body;
+    const userID = req.user.userId;
+    const { titleReport, detailsReport } = req.body;
     if (!titleReport || !detailsReport) {
       return res.status(400).json({ error: "Please Provide all fields!" });
     } else {
@@ -941,9 +975,9 @@ app.post("/api/submit-report", authenticateToken, async (req, res) => {
   }
 });
 
-app.get("/api/user-reports/:id", authenticateToken, async (req, res) => {
+app.get("/api/user-reports", authenticateToken, async (req, res) => {
   try {
-    const id = req.params.id;
+    const id = req.user.userId;
     const data = await getUserReport(id);
     res.json(data);
   } catch (err) {
@@ -952,9 +986,9 @@ app.get("/api/user-reports/:id", authenticateToken, async (req, res) => {
   }
 });
 
-app.get("/api/user-reports/:userId/:reportId", async (req, res) => {
+app.get("/api/user-reports/:reportId", authenticateToken, async (req, res) => {
   try {
-    const userID = req.params.userId;
+    const userID = req.user.userId;
     const reportId = req.params.reportId;
     const data = await getUserDetailReport(userID, reportId);
     res.json(data);
@@ -1055,9 +1089,6 @@ app.post("/api/admin-registration", async (req, res) => {
     };
     const userId = await saveAdminAccount(newUser);
 
-    // Generate a JWT token
-    const token = jwt.sign({ userId }, secretKey, { expiresIn: "1h" });
-
     await sendEmail("new-account", email, {
       name: admin_name,
       email: user_email,
@@ -1066,9 +1097,7 @@ app.post("/api/admin-registration", async (req, res) => {
     });
 
     // Send a successful response with the token
-    return res
-      .status(201)
-      .json({ message: "Admin registered successfully", token });
+    return res.status(201).json({ message: "Admin registered successfully" });
   } catch (error) {
     console.error("Internal server error:", error);
     return res.status(500).json({ error: "Internal server error!" });
@@ -1111,11 +1140,12 @@ app.post("/adminlogin", async (req, res) => {
           maxAge: 3600000,
           httpOnly: true,
         });
-        console.log("Token set in cookie:", token); // Add logging for token
 
-        return res
-          .status(200)
-          .json({ message: "Admin login Successful", token: token });
+        return res.status(200).json({
+          message: `${
+            admin.account_role == "admin" ? "Admin" : "Instructor"
+          } login Successful`,
+        });
       } else {
         return res
           .status(401)
@@ -2719,6 +2749,7 @@ app.get(
           res.clearCookie("adminSession", { path: "/" });
           res.clearCookie("userSession", { path: "/" });
           res.clearCookie("jwtToken", { path: "/" });
+          res.clearCookie("publicKey", { path: "/" });
 
           // Redirect only after clearing cookies
           return res.redirect(logoutLink);
@@ -3208,6 +3239,51 @@ app.post("/certificates-completion-tdc/:type", async (req, res) => {
     res.status(500).send("An error occurred while generating the PDF.");
   }
 });
+
+app.get("/sample", authenticateToken, authorizeRole("user"), (req, res) => {
+  try {
+    res.render("sample");
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "failed to load page", err });
+  }
+});
+
+app.post(
+  "/sample/:type",
+  authenticateToken,
+  authorizeRole("user"),
+  async (req, res) => {
+    const type = req.params.type;
+    const { userId, role } = req.user;
+    const encPrivKey = await getPrivKeyWithUserId(userId, role);
+    const encKey = {
+      encrypted: encPrivKey.encrypted,
+      iv: encPrivKey.iv,
+    };
+    const privKey = handlePrivateKey("decrypt", secretKey, null, encKey);
+    const clientPubKey = encPrivKey.pubKeyWebCrypto;
+    try {
+      if (type == "decrypt") {
+        const { encryptedData, iv, encAesKey } = req.body;
+        const encData = { encryptedData, iv, encAesKey };
+        const decrypted = await decryptData(encData, privKey);
+        console.log("decrypted", decrypted);
+        return res.status(200).json({
+          message: decrypted,
+        });
+      } else if (type == "encrypt") {
+        const { encMsg } = req.body;
+        const dataFromDb = await getUserAccountById(encMsg);
+        const encrypted = encryptData(dataFromDb, clientPubKey);
+        return res.status(200).json({ encrypted });
+      }
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: "failed to load page", err });
+    }
+  }
+);
 
 app.listen(PORT, () => {
   console.log(`Server is running at ${PORT}`);

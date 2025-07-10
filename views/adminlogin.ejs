@@ -85,7 +85,7 @@
                     body: JSON.stringify({ email, password }),
                 })
                 if (response.ok) {
-                    window.location.href = '/admin-dashboard';
+                    window.location.href = '/login-success';
                 } else {
                     const data = await response.json();
                     alert('Error: ' + data.error);

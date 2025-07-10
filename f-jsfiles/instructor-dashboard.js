@@ -298,7 +298,7 @@ function allButtons(dataList) {
           setTimeout(() => {
             modal.style.display = "none";
           }, 3000);
-          renderAttendanceTable(dataList);
+          fetchAttendanceList();
         } else {
           alert(`Can't change status of ID no. ${id}`);
         }

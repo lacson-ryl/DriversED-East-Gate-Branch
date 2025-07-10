@@ -251,7 +251,7 @@ async function renderDetails() {
         </p>
     </div>
 
-    <div>${renderUserCourseTaken(userCourseInfoList)}</div>
+    <div class="gap-4">${renderUserCourseTaken(userCourseInfoList)}</div>
 
     <a id="edit-profile-btn" href="/user-profile-form"
         class="bg-sky-900 hover:bg-red-600 m-auto text-white font-bold py-2 px-4 mt-9 rounded-lg focus:outline-none focus:shadow-outline"
@@ -270,9 +270,10 @@ function renderUserCourseTaken(courseList) {
   if (!courseList) {
     return "";
   }
-  return courseList.map(
-    (course) => `
-    <h3 class="block text-xl text-center font-medium mb-2">${
+  return courseList
+    .map(
+      (course) => `
+    <h3 class="block text-xl text-center font-medium mt-3 mb-2">${
       course.program_name
     }</h3>
     <div class="flex flex-col md:flex-row mb-2 gap-3">
@@ -305,5 +306,6 @@ function renderUserCourseTaken(courseList) {
         </div>
     </div>
     `
-  );
+    )
+    .join("");
 }

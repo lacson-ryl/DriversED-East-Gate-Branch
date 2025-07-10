@@ -24,6 +24,63 @@ function formatDate(date) {
   return `${year}-${month}-${day}`;
 }
 
+export async function addPrivKeyForUser(
+  userId,
+  role,
+  privKey,
+  iv,
+  pubKeyWebCrypto
+) {
+  try {
+    const query = `
+    INSERT INTO user_keys (user_id, user_role, enc_priv_key, priv_key_iv, pub_key_web_crypto )
+    VALUES (?, ?, ?, ?, ?)
+    `;
+    const [result] = await pool.query(query, [
+      userId,
+      role,
+      privKey,
+      iv,
+      pubKeyWebCrypto,
+    ]);
+    return result[0]; //return the latest one
+  } catch (error) {
+    console.error("Failed to add private key", error);
+    throw error;
+  }
+}
+
+export async function getPrivKeyWithUserId(userId, role) {
+  try {
+    const query = `
+     SELECT enc_priv_key AS encrypted, priv_key_iv AS iv, pub_key_web_crypto AS pubKeyWebCrypto
+     FROM user_keys 
+     WHERE user_id = ? AND user_role = ?
+     ORDER BY date_created DESC 
+     LIMIT 1
+    `;
+    const [result] = await pool.query(query, [userId, role]);
+    return result[0]; //return the latest one
+  } catch (error) {
+    console.error("Cant get private key right now!", error);
+    throw error;
+  }
+}
+
+export async function clearKeyStorage() {
+  try {
+    const query = `
+    DELETE *
+    FROM user_keys
+    `;
+    const [result] = await pool.query(query);
+    return result; //return the latest one
+  } catch (error) {
+    console.error("Cant get private key right now!", error);
+    throw error;
+  }
+}
+
 // for change email and password
 export async function findAccountByEmail(email) {
   try {
@@ -2334,6 +2391,7 @@ export async function getTraineeCourseList(userId) {
     throw error;
   }
 }
+
 export async function getTraineeCourseInfo(courseId) {
   const query = `
     SELECT 

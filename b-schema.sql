@@ -337,6 +337,17 @@ CREATE TABLE
         date_created TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
 
+CREATE TABLE
+    user_keys (
+        key_id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NOT NULL,
+        user_role VARCHAR(20) NOT NULL,
+        enc_priv_key TEXT NOT NULL,
+        priv_key_iv VARCHAR(32) NOT NULL,
+        pub_key_web_crypto TEXT NOT NULL,
+        date_created TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+
 INSERT INTO
     instructor_payroll_history (
         instructor_id,

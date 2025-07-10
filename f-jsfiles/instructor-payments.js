@@ -157,9 +157,8 @@ function renderWeeklyPayments(data) {
 function renderCurrentWeekPayTable(data) {
   const details = data;
   const currentDate = new Date().toLocaleDateString();
-  let tableRows = details
-    .map(
-      (arr) => `
+  const desktopRow = details.map(
+    (arr) => `
           <tr class="text-center hover:outline outline-1 outline-black">
             <td class="border border-gray-300 px-4 py-2">${
               arr.instructor_name
@@ -176,13 +175,35 @@ function renderCurrentWeekPayTable(data) {
             }</td>
           </tr>
         `
-    )
-    .join("");
+  );
 
+  const mobileRow = details.map(
+    (arr) => `
+<tr class="border-b">
+  <td colspan="5" class="px-2 py-2">
+    <div class="flex flex-col gap-3">
+      <div class="flex justify-between">
+        <div>
+          <span class="font-semibold">${arr.instructor_name}</span>
+        </div>
+        <div>Rate/hour: <br><strong>${arr.rate_per_hour}</strong> </div>
+        <div>Hour Attended: ${arr.attended_hours}</div>
+      </div>
+      <div class="flex justify-between">
+        <div>Date: <br><strong>${currentDate}</strong></div>
+        <div>Income: ${arr.attended_hours * arr.rate_per_hour}</div>
+      </div>
+      </div>
+    </div>
+  </td>
+</tr>
+  `
+  );
+  const tableRows = window.innerWidth > 768 ? desktopRow : mobileRow;
   return `
           <table id="current-week-payroll-table" class="w-full text-sm text-center font-normal justify-items-start table-fixed border-collapse border-2 border-gray-300">
             <thead>
-              <tr>
+              <tr class=" md:table-row hidden">
                 <th class="border border-gray-300 px-4 py-2">Instructor Name</th>
                 <th class="border border-gray-300 px-4 py-2">Rate / Hour</th>
                 <th class="border border-gray-300 px-4 py-2">Date</th>

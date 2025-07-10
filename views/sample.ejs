@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title></title>
+    <meta name="description" content="">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="">
+    <script type="module">
+        import Dexie from "https://cdn.jsdelivr.net/npm/dexie@3.2.4/dist/dexie.mjs";
+        window.Dexie = Dexie;
+    </script>
+
+</head>
+
+<body>
+    <div>
+        <h1>Check server public keys and private keys</h1>
+        <button id="check-keys-dexie">check</button>
+
+    </div>
+    <p id="public-key-msg"></p>
+    <p id="private-key-msg"></p>
+    <div id="encrypt">
+        <div>
+            <form id="encrypting" action="">
+                <h2>Encrypt Words</h2>
+                <input id="encrypt-msg" type="text" />
+                <button type="submit">Submit</button>
+            </form>
+        </div>
+        <p id="enc-msg-box"></p>
+    </div>
+    <div id="decrypt">
+        <div>
+            <form id="decrypting" action="">
+                <h2>Decrypt from sample table db</h2>
+                <input id="decrypt-msg" type="text" />
+                <button type="submit">Submit</button>
+            </form>
+        </div>
+        <p id="decrypt-msg-box"></p>
+    </div>
+
+    <script type="module" src="../f-jsfiles/sample.js"></script>
+    <script type="module" src="../f-keyManager.js"></script>
+</body>
+
+</html>

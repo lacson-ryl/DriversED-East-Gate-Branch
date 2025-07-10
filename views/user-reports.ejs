@@ -6,26 +6,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>User Reports</title>
     <link href="/f-css/output.css" rel="stylesheet">
-    <style>
-        .side-icons {
-            width: 30px;
-            height: 30px;
-        }
-    </style>
 </head>
 
 <body class="flex flex-row w-full">
     <div id="sidebar-container">
     </div>
-    <div id="main-content" class="block ml-ml-250 w-calc space-y-2">
-        <div id="top-bar" class="flex h-15 flex-row w-full sticky shadow-inner bg-white border-b-2 p-4">
+    <div id="main-content" class="ml-ml-64 h- phone-w-calc md:desktop-w-calc md:ml-[160px] space-y-2">
+        <div id="top-bar" class="flex flex-row w-full sticky shadow-inner bg-white border-b-2 p-4 mb-5 opacity-95">
             <div id="left-side" class="flex flex-row gap-4 relative">
-                <button class="relative">
-                    <img id="notif-logo" src="/f-css/solid/bell.svg" class="w-7 h-7 inline-block" />
-                    <div
-                        class="h-3 w-3 rounded-full bg-blue-900 absolute top-2 right-2 transform translate-x-1/2 -translate-y-1/2 animate-pulse">
-                    </div>
-                </button> <img id="company-logo" src="/f-css/solid/car-front.svg" class="w-8 h-8" />
+                <div>
+                    <button id="notif-button" class="relative">
+                        <img id="notif-logo" src="/f-css/solid/bell.svg" class="w-7 h-7 inline-block" />
+                        <div id="notif-new-indicator"
+                            class="h-3 w-3 rounded-full bg-blue-900 absolute top-2 right-2 transform translate-x-1/2 -translate-y-1/2 animate-pulse">
+                        </div>
+                    </button>
+                </div>
+                <img id="company-logo" src="/f-css/solid/drivers_ed_logo-no-bg.png" class="w-20 h-8" />
             </div>
             <div id="right-side" class="absolute right-4 text-lg">
                 Reports
@@ -33,7 +30,7 @@
         </div>
 
         <div id="content" class="flex flex-col w-full items-center">
-            <div class="bg-slate-200 p-10 rounded-lg shadow-lg w-full max-w-screen-md my-2">
+            <div class="bg-slate-200 p-5 md:p-8 rounded-lg shadow-lg w-full max-w-screen-md my-2">
                 <h1 class="text-2xl text-center mb-5 font-bold text-blue-900">User Report</h1>
                 <form id="report-form">
                     <div class="mb-4">
@@ -47,8 +44,6 @@
                         <textarea id="details-report" name="details-report" type="textbox"
                             class="shadow-md appearance-none border rounded w-full min-h-40 py-2 px-3 text-gray-700 leading-tight hover:border-blue-900 focus:outline-none focus:border-blue-900"></textarea>
                     </div>
-
-                    <input type="hidden" id="userIDReport" name="userID" />
 
                     <button id="submit-report-btn"
                         class="bg-sky-900 hover:bg-red-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
@@ -65,9 +60,18 @@
 
         </div>
     </div>
+
+    <div id="myModal" class="fixed inset-0 z-50 items-center justify-center hidden bg-gray-900 bg-opacity-50">
+        <div class="relative bg-white rounded-lg shadow-lg min-w-96 max-w-screen-md p-6">
+            <span
+                class="close absolute top-0 right-2 text-3xl font-semibold text-gray-700 hover:text-gray-900 cursor-pointer">&times;</span>
+            <h2 class="text-xl font-semibold">Report Details</h2>
+            <p id="modal-details" class="min-w-96 mt-4">the details</p>
+        </div>
+    </div>
     <script>
 
-        document.addEventListener('DOMContentLoaded', async () => {
+        document.addEventListener('DOMContentLoaded', () => {
             try {
                 // Since the response is not JSON, just log the success
                 console.log('User dashboard accessed successfully');

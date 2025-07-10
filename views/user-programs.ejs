@@ -6,11 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>User Program Enroll</title>
     <link href="/f-css/output.css" rel="stylesheet">
-    <style>
-        .side-icons {
-            width: 30px;
-            height: 30px;
-        }
+    <style> 
 
         .calendar {
             display: grid;
@@ -54,18 +50,21 @@
     </style>
 </head>
 
-<body class="flex flex-row w-full over">
+<body class="flex flex-row w-full">
     <div id="sidebar-container">
     </div>
-    <div id="main-content" class="block ml-ml-250 w-calc space-y-2">
-        <div id="top-bar" class="flex h-15 flex-row w-full sticky shadow-inner bg-white border-b-2 p-4">
+      <div id="main-content" class="ml-ml-64 h- phone-w-calc md:desktop-w-calc md:ml-[160px] space-y-2">
+        <div id="top-bar" class="flex flex-row w-full sticky shadow-inner bg-white border-b-2 p-4 mb-5 opacity-95">
             <div id="left-side" class="flex flex-row gap-4 relative">
-                <button class="relative">
-                    <img id="notif-logo" src="/f-css/solid/bell.svg" class="w-7 h-7 inline-block" />
-                    <div
-                        class="h-3 w-3 rounded-full bg-blue-900 absolute top-2 right-2 transform translate-x-1/2 -translate-y-1/2 animate-pulse">
-                    </div>
-                </button> <img id="company-logo" src="/f-css/solid/car-front.svg" class="w-8 h-8" />
+                <div>
+                    <button id="notif-button" class="relative">
+                        <img id="notif-logo" src="/f-css/solid/bell.svg" class="w-7 h-7 inline-block" />
+                        <div id="notif-new-indicator"
+                            class="h-3 w-3 rounded-full bg-blue-900 absolute top-2 right-2 transform translate-x-1/2 -translate-y-1/2 animate-pulse">
+                        </div>
+                    </button>
+                </div>
+                <img id="company-logo" src="/f-css/solid/drivers_ed_logo-no-bg.png" class="w-20 h-8" />
             </div>
             <div id="right-side" class="absolute right-4 text-lg">
                 Programs
@@ -175,6 +174,14 @@
             }
         });
     </script>
+    <div id="notificationDropdown"
+        class="hidden absolute w-72 max-h-80 overflow-auto bg-white shadow-lg rounded border border-black"
+        style="z-index: 99999;">
+        <div class="p-2">
+            <h3 class="font-semibold">Recent Notifications</h3>
+            <ul id="notificationList" class="text-sm"></ul>
+        </div>
+    </div>
 </body>
 
 </html>

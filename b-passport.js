@@ -83,7 +83,6 @@ userPassport.use(
         const email = profile.emails[0].value;
         const existingUser = await checkEmail(email);
         if (existingUser) {
-          console.log("existingUser", existingUser);
           return done(null, existingUser);
         } else {
           const random8CharacPass = generateTemporaryPassword(8);
@@ -115,16 +114,13 @@ userPassport.use(
 );
 
 userPassport.serializeUser((user, done) => {
-  console.log("Serializing user:", user);
   done(null, { id: user.user_id, userType: "user" });
 });
 
 userPassport.deserializeUser(async (obj, done) => {
   try {
     if (obj.userType === "user") {
-      console.log("Deserializing user with ID:", obj.id);
       const user = await getUserAccountById(obj.id);
-      console.log("Deserialized user:", user);
       return done(null, user);
     } else {
       return done(

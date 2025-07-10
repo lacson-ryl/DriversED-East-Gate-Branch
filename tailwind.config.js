@@ -44,8 +44,11 @@ module.exports = {
           ".h-calc": {
             heigth: "calc(100% - 56px)",
           },
+          ".desktop-w-calc": {
+            width: "calc(100% - 160px)",
+          },
           ".phone-w-calc": {
-            width: "calc(100% - 64px)", // Example for phone main content width considering sidebar
+            width: "calc(100% - 64px)",
           },
           ".max-h-data-table": {
             maxHeight: "30rem",

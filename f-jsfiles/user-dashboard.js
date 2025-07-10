@@ -68,7 +68,7 @@ async function renderUserCourseCards() {
                 }</h2>
                 <div class="flex justify-between items-center gap-3">
                   <div class="w-2/3 ">
-                    <div class="flex h-5 w-full overflow-hidden rounded-md bg-neutral-50 dark:bg-white outline outline-1 outline-gray-200 z-40"
+                    <div class="flex h-5 w-full overflow-hidden rounded-md bg-neutral-50 dark:bg-white outline outline-1 outline-gray-200"
                         role="progressbar" aria-label="default progress bar" aria-valuenow="${progress}" aria-valuemin="0"
                         aria-valuemax="100">
                       <div class="h-full rounded-md bg-blue-500 p-0.5 text-center  text-sm font-semibold leading-none text-black"
@@ -121,9 +121,6 @@ async function renderUserCourseCards() {
   // Initialize Swiper only if there are courses
   const userCourseSwiper = new Swiper(".swiper1", {
     direction: "horizontal",
-    slidesPerView: 3,
-    centeredSlides: true,
-    spaceBetween: 10,
     pagination: {
       el: ".swiper-pagination1",
       clickable: true,
@@ -133,6 +130,19 @@ async function renderUserCourseCards() {
       prevEl: ".swiper-button-prev1",
     },
     grabbingCursor: true,
+    breakpoints: {
+      // When window width is >= 0px (mobile)
+      0: {
+        slidesPerView: 1,
+        centeredSlides: true,
+        spaceBetween: 30,
+      },
+      // When window width is >= 768px (desktop)
+      768: {
+        slidesPerView: 3,
+        centeredSlides: true,
+      },
+    },
   });
 
   allButtons();
@@ -249,17 +259,16 @@ async function renderCourseCards() {
                     <h1 class="text-2xl mb-2 font-bold text-gray-800">${
                       program.program_name
                     }</h1>
-                    <p class="text-green-700 font-semibold">${
-                      program.availability
+                    ${
+                      program.availability == "Available"
+                        ? '<div class="text-green-700 hover:font-semibold rounded-md">Available</div>'
+                        : '<div class="text-red-700 hover:font-semibold rounded-md">Unavailable</div>'
                     }</p>
-                    <p class="mt-2">${program.program_duration} Hours | ${
-          program.program_fee
-        } pesos</p>
+                    <p class="mt-2">${program.program_duration} Hours | 
+                    ${program.program_fee} pesos</p>
                     <div class="w-full text-left text-lg mt-2">
                       <h5 class="font-semibold">Instructor(s):</h5>
-                      <p>${
-                        instructors || "No instructors assigned</p>"
-                      }
+                      <p>${instructors || "No instructors assigned</p>"}
                     </div>
                   </div>
         
@@ -284,9 +293,6 @@ async function renderCourseCards() {
   // Initialize Swiper
   const programSwiper = new Swiper(".swiper2", {
     direction: "horizontal",
-    slidesPerView: 3,
-    centeredSlides: true,
-    spaceBetween: 10,
     pagination: {
       el: ".swiper-pagination2",
       clickable: true,
@@ -296,6 +302,19 @@ async function renderCourseCards() {
       prevEl: ".swiper-button-prev2",
     },
     grabcursor: true,
+    breakpoints: {
+      // When window width is >= 0px (mobile)
+      0: {
+        slidesPerView: 1,
+        centeredSlides: true,
+        spaceBetween: 30,
+      },
+      // When window width is >= 768px (desktop)
+      768: {
+        slidesPerView: 3,
+        centeredSlides: true,
+      },
+    },
   });
 }
 // Call the function to render course cards

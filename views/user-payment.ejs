@@ -5,38 +5,35 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>User Payments</title>
-    <link href="/f-css/output.css" rel="stylesheet">
-    <style>
-        .side-icons {
-            width: 30px;
-            height: 30px;
-        }
-    </style>
+    <link href="/f-css/output.css" rel="stylesheet
 </head>
 
 <body class="flex flex-row w-full">
     <div id="sidebar-container">
     </div>
-    <div id="main-content" class="block ml-ml-250 w-calc space-y-2">
-        <div id="top-bar" class="flex h-15 flex-row w-full sticky shadow-inner bg-white border-b-2 p-4">
+    <div id="main-content" class="ml-ml-64 phone-w-calc md:desktop-w-calc md:ml-[160px] space-y-2">
+        <div id="top-bar" class="flex flex-row w-full sticky shadow-inner bg-white border-b-2 p-4 mb-5 opacity-95">
             <div id="left-side" class="flex flex-row gap-4 relative">
-                <button class="relative">
-                    <img id="notif-logo" src="/f-css/solid/bell.svg" class="w-7 h-7 inline-block" />
-                    <div
-                        class="h-3 w-3 rounded-full bg-blue-900 absolute top-2 right-2 transform translate-x-1/2 -translate-y-1/2 animate-pulse">
-                    </div>
-                </button> <img id="company-logo" src="/f-css/solid/car-front.svg" class="w-8 h-8" />
+                <div>
+                    <button id="notif-button" class="relative">
+                        <img id="notif-logo" src="/f-css/solid/bell.svg" class="w-7 h-7 inline-block" />
+                        <div id="notif-new-indicator"
+                            class="h-3 w-3 rounded-full bg-blue-900 absolute top-2 right-2 transform translate-x-1/2 -translate-y-1/2 animate-pulse">
+                        </div>
+                    </button>
+                </div>
+                <img id="company-logo" src="/f-css/solid/drivers_ed_logo-no-bg.png" class="w-20 h-8" />
             </div>
             <div id="right-side" class="absolute right-4 text-lg">
                 Payments
             </div>
         </div>
 
-        <div id="content" class="flex flex-col w-full  gap-5">
-            <div id="user-payment-form" class="flex flex-row justify-center gap-5">
-                <div class="bg-slate-200 p-10 rounded-lg shadow-md mx-4 my-2 place-self-center">
+        <div id="content" class="flex flex-col w-full gap-5">
+            <div id="user-payment-form" class="flex flex-col md:flex-row justify-center w-full gap-5">
+                <div class="bg-slate-200 p-5 md:p-8 rounded-lg shadow-lg w-full max-w-screen-md my-2">
                     <h1 class="text-2xl text-center mb-5 font-bold text-blue-900">User Payment</h1>
-                    <form id="payment-form" class="w-full">
+                    <form id="payment-form" class="mx-4">
                         <div class="flex flex-col md:flex-row mb-4 gap-3">
                             <div class="w-full">
                                 <label>Account Name</label>
@@ -47,7 +44,7 @@
                                 <label>Payment Method</label>
                                 <select id="payment-method" name="payment-method" required
                                     class="shadow-md bg-white border rounded w-full py-2 px-3 text-gray-700 leading-tight hover:border-yellow-500 focus:border-yellow-500">
-                                    <option value="" disabled selected >Select payment option</option>
+                                    <option value="" disabled selected>Select payment option</option>
                                 </select>
                                 <input id="Other-payment-method" name="Other-payment-method" style="min-height: 2rem;"
                                     type="text"

@@ -328,26 +328,10 @@ async function renderUserApplicationsList() {
     return;
   } else {
     tableAnnouncement.innerText = "Application Logs";
-    userApplicationTable.innerHTML = `
-    <table id="applicants-table" class="w-full border-collapse">
-      <thead class="">
-        <tr class="text-center">
-          <th class="w-10 border border-gray-300 px-4 py-2 text-xs">ID</th>
-          <th class="border border-gray-300 px-4 py-2">Name</th>
-          <th class="border border-gray-300 px-4 py-2">Instructor</th>
-          <th class="w-32 border border-gray-300 px-4 py-2">Start</th>
-          <th class="w-14 border border-gray-300 px-4 py-2">Slot</th>
-          <th class="w-32 border border-gray-300 px-4 py-2">Continuation</th>
-          <th class="w-14 border border-gray-300 px-4 py-2">Slot</th>
-          <th class="w-24 border border-gray-300 px-4 py-2">Type</th>
-          <th class="w-36 border border-gray-300 px-4 py-2">Date Applied</th>
-        </tr>
-      </thead>
-      <tbody class="">
-        ${data
-          .map(
-            (arr) =>
-              `
+    const desktopTable = data
+      .map(
+        (arr) =>
+          `
             <tr class="text-center group hover:outline outline-1 outline-black">
               <td class="border border-gray-300 px-4 py-2 text-xs">
                 ${arr.application_id}
@@ -374,8 +358,83 @@ async function renderUserApplicationsList() {
               <td class="border border-gray-300 px-4 py-2">${arr.created}</td>
             </tr>
           `
-          )
-          .join("")}
+      )
+      .join("");
+
+    const mobileTable = data
+      .map(
+        (arr) => `
+    <tr class="border-b">
+      <td colspan="9" class="p-3">
+        <div class="flex flex-col gap-4 text-sm">
+          
+          <!-- Application & Creator -->
+          <div class="flex justify-between items-center">
+            <div>
+              <p class="text-gray-500">Application ID</p>
+              <p class="font-semibold">${arr.application_id}</p>
+            </div>
+            <div>
+              <p class="text-gray-500">Created by</p>
+              <p class="font-medium">${arr.creator_name}</p>
+            </div>
+          </div>
+
+          <!-- Instructor & Transmission -->
+          <div class="flex justify-between items-center">
+            <div>
+              <p class="text-gray-500">Instructor</p>
+              <p>${arr.instructor_name}</p>
+            </div>
+            <div>
+              <p class="text-gray-500">Transmission</p>
+              <p>${arr.transmission}</p>
+            </div>
+          </div>
+
+          <!-- Schedule -->
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <p class="text-gray-500">Start Date</p>
+              <p>${arr.start_date} ${arr.start_date_am_pm}</p>
+            </div>
+            <div>
+              <p class="text-gray-500">Continuation</p>
+              <p>${arr.continuation} ${arr.continuation_am_pm}</p>
+            </div>
+          </div>
+
+          <!-- Created Timestamp -->
+          <div>
+            <p class="text-gray-500">Created At</p>
+            <p class="text-xs">${arr.created}</p>
+          </div>
+
+        </div>
+      </td>
+    </tr>
+  `
+      )
+      .join("");
+
+    const tableRows = window.innerWidth > 768 ? desktopTable : mobileTable;
+    userApplicationTable.innerHTML = `
+    <table id="applicants-table" class="w-full border-collapse">
+      <thead class="">
+        <tr class="text-center hidden md:table-row">
+          <th class="w-10 border border-gray-300 px-4 py-2 text-xs">ID</th>
+          <th class="border border-gray-300 px-4 py-2">Name</th>
+          <th class="border border-gray-300 px-4 py-2">Instructor</th>
+          <th class="w-32 border border-gray-300 px-4 py-2">Start</th>
+          <th class="w-14 border border-gray-300 px-4 py-2">Slot</th>
+          <th class="w-32 border border-gray-300 px-4 py-2">Continuation</th>
+          <th class="w-14 border border-gray-300 px-4 py-2">Slot</th>
+          <th class="w-24 border border-gray-300 px-4 py-2">Type</th>
+          <th class="w-36 border border-gray-300 px-4 py-2">Date Applied</th>
+        </tr>
+      </thead>
+      <tbody class="">
+        ${tableRows}
       </tbody>
     </table>
 

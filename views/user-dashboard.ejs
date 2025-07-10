@@ -55,13 +55,8 @@
             transition: transform 0.3s ease;
         }
 
-        .card.middle {
-            transform: scale(1.1);
-            z-index: 10;
-        }
-
         .swiper-button-next,
-        .swiper-button-prev{
+        .swiper-button-prev {
             color: gold;
         }
 
@@ -82,15 +77,17 @@
 <body class="bg-black flex flex-row w-full">
     <div id="sidebar-container" class="z-10">
     </div>
-    <div id="main-content" class="block ml-ml-250 w-calc h-screen space-y-2 z-10">
-        <div id="top-bar" class="flex h-15 flex-row w-full sticky shadow-inner bg-white border-b-2 p-4 mb-5 opacity-95">
+    <div id="main-content" class="ml-ml-64 h- phone-w-calc md:desktop-w-calc md:ml-[160px] space-y-2">
+        <div id="top-bar" class="flex flex-row w-full sticky shadow-inner bg-white border-b-2 p-4 mb-5 opacity-95">
             <div id="left-side" class="flex flex-row gap-4 relative">
-                <button class="relative">
-                    <img id="notif-logo" src="/f-css/solid/bell.svg" class="w-7 h-7 inline-block" />
-                    <div
-                        class="h-3 w-3 rounded-full bg-blue-900 absolute top-2 right-2 transform translate-x-1/2 -translate-y-1/2 animate-pulse">
-                    </div>
-                </button>
+                <div>
+                    <button id="notif-button" class="relative">
+                        <img id="notif-logo" src="/f-css/solid/bell.svg" class="w-7 h-7 inline-block" />
+                        <div id="notif-new-indicator"
+                            class="h-3 w-3 rounded-full bg-blue-900 absolute top-2 right-2 transform translate-x-1/2 -translate-y-1/2 animate-pulse">
+                        </div>
+                    </button>
+                </div>
                 <img id="company-logo" src="/f-css/solid/drivers_ed_logo-no-bg.png" class="w-20 h-8" />
             </div>
             <div id="right-side" class="absolute right-4 text-lg">Dashboard</div>
@@ -99,7 +96,7 @@
         <div class="swiper-container swiper1" space-between="10">
             <div class="swiper-wrapper">
                 <!-- Slides will be dynamically inserted here -->
-            </div>  
+            </div>
             <!-- Add Pagination -->
             <div class="swiper-pagination swiper-pagination1"></div>
             <!-- Add Navigation -->
@@ -136,7 +133,6 @@
             }
         });
     </script>
-
 </body>
 
 </html>
