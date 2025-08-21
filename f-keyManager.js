@@ -4,7 +4,7 @@ db.version(1).stores({
   rsaKeys: "id, privateKey, serverPublicKey, createdAt",
 });
 
-const TTL_MINUTES = 60;
+const TTL_MINUTES = 3 * 60;
 
 export const KeyManager = {
   async init() {

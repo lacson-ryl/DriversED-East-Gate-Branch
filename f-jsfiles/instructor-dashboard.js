@@ -26,7 +26,6 @@ async function fetchAttendanceList() {
 fetchAttendanceList();
 
 function renderAttendanceTable(dataList) {
-  console.log("dataList", dataList);
   // Group data by date
   const groupedData = dataList.reduce((acc, item) => {
     const date = item.date; // Assuming `date` is the field for attendance date
@@ -404,7 +403,7 @@ function allButtons(dataList) {
 }
 
 function traineesInfo(profile) {
-  console.log("profile", profile);
+  traineeInfoBox.innerHTML = "";
   traineeInfoBox.innerHTML = `
           <div class="flex flex-col md:flex-row gap-5">
               <div class="flex flex-col place-self-center">
@@ -453,7 +452,8 @@ function traineesInfo(profile) {
                       }</p>
                           <p>Grade Sheet: ${
                             profile.grading_status === "Pending"
-                              ? '<span class="text-gray-700 hover:font-semibold rounded-md">Pending</span>'
+                              ? `<button id="upload-grade-sheet-btn"
+                              class="outline outline-1 outline-gray-400 hover:outline-gray-700 rounded-md px-1">Upload</button>`
                               : `<button id="view-grade-sheet-btn"
                               class="outline outline-1 outline-gray-400 hover:outline-gray-700 rounded-md px-1">View</button>`
                           }</p>
@@ -507,6 +507,66 @@ function traineesInfo(profile) {
       }
     });
   }
+  //Grading sheet for completed course upload
+  document.getElementById("upload-grade-sheet-btn").addEventListener(
+    "click",
+    function () { 
+      const result = profile; 
+
+      modalDetails.innerHTML = `
+          <form id="grade-completion-upload-form" class="min-w-96">
+            <div class="mb-4">
+                <h3 class="text-lg font-semibold mb-4">Grade
+                <input type="number" id="course-grade" name="course-grade" 
+                value="${result.grade}" 
+                class="w-full outline outline-1 outline-gray-300 rounded-md px-2 py-1 mt-1" placeholder="Enter Trainee Grade"/>
+            </div>
+            <div class="mb-4">
+                <h3 class="text-lg font-semibold mb-4">Upload of grade sheet: 
+                  <hr class="border-white">user-name:  ${result.user_name} | course: ${result.course_id} - ${result.program_name} </h3>
+                <input type="file" id="grade-completion-file" name="grade-completion-file" 
+                class="w-full rounded-md text-lg px-1" accept="image/*"/>
+            </div>
+            <button id="completion-submit-button" type="submit" class="bg-blue-800 text-white rounded-md px-2">Submit</button>
+          </form>
+        `;
+      modal.style.display = "flex";
+
+      document
+        .getElementById("grade-completion-upload-form")
+        .addEventListener("submit", async (event) => {
+          event.preventDefault();
+          const file = document.getElementById("grade-completion-file")
+            .files[0];
+          const courseGrade = document.getElementById("course-grade");
+          const formData = new FormData();
+          formData.append("grade-completion-file", file);
+          formData.append("courseGrade", courseGrade);
+
+          try {
+            const response = await fetch(
+              `/api/completed-course/grade-upload/${profile.course_id}`,
+              {
+                method: "POST",
+                body: formData,
+              }
+            );
+            const data = await response.json();
+            if (response.ok) {
+              alert("Grading Sheet upload success!");
+              traineesInfo(data);
+            } else {
+              alert(data.error);
+            }
+            modal.style.display = "none";
+          } catch (error) {
+            console.error("Error uploading Template", error);
+            alert("An error occurred while uploading Template.");
+          }
+        });
+    },
+    { once: true }
+  );
 
   // Add event listener for the "Back" button
   backBtn.addEventListener("click", (event) => {

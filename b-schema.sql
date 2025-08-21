@@ -141,6 +141,7 @@ CREATE TABLE
         request_title VARCHAR(255) NOT NULL,
         request_details VARCHAR(2000) NOT NULL,
         sender_id INT,
+        date_created TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         status VARCHAR(25) DEFAULT 'Pending',
         reason VARCHAR(1000),
         FOREIGN KEY (sender_id) REFERENCES user (user_id)
@@ -157,6 +158,7 @@ CREATE TABLE
         continuation_am_pm ENUM ('AM', 'PM'),
         creator_id INT, -- Combined field for both user and admin IDs
         created_by ENUM ('user', 'admin'), -- Column to specify the type of creator
+        user_course_id INT NOT NULL,
         transmission ENUM ("Manual", "Automatic", "onsite"),
         created TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (instructor_id) REFERENCES instructor (instructor_id)

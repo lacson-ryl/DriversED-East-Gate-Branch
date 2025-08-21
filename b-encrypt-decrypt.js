@@ -1,4 +1,9 @@
 import crypto from "crypto";
+import { getKeysWithUserId } from "./b-database.js";
+import dotenv from "dotenv";
+dotenv.config();
+
+const secretKey = process.env.secret_key;
 
 export function generateKeyPair() {
   const { publicKey, privateKey } = crypto.generateKeyPairSync("rsa", {
@@ -20,7 +25,8 @@ function buf2b64(buf) {
 }
 
 // Encrypt with AES-GCM (Node.js)
-export function encryptData(data, clientPublicKey) {
+export async function encryptData(data, userId, role) {
+  const { pubKeyWebCrypto } = await getKeysWithUserId(userId, role);
   // 1. Generate AES key
   const aesKey = crypto.randomBytes(32); // 256-bit key
 
@@ -37,7 +43,7 @@ export function encryptData(data, clientPublicKey) {
   // 3. Encrypt AES key with client's RSA public key (PEM)
   const encAesKey = crypto.publicEncrypt(
     {
-      key: clientPublicKey, // PEM string
+      key: pubKeyWebCrypto, // PEM string
       padding: crypto.constants.RSA_PKCS1_OAEP_PADDING,
       oaepHash: "sha256",
     },
@@ -53,7 +59,13 @@ export function encryptData(data, clientPublicKey) {
 }
 
 // Decrypt with AES-GCM (Node.js)
-export async function decryptData(payload, privateKey) {
+export async function decryptData(payload, userId, role) {
+  const encKeys = await getKeysWithUserId(userId, role);
+  const encKey = {
+    encrypted: encKeys.encrypted,
+    iv: encKeys.iv,
+  };
+  const privateKey = handlePrivateKey("decrypt", secretKey, null, encKey);
   const { encryptedData, iv, encAesKey } = payload;
 
   // 1. Decrypt AES key using your private RSA key

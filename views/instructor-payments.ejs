@@ -19,13 +19,15 @@
     <div id="main-content" class="block ml-ml-64 phone-w-calc md:ml-[160px] space-y-2">
         <div id="top-bar" class="flex h-15 flex-row w-full sticky shadow-inner bg-white border-b-2 p-4">
             <div id="left-side" class="flex flex-row gap-4 relative">
-                <button class="relative">
-                    <img id="notif-logo" src="/f-css/solid/bell.svg" class="w-7 h-7 inline-block" />
-                    <div
-                        class="h-3 w-3 rounded-full bg-blue-900 absolute top-2 right-2 transform translate-x-1/2 -translate-y-1/2 animate-pulse">
-                    </div>
-                </button>
-                <img id="company-logo" src="/f-css/solid/car-front.svg" class="w-8 h-8" />
+                <div>
+                    <button id="notif-button" class="relative">
+                        <img id="notif-logo" src="/f-css/solid/bell.svg" class="w-7 h-7 inline-block" />
+                        <div id="notif-new-indicator"
+                            class="h-3 w-3 rounded-full bg-blue-900 absolute top-2 right-2 transform translate-x-1/2 -translate-y-1/2 animate-pulse">
+                        </div>
+                    </button>
+                </div>
+                <img id="company-logo" src="/f-css/solid/drivers_ed_logo-no-bg.png" class="w-20 h-8" />
             </div>
             <div id="right-side" class="absolute right-4 text-lg">
                 Applicants
@@ -33,6 +35,14 @@
         </div>
 
         <div id="content" class="flex flex-col w-full animate-fadeIn">
+
+            <div class="flex w-full justify-between pr-4 my-2">
+                <h2 class="text-lg ml-4">Manage Profile</h2>
+            </div>
+            <div id="instructors-current-payroll-table" style="display: none;"
+                class="flex flex-col max-h-data-table mt-3 mb-3 mx-3 overflow-auto">
+
+            </div>
             <div class="flex w-full justify-between pr-4 my-2">
                 <h2 class="text-lg ml-4">Manage Payments</h2>
                 <div id="week-month-btn-container" class="flex gap-2">

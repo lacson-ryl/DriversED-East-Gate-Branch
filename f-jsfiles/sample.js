@@ -2,6 +2,18 @@ import { encryptData, decryptData } from "../f-webCryptoKeys.js";
 
 import { KeyManager } from "../f-keyManager.js";
 
+async function getKeys() {
+  const privKey = await KeyManager.getPrivateKey();
+  const serverPubKey = await KeyManager.getServerPublicKey();
+
+  console.log("privKey, serverPubKey", privKey, serverPubKey);
+  return { privKey, serverPubKey };
+}
+
+const { privKey, serverPubKey } = await getKeys();
+//const prpbkeys = await getKeys();
+//console.log("prpbkeys", prpbkeys);
+
 document
   .getElementById("encrypting")
   .addEventListener("submit", async (event) => {
@@ -10,8 +22,7 @@ document
 
     const encMsg = document.getElementById("encrypt-msg").value;
 
-    const pubKey = await KeyManager.getServerPublicKey();
-    const encMessage = await encryptData(encMsg, pubKey);
+    const encMessage = await encryptData(encMsg, serverPubKey);
     console.log("encMessage", encMessage);
 
     const response = await fetch("/sample/decrypt", {
@@ -36,16 +47,11 @@ document
   .getElementById("check-keys-dexie")
   .addEventListener("click", async (event) => {
     event.preventDefault();
-    const serverPubKey = await KeyManager.getServerPublicKey();
-    console.log("serverPubKey", serverPubKey);
-    const clientPrivKey = await KeyManager.getPrivateKey();
-    console.log("clientPrivKey", clientPrivKey);
-
     const pubMsg = document.getElementById("public-key-msg");
     const privMsg = document.getElementById("private-key-msg");
 
     pubMsg.innerText = `Pub key: ${serverPubKey || "Not Found"}`;
-    privMsg.innerText = `Priv key: ${clientPrivKey || "Not Found"}`;
+    privMsg.innerText = `Priv key: ${privKey || "Not Found"}`;
   });
 
 document
@@ -56,8 +62,7 @@ document
 
     const encMsg = document.getElementById("decrypt-msg").value;
 
-    const clientPrivKey = await KeyManager.getPrivateKey();
-    if (!clientPrivKey) {
+    if (!privKey) {
       msgBox.innerText =
         "Private key not found! Please re-login to generate new keys.";
       return;
@@ -76,7 +81,7 @@ document
       throw new Error(data.error);
     }
 
-    const decryptedData = await decryptData(data.encrypted, clientPrivKey);
+    const decryptedData = await decryptData(data.encrypted, privKey);
     console.log("decryptedData", decryptedData);
     msgBox.innerHTML = `
       <div>

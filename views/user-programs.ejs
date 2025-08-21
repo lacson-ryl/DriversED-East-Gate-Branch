@@ -6,8 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>User Program Enroll</title>
     <link href="/f-css/output.css" rel="stylesheet">
-    <style> 
-
+    <style>
         .calendar {
             display: grid;
             grid-template-columns: repeat(7, 1fr);
@@ -53,7 +52,7 @@
 <body class="flex flex-row w-full">
     <div id="sidebar-container">
     </div>
-      <div id="main-content" class="ml-ml-64 h- phone-w-calc md:desktop-w-calc md:ml-[160px] space-y-2">
+    <div id="main-content" class="ml-ml-64 h- phone-w-calc md:desktop-w-calc md:ml-[160px] space-y-2">
         <div id="top-bar" class="flex flex-row w-full sticky shadow-inner bg-white border-b-2 p-4 mb-5 opacity-95">
             <div id="left-side" class="flex flex-row gap-4 relative">
                 <div>
@@ -72,22 +71,22 @@
         </div>
 
         <div id="content" class="flex flex-col w-full gap-4 pr-3">
+
             <div class="grid grid-rows-1 md:grid-cols-3 gap-4 ">
                 <!-- Application Form -->
                 <div class="col-span-1 space-y-3 ">
                     <h1 id="announcement" class="ml-4">Announcement</h1>
                     <form id="applicationForm" class="bg-gray-200 ml-4 p-2 shadow-md">
                         <div class="mb-4">
-                            <label for="instructoroption"
+                            <label for="instructor"
                                 class="block text-base font-medium text-gray-700">Instructor</label>
-                            <select id="instructor" name="instructor" required>
+                            <select id="instructor" name="instructor" class="instructor" required>
                                 <option value="">Select an Instructor</option>
 
                             </select>
                         </div>
                         <div class="mb-4">
-                            <label for="programoption"
-                                class="block text-base font-medium text-gray-700">Program</label>
+                            <label for="program" class="block text-base font-medium text-gray-700">Program</label>
                             <select id="program" name="program" required>
                                 <option value="">Select a program</option>
                             </select>
@@ -121,17 +120,38 @@
                             </select>
                         </div>
 
-                        <button type="submit" class="bg-blue-500 text-white px-4 py-2 mt-4">Submit</button>
+                        <div class="flex flex-row justify-between">
+                            <button type="submit" class="bg-blue-500 text-white px-4 py-2 mt-4">Submit</button>
+                            <a id="add-continuation" class="bg-blue-500 text-white px-4 py-2 mt-4 hover:cursor-pointer">
+                                Add continuation
+                            </a>
+                        </div>
                     </form>
                 </div>
                 <!-- Calendar -->
                 <div class="col-span-2 bg-white shadow-md">
-                    <p id="color-stamps-instructions" class="hidden ml-4"></p>
-                    
-                    <div class="flex justify-between items-center p-4 mb-4">
-                        <button id="prevMonth" class="bg-blue-500 text-white px-4 py-2">Previous</button>
+                    <div id="color-stamps-instructions" class="place-content-center flex flex-row gap-4 ml-4">
+                        <div class="flex flex-row gap-3">
+                            <div class="circle available-am place-self-center">AM</div>
+                            <div class="circle available-pm place-self-center">PM</div>
+                            <p>- PDC slots taken</p>
+                        </div>
+                        <div class="flex flex-row gap-3">
+                            <div class="circle onsite-tdc place-self-center">25</div>
+                            <p>- TDC slots availability</p>
+                        </div>
+                        <div class="flex flex-row gap-3">
+                            <div class="bg-green-100 w-6 h-6 place-self-center"></div>
+                            <p>- no slots taken</p>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-between items-center mb-4 px-3">
+                        <button id="prevMonth"
+                            class="w-24 text-center bg-blue-500 text-white px-4 py-2 rounded-ss-3xl">Previous</button>
                         <div id="monthLabel" class="text-xl font-bold"></div>
-                        <button id="nextMonth" class="bg-blue-500 text-white px-4 py-2">Next</button>
+                        <button id="nextMonth"
+                            class="w-20 text center bg-blue-500 text-white px-4 py-2 rounded-tr-3xl">Next</button>
                     </div>
                     <div class="grid grid-cols-7 mt-4 text-center">
                         <div class="pl-1 text-sm">Mon</div>
@@ -154,6 +174,45 @@
         </div>
 
     </div>
+    </div>
+
+    <div id="formModal" class="fixed inset-0 z-50 place-content-center hidden bg-gray-900 bg-opacity-50">
+        <div class="relative justify-self-center bg-white rounded-lg shadow-lg min-w-96 max-w-screen-lg p-6 ">
+            <span
+                class="close absolute top-0 right-2 text-3xl font-semibold text-gray-700 hover:text-gray-900 cursor-pointer">&times;</span>
+            <h2 class="text-xl font-semibold">Add Continuation hours</h2>
+            <form id="add-continuation-form" class="mt-4">
+                <div class="mb-4">
+                    <label for="instructor" class="block text-base font-medium text-gray-700">Instructor</label>
+                    <select id="instructor-modal" name="instructor" required>
+                        <option value="">Select an Instructor</option>
+
+                    </select>
+                </div>
+                <div class="mb-4">
+                    <label for="course" class="block text-base font-medium text-gray-700">Course <span class="text-xs">(remaing hours)</span></label>
+                    <select id="course" name="courseOption" required>
+                        <option value="">Select a Enrolled Course</option>
+
+                    </select>
+                </div>
+                <div class="mb-4">
+                    <label for="continuationDate" class="block text-sm font-medium text-gray-700">Continuation
+                        Date</label>
+                    <input type="date" id="continuationDate" name="continuationDate" required
+                        class="date-input mt-1 block w-full outline outline-1 outline-gray-500 hover:outline-yellow-500 focus:outline-yellow-500 px-1">
+                </div>
+                <div class="flex flex-row gap-4 mb-4">
+                    <label for="dateAMPM" class="block text-base font-medium text-gray-700">Slot</label>
+                    <select id="dateAMPM" name="dateAMPM" required>
+                        <option value="AM">AM</option>
+                        <option value="PM">PM</option>
+                    </select>
+                </div>
+                <button type="submit" class="bg-blue-500 text-white px-4 py-2 mt-4">Submit</button>
+
+            </form>
+        </div>
     </div>
     <script>
         document.addEventListener('DOMContentLoaded', async () => {

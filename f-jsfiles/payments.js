@@ -1,3 +1,5 @@
+import { encryptData, decryptData } from "../f-webCryptoKeys.js";
+
 async function renderPaymentList() {
   const response = await fetch("/api/payments");
 
@@ -133,31 +135,41 @@ function allButtons(data) {
     <form id="add-payment-form" class="w-96">
       <div class="mb-4">
         <h3 class="text-xl font-semibold mb-3">Name</h3>
-        <input type="text" id="account-name" name="account-name" class="w-full outline outline-1 outline-gray-300 rounded-md text-lg px-1" placeholder="Enter Name" />
+        <input type="text" id="account-name" name="accountName" class="w-full outline outline-1 outline-gray-300 rounded-md text-lg px-1" placeholder="Enter Name" />
       </div>
       <div class="mb-4 flex flex-col space-y-4 md:flex-row md:space-x-4 md:space-y-0">
-        <div class="input-container w-1/3">
+        <div class="input-container w-1/2">
           <h3 class="text-xl font-semibold mb-3">ID</h3>
-          <input type="number" id="user-id" name="user-id" value="" class="w-full outline outline-1 outline-gray-300 rounded-md text-lg px-1" placeholder="ID" />
-          <p class="info-message text-sm font-normal">Leave blank for clients that have no account</p>
+          <input type="number" id="user-id" name="id" value="0" disable 
+            class="w-full outline outline-1 outline-gray-300 rounded-md text-lg px-1" placeholder="ID" />
+          <p class="info-message text-sm font-normal">This is for the payment paid by client in store that dont have acount, use Search to attach the payment if the client have a account.</p>
         </div>
-        <div class="w-2/3">
+        <div class="w-1/2">
           <h3 class="text-xl font-semibold mb-3">Amount</h3>
           <input type="number" id="amount" name="amount" class="w-full outline outline-1 outline-gray-300 rounded-md text-lg px-1" placeholder="Enter Amount" />
         </div>
       </div>
-      <div class="mb-4">
-        <h3 class="text-xl font-semibold mb-3">Payment Method</h3>
-        <select id="payment-method" name="payment-method" class="w-full outline outline-1 outline-gray-300 border hover:border-blue-500 focus:border-yellow-500 rounded-md text-lg px-1">
-          <option value="Cash">Cash</option>
-          <option value="E-wallet">E-wallet</option>
-          <option value="Card">Card</option>
-          <option value="Online Bank">Online Bank</option>
-        </select>
+      <div class="mb-4 flex flex-col space-y-4 md:flex-row md:space-x-4 md:space-y-0">
+        <div class="input-container w-1/3">
+          <h3 class="text-xl font-semibold mb-3">CourseId</h3>
+          <input type="number" id="course-select" name="courseSelect" value="0"
+            class="w-full outline outline-1 outline-gray-300 rounded-md text-lg px-1" placeholder="ID" />
+          <p class="info-message text-sm font-normal">This is for the payment paid by client in store that dont have acount, use Search to attach the payment if the client have a account.</p>
+        </div>
+        <div class="w-2/3">
+          <h3 class="text-xl font-semibold mb-3">Payment Method</h3>
+          <select id="payment-method" name="paymentMethod"
+            class="w-full outline outline-1 outline-gray-300 border hover:border-blue-500 focus:border-yellow-500 rounded-md text-lg px-1">
+            <option value="Cash">Cash</option>
+            <option value="E-wallet">E-wallet</option>
+            <option value="Card">Card</option>
+            <option value="Online Bank">Online Bank</option>
+          </select>
+        </div>
       </div>
       <div class="mb-4">
         <h3 class="text-xl font-semibold mb-3">Receipt Screenshot</h3>
-        <input type="file" id="screenshot-receipt" name="screenshot-receipt" class="w-full outline outline-1 outline-gray-300 rounded-md text-lg px-1" accept="image/*" />
+        <input type="file" id="screenshot-receipt" name="screenshotReceipt" class="w-full outline outline-1 outline-gray-300 rounded-md text-lg px-1" accept="image/*" />
       </div>
       <button id="payment-submit-button" type="submit" class="bg-blue-800 text-white rounded-md px-2">Submit</button>
     </form>
@@ -178,24 +190,15 @@ function allButtons(data) {
         .getElementById("add-payment-form")
         .addEventListener("submit", async (event) => {
           event.preventDefault();
-          const accountName = document.getElementById("account-name").value;
-          const id = document.getElementById("user-id").value;
-          const amount = document.getElementById("amount").value;
-          const paymentMethod = document.getElementById("payment-method").value;
-          const screenshotReceipt =
-            document.getElementById("screenshot-receipt").files[0];
 
-          const formData = new FormData();
-          formData.append("accountName", accountName);
-          formData.append("id", id);
-          formData.append("amount", amount);
-          formData.append("paymentMethod", paymentMethod);
-          formData.append("screenshotReceipt", screenshotReceipt);
+          const formData = new FormData(event.target);
+          const encrypting = await encryptData(formData);
 
           try {
             const response = await fetch("/api/payment/add", {
               method: "POST",
-              body: formData,
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ encryptedWithEncAesKey: encrypting }),
             });
             if (response.ok) {
               alert("Payment Added Successfully!");
@@ -407,11 +410,14 @@ function allButtons(data) {
       document
         .getElementById("delete-yes")
         .addEventListener("click", async () => {
+          const encrypted = encryptData({ rowId: rowId });
           try {
-            const response = await fetch(`/api/payments/${rowId}`, {
+            const response = await fetch(`/api/payments/delete`, {
               method: "DELETE",
               headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ encryptedWithEncAesKey: encrypted }),
             });
+            const data = response.json();
             if (response.ok) {
               alert(`Successfully Deleted ID no. ${rowId}`);
               renderPaymentList();

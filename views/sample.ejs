@@ -45,6 +45,28 @@
         <p id="decrypt-msg-box"></p>
     </div>
 
+    <div id="editable-card-for-change" class="bg-white p-10 rounded-lg items-center shadow-md max-w-md">
+        <h1 class="text-2xl font-bold mb-5 text-yellow-600 text-center">Is this you?</h1>
+        <div class="w-full flex space-x-3 mt-5">
+            <div class="content-center">
+                <div id="profile-pic" class="">
+                    <img src="/f-css/solid/black/user.svg"
+                        class="outline outline-2 outline-gray-500 max-w-20 max-h-24 rounded-full shadow-md shadow-current" />
+                </div>
+            </div>
+            <div class="gap-x-4 text-lg">
+                <h1>${profile.name}</h1>
+                <h2>${profile.email}</h2>
+                <p>${profile.date_created}</p>
+            </div>
+        </div>
+        <div class="mt-6 place-self-center space-x-5">
+            <button id="load-user-btn" data-id="${profile.id}"
+                class="outline rounded-full bg-blue-500 text-white px-3 py-2 hover:outline-offset-2 hover:outline-2 hover:outline-blue-500">Yes,
+                Load User Infos</button>
+        </div>
+    </div>
+
     <script type="module" src="../f-jsfiles/sample.js"></script>
     <script type="module" src="../f-keyManager.js"></script>
 </body>

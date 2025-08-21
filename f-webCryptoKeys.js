@@ -1,3 +1,5 @@
+import { KeyManager } from "./f-keyManager.js";
+
 export async function generateRawAESKey() {
   // Generate AES-GCM key in browser
   const aesKey = await window.crypto.subtle.generateKey(
@@ -19,8 +21,9 @@ function b642ab(b64) {
   return Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
 }
 
-export async function decryptData(payload, privKey) {
+export async function decryptData(payload) {
   const { encryptedData, iv, encAesKey } = payload;
+  const privKey = await KeyManager.getPrivateKey();
 
   // Step 1: Decrypt AES key with RSA private key
   const rawAESKey = await window.crypto.subtle.decrypt(
@@ -55,9 +58,21 @@ export async function decryptData(payload, privKey) {
 }
 
 // Encrypt with AES-GCM (Web Crypto)
-export async function encryptData(data, serverPubKey) {
+export async function encryptData(data) {
+  // 🔄 Normalize FormData to plain object
+  if (data instanceof FormData) {
+    const normalized = {};
+    data.forEach((value, key) => {
+      normalized[key] = value;
+    });
+    data = normalized;
+  }
+
+  const serverPubKey = await KeyManager.getServerPublicKey();
+
   const { aesKey, rawKey } = await generateRawAESKey();
   const iv = window.crypto.getRandomValues(new Uint8Array(12));
+
   const encoded = new TextEncoder().encode(JSON.stringify(data));
   const encrypted = await window.crypto.subtle.encrypt(
     { name: "AES-GCM", iv },
@@ -78,9 +93,6 @@ export async function encryptData(data, serverPubKey) {
     encAesKey: ab2b64(encAESKey),
   };
 }
-
-// Decrypt with AES-GCM (Web Crypto)
-
 
 // Helper to convert PEM to ArrayBuffer
 function pemToArrayBuffer(pem) {

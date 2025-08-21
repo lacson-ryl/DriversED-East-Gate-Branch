@@ -50,7 +50,7 @@ export async function addPrivKeyForUser(
   }
 }
 
-export async function getPrivKeyWithUserId(userId, role) {
+export async function getKeysWithUserId(userId, role) {
   try {
     const query = `
      SELECT enc_priv_key AS encrypted, priv_key_iv AS iv, pub_key_web_crypto AS pubKeyWebCrypto
@@ -112,6 +112,141 @@ export async function findAccountByEmail(email) {
     return rows; // Return the first matching result
   } catch (error) {
     console.error("Error finding account by email:", error);
+    throw error;
+  }
+}
+
+export async function userSearch(id) {
+  let query = `
+  SELECT u.*, up.*
+  FROM user u
+  LEFT JOIN user_profile up ON u.user_id = up.user_id
+  WHERE u.user_id = ?
+  `;
+
+  try {
+    const [result] = await pool.query(query, [id]);
+    if (result.length === 0) return null;
+
+    const profile = result.map((row) => ({
+      ...row,
+      user_password: null,
+      date_created: row.date_created
+        ? new Date(row.date_created).toLocaleString("en-US", {
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit",
+          })
+        : null,
+      profile_picture: row.profile_picture
+        ? `data:image/jpeg;base64,${row.profile_picture.toString("base64")}`
+        : null,
+      birth_date: row.birth_date
+        ? new Date(row.birth_date).toLocaleDateString("en-US", {
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+          })
+        : null,
+    }));
+
+    const courseList = await getTraineeCourseList(id);
+    const [resultII] = await pool.query(
+      `SELECT *
+      FROM attendance
+      WHERE creator_id = ? AND created_by= 'user'`,
+      [id]
+    );
+    const courseAttendance = resultII.map((row) => ({
+      instructor_id: row.instructor_id,
+      attendance_id: row.attendance_id,
+      user_course_id: row.user_course_id,
+      date: row.date
+        ? new Date(row.date).toLocaleString("en-US", {
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+          })
+        : null,
+      slot: row.date_am_pm,
+      status: row.status,
+      hours: row.hours_attended,
+    }));
+    return { profile, courseList, courseAttendance };
+  } catch (error) {
+    console.error("Error in searching for user:", error);
+    throw error;
+  }
+}
+
+export async function findUserAccount(searchOption, userInfo) {
+  // Map searchOption to the correct SQL field and table
+  let whereClause = "";
+  let params = [];
+
+  switch (searchOption) {
+    case "user-id":
+      whereClause = "user.user_id = ?";
+      params = [userInfo];
+      break;
+    case "user-name":
+      whereClause = "user.user_name LIKE ?";
+      params = [`%${userInfo}%`];
+      break;
+    case "user-email":
+      whereClause = "user.user_email = ?";
+      params = [userInfo];
+      break;
+    case "user-prn":
+      whereClause = "user_profile.prn = ?";
+      params = [userInfo];
+      break;
+    default:
+      throw new Error("Invalid search option");
+  }
+
+  const query = `
+    SELECT 
+      user.user_id AS id,
+      user.user_name AS name, 
+      user.user_email AS email, 
+      user.date_created AS date_created,
+      user.user_role AS account_role,
+      user_profile.profile_picture AS profile_picture,
+      user_profile.prn AS prn
+    FROM 
+      user
+    LEFT JOIN 
+      user_profile ON user.user_id = user_profile.user_id
+    WHERE 
+      ${whereClause}
+    LIMIT 10
+  `;
+
+  try {
+    const [result] = await pool.query(query, params);
+    const formattedResult = result.map((row) => ({
+      ...row,
+      date_created: row.date_created
+        ? new Date(row.date_created).toLocaleString("en-US", {
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit",
+          })
+        : null,
+      profile_picture: row.profile_picture
+        ? `data:image/jpeg;base64,${row.profile_picture.toString("base64")}`
+        : null,
+    }));
+    return formattedResult;
+  } catch (error) {
+    console.error("Error in findUserAccount:", error);
     throw error;
   }
 }
@@ -479,6 +614,150 @@ export async function updateUserProfile(userID, updatedProfile) {
   return result;
 }
 
+export async function getAllDashboardCounts() {
+  // Get current month and year
+  const now = new Date();
+  const month = now.getMonth() + 1;
+  const year = now.getFullYear();
+
+  try {
+    // Run all queries in parallel
+    const [
+      [newApplicantsMonth],
+      [newApplicantsYear],
+      [newApplicantsAll],
+      [acceptedApplicantsMonth],
+      [acceptedApplicantsYear],
+      [acceptedApplicantsAll],
+      [finishedApplicantsMonth],
+      [finishedApplicantsYear],
+      [finishedApplicantsAll],
+      [tdcTakersMonth],
+      [tdcTakersYear],
+      [tdcTakersAll],
+      [pdcTakersMonth],
+      [pdcTakersYear],
+      [pdcTakersAll],
+      [ownedVehicles],
+    ] = await Promise.all([
+      // New Applicants (user table)
+      pool.query(
+        `SELECT COUNT(*) AS count FROM user
+       WHERE MONTH(date_created) = ? AND YEAR(date_created) = ?`,
+        [month, year]
+      ),
+      pool.query(
+        `SELECT COUNT(*) AS count FROM user
+       WHERE YEAR(date_created) = ?`,
+        [year]
+      ),
+      pool.query(`SELECT COUNT(*) AS count FROM user`),
+
+      // Accepted Applicants (applications table)
+      pool.query(
+        `SELECT COUNT(*) AS count FROM applications
+       WHERE MONTH(created) = ? AND YEAR(created) = ?`,
+        [month, year]
+      ),
+      pool.query(
+        `SELECT COUNT(*) AS count FROM applications
+       WHERE YEAR(created) = ?`,
+        [year]
+      ),
+      pool.query(`SELECT COUNT(*) AS count FROM applications`),
+
+      // Finished Applicants (user_courses table, program_duration == total_hours)
+      pool.query(
+        `SELECT COUNT(*) AS count FROM user_courses
+       WHERE program_duration = total_hours
+         AND MONTH(date_completed) = ? AND YEAR(date_completed) = ?`,
+        [month, year]
+      ),
+      pool.query(
+        `SELECT COUNT(*) AS count FROM user_courses
+       WHERE program_duration = total_hours
+         AND YEAR(date_completed) = ?`,
+        [year]
+      ),
+      pool.query(
+        `SELECT COUNT(*) AS count FROM user_courses
+       WHERE program_duration = total_hours`
+      ),
+
+      // TDC Takers (applications table, transmission = 'onsite')
+      pool.query(
+        `SELECT COUNT(*) AS count FROM applications
+       WHERE transmission = 'onsite'
+         AND MONTH(created) = ? AND YEAR(created) = ?`,
+        [month, year]
+      ),
+      pool.query(
+        `SELECT COUNT(*) AS count FROM applications
+       WHERE transmission = 'onsite'
+         AND YEAR(created) = ?`,
+        [year]
+      ),
+      pool.query(
+        `SELECT COUNT(*) AS count FROM applications
+       WHERE transmission = 'onsite'`
+      ),
+
+      // PDC Takers (applications table, transmission = 'Manual' OR 'Automatic')
+      pool.query(
+        `SELECT COUNT(*) AS count FROM applications
+       WHERE (transmission = 'Manual' OR transmission = 'Automatic')
+         AND MONTH(created) = ? AND YEAR(created) = ?`,
+        [month, year]
+      ),
+      pool.query(
+        `SELECT COUNT(*) AS count FROM applications
+       WHERE (transmission = 'Manual' OR transmission = 'Automatic')
+         AND YEAR(created) = ?`,
+        [year]
+      ),
+      pool.query(
+        `SELECT COUNT(*) AS count FROM applications
+       WHERE (transmission = 'Manual' OR transmission = 'Automatic')`
+      ),
+
+      // Owned Vehicles (vehicle_list table)
+      pool.query(`SELECT COUNT(*) AS count FROM vehicle_list`),
+    ]);
+
+    return {
+      newApplicants: {
+        month: newApplicantsMonth[0].count,
+        year: newApplicantsYear[0].count,
+        all: newApplicantsAll[0].count,
+      },
+      acceptedApplicants: {
+        month: acceptedApplicantsMonth[0].count,
+        year: acceptedApplicantsYear[0].count,
+        all: acceptedApplicantsAll[0].count,
+      },
+      finishedApplicants: {
+        month: finishedApplicantsMonth[0].count,
+        year: finishedApplicantsYear[0].count,
+        all: finishedApplicantsAll[0].count,
+      },
+      tdcTakers: {
+        month: tdcTakersMonth[0].count,
+        year: tdcTakersYear[0].count,
+        all: tdcTakersAll[0].count,
+      },
+      pdcTakers: {
+        month: pdcTakersMonth[0].count,
+        year: pdcTakersYear[0].count,
+        all: pdcTakersAll[0].count,
+      },
+      ownedVehicles: ownedVehicles[0].count,
+    };
+  } catch (error) {
+    console.error("Error fetching dashboard counts:", error);
+    throw error;
+  }
+}
+
 // get the day and the total amount each day
 export async function getDayplusTP(month, year) {
   const [result] = await pool.query(
@@ -720,6 +999,44 @@ async function getApplicantadmin(id) {
   return formattedResult[0];
 }
 
+export async function deleteUserCourse(userId, instructorName, dateStarted) {
+  const applicationId = await findApplicationIdByCourse(
+    userId,
+    instructorName,
+    dateStarted
+  );
+  if (!applicationId) {
+    throw new Error("No application found!");
+  }
+  try {
+    await deleteApplication(applicationId);
+    const user = await getUserAccountById(userId);
+    return { clientId: user.user_id };
+  } catch (error) {
+    console.error("Error deleting course:", error);
+    throw error;
+  }
+}
+
+async function findApplicationIdByCourse(userId, instructorName, dateStarted) {
+  // Get instructor_id from instructor_name
+  const [instructorRows] = await pool.query(
+    "SELECT instructor_id FROM instructor WHERE instructor_name = ?",
+    [instructorName]
+  );
+  if (instructorRows.length === 0) return null;
+  const instructorId = instructorRows[0].instructor_id;
+
+  // Find application
+  const [appRows] = await pool.query(
+    `SELECT application_id FROM applications
+     WHERE creator_id = ? AND instructor_id = ? AND start_date = ?`,
+    [userId, instructorId, dateStarted]
+  );
+  if (appRows.length === 0) return null;
+  return appRows[0].application_id;
+}
+
 export async function deleteApplication(id) {
   try {
     // Fetch the application details before deleting
@@ -744,6 +1061,7 @@ export async function deleteApplication(id) {
 
       // Update availability for startDate and continuation based on AM/PM selection
       await updateAvailability(
+        connection,
         application.instructor_id,
         application.start_date,
         application.start_date_am_pm === "AM" ? false : undefined,
@@ -752,6 +1070,7 @@ export async function deleteApplication(id) {
       );
 
       await updateAvailability(
+        connection,
         application.instructor_id,
         application.continuation,
         application.continuation_am_pm === "AM" ? false : undefined,
@@ -759,28 +1078,12 @@ export async function deleteApplication(id) {
         undefined
       );
 
-      // Delete attendance records
       await connection.query(
         `
         DELETE FROM attendance
-        WHERE instructor_id = ? AND date = ? AND date_am_pm = ?
+        WHERE user_course_id = ?
         `,
-        [
-          application.instructor_id,
-          application.start_date,
-          application.start_date_am_pm,
-        ]
-      );
-      await connection.query(
-        `
-        DELETE FROM attendance
-        WHERE instructor_id = ? AND date = ? AND date_am_pm = ?
-        `,
-        [
-          application.instructor_id,
-          application.continuation,
-          application.continuation_am_pm,
-        ]
+        [application.user_course_id]
       );
 
       // Update Monthly Applicants
@@ -807,7 +1110,7 @@ export async function deleteApplication(id) {
       connection.release();
     }
 
-    return { message: "Application deleted successfully" };
+    return { clientId: application.creator_id };
   } catch (error) {
     console.error("Error deleting application:", error);
     throw error;
@@ -821,38 +1124,20 @@ async function updateMonthlyApplicants(connection, increment = 1) {
     const currMonth = new Date().toLocaleString("default", {
       month: "long",
     });
+    const currYear = new Date().toLocaleString("default", {
+      year: "numeric",
+    });
 
     await connection.query(
-      `INSERT INTO monthly_applicants (currDay, currMonth, totalApplicants)
-      VALUES (?, ?, ?)
+      `INSERT INTO monthly_applicants (currDay, currMonth, currYear, totalApplicants)
+      VALUES (?, ?, ?, ?)
       ON DUPLICATE KEY UPDATE totalApplicants = totalApplicants + ?`,
-      [currDay, currMonth, increment, increment]
+      [currDay, currMonth, currYear, increment, increment]
     );
   } catch (error) {
     console.error("Error updating monthly applicants:", error);
     throw error;
   }
-}
-
-export async function getPDC() {
-  const [result] = await pool.query(
-    `
-    SELECT COUNT(*) as pdcCount
-    FROM new_applicants
-    WHERE course = "pdc"
-    `
-  );
-  return result[0].pdcCount;
-}
-
-export async function newUserCount() {
-  const query = `
-    SELECT COUNT(*) as count
-    FROM user
-    WHERE created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
-  `;
-  const [result] = await pool.query(query);
-  return result[0].count;
 }
 
 export async function getAllPrograms() {
@@ -1197,7 +1482,17 @@ export async function changePaymentStatus(paymentId, status) {
       [isPaid, paymentId]
     );
 
+    const [result] = await connection.query(
+      `
+      SELECT user_id, payment_method, amount, status as payStatus 
+      FROM user_payments 
+      WHERE user_payment_id = ?
+      `,
+      [paymentId]
+    );
+
     await connection.commit();
+    return result[0];
   } catch (error) {
     await connection.rollback();
     console.error("Error changing payment status:", error);
@@ -1352,7 +1647,7 @@ export async function getAllRequests() {
   }
 }
 
-export async function getUserDetailReport(userID, reportId) {
+export async function getUserDetailReport(reportId) {
   try {
     const [result] = await pool.query(
       `
@@ -1361,9 +1656,9 @@ export async function getUserDetailReport(userID, reportId) {
       FROM 
         reports_table 
       WHERE 
-        report_id = ? AND sender_id = ?
+        report_id = ?
       `,
-      [reportId, userID]
+      [reportId]
     );
     const formattedResult = result.map((row) => ({
       ...row,
@@ -1411,7 +1706,7 @@ export async function getOneReport(id) {
 
 export async function editUserReport(status, reason, rowId) {
   try {
-    const [result] = await pool.query(
+    await pool.query(
       `
       UPDATE reports_table
     SET status = ?,
@@ -1420,7 +1715,12 @@ export async function editUserReport(status, reason, rowId) {
       `,
       [status, reason, rowId]
     );
-    return result;
+    const result = await getUserDetailReport(rowId);
+    return {
+      clientId: result.sender_id,
+      title: result.report_title,
+      repStatus: result.status,
+    };
   } catch (error) {
     console.error("Error changing Request Status from the Server!", error);
     throw error;
@@ -1490,20 +1790,24 @@ export async function getUserRequest(userId) {
   }
 }
 
-export async function getUserDetailRequest(userID, requestId) {
+export async function getUserDetailRequest(requestId) {
   try {
     const [result] = await pool.query(
       `
       SELECT 
-        * 
+      * 
       FROM 
-        requests_table 
+      requests_table 
       WHERE 
-        request_id = ? AND sender_id = ?
+      request_id = ?
       `,
-      [requestId, userID]
+      [requestId]
     );
-    return result[0];
+    const formattedResult = result.map((row) => ({
+      ...row,
+      date_created: formatDate(row.date_created),
+    }));
+    return formattedResult[0];
   } catch (error) {
     console.error(
       "Error fetching user detail request from the database:",
@@ -1515,7 +1819,7 @@ export async function getUserDetailRequest(userID, requestId) {
 
 export async function editUserRequest(status, reason, rowId) {
   try {
-    const [result] = await pool.query(
+    await pool.query(
       `
       UPDATE requests_table
     SET status = ?,
@@ -1524,7 +1828,13 @@ export async function editUserRequest(status, reason, rowId) {
       `,
       [status, reason, rowId]
     );
-    return result;
+    const result = await getUserDetailRequest(rowId);
+    console.log("result", result);
+    return {
+      clientId: result.sender_id,
+      title: result.request_title,
+      reqStatus: result.status,
+    };
   } catch (error) {
     console.error("Error changing Request Status from the Server!", error);
     throw error;
@@ -1552,9 +1862,17 @@ export async function checkInstructorAvailability(instructorId) {
 }
 
 // Update availability
-export async function updateAvailability(instructorId, date, am, pm, onsite) {
+export async function updateAvailability(
+  connection,
+  instructorId,
+  date,
+  am,
+  pm,
+  onsite
+) {
   try {
-    const [existing] = await pool.query(
+    // Use the passed-in connection for all queries
+    const [existing] = await connection.query(
       "SELECT * FROM availability WHERE instructor_id = ? AND date = ?",
       [instructorId, date]
     );
@@ -1562,7 +1880,7 @@ export async function updateAvailability(instructorId, date, am, pm, onsite) {
     if (existing.length > 0) {
       // Update only the slots that are provided
       const current = existing[0];
-      await pool.query(
+      await connection.query(
         "UPDATE availability SET am_available = ?, pm_available = ?, onsite_slots = ? WHERE instructor_id = ? AND date = ?",
         [
           am !== undefined ? am : current.am_available,
@@ -1573,7 +1891,7 @@ export async function updateAvailability(instructorId, date, am, pm, onsite) {
         ]
       );
     } else {
-      await pool.query(
+      await connection.query(
         "INSERT INTO availability (instructor_id, date, am_available, pm_available, onsite_slots) VALUES (?, ?, ?, ?, ?)",
         [instructorId, date, am, pm, onsite]
       );
@@ -1620,10 +1938,22 @@ export async function updateOnsiteAvailability(instructorId, date, onsite) {
 async function isSlotTaken(instructorId, date, am, pm) {
   try {
     const [result] = await pool.query(
-      "SELECT * FROM availability WHERE instructor_id = ? AND date = ? AND (am_available = ? OR pm_available = ?)",
-      [instructorId, date, am, pm]
+      "SELECT am_available, pm_available FROM availability WHERE instructor_id = ? AND date = ?",
+      [instructorId, date]
     );
-    return result.length > 0;
+    console.log("Slot query result:", result);
+
+    if (result.length === 0) {
+      return false; // No record found, slot is available
+    }
+
+    const { am_available, pm_available } = result[0];
+
+    // Check individual slot availability
+    if (am !== null && am_available === 1) return true;
+    if (pm !== null && pm_available === 1) return true;
+
+    return false; // No conflicts
   } catch (error) {
     console.error("Database query error:", error);
     throw error;
@@ -1671,8 +2001,8 @@ export async function applyTDC(
     const startDateSlotTaken = await isSlotTaken(
       instructor,
       startDate,
-      startDateAMPM === "AM",
-      startDateAMPM === "PM"
+      startDateAMPM === "AM" ? true : null,
+      startDateAMPM === "PM" ? true : null
     );
     if (startDateSlotTaken) {
       throw new Error("Start date slot is already taken.");
@@ -1682,8 +2012,8 @@ export async function applyTDC(
     const continuationSlotTaken = await isSlotTaken(
       instructor,
       continuation,
-      continuationAMPM === "AM",
-      continuationAMPM === "PM"
+      continuationAMPM === "AM" ? true : null,
+      continuationAMPM === "PM" ? true : null
     );
     if (continuationSlotTaken) {
       throw new Error("Continuation date slot is already taken.");
@@ -1735,10 +2065,21 @@ export async function applyTDC(
     try {
       await connection.beginTransaction();
 
+      //Update for the user course table
+      const user_course_id = await updateUserCoursesTable(
+        connection,
+        userid,
+        instructorName.instructor_name,
+        selectedProgramDetails.program_name,
+        selectedProgramDetails.program_duration,
+        selectedProgramDetails.program_fee,
+        startDate
+      );
+
       // Insert the application
-      const [result] = await connection.query(
-        `INSERT INTO applications (instructor_id, start_date, start_date_am_pm, continuation, continuation_am_pm, creator_id, created_by, transmission) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      await connection.query(
+        `INSERT INTO applications (instructor_id, start_date, start_date_am_pm, continuation, continuation_am_pm, creator_id, created_by, transmission, user_course_id) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           instructor,
           startDate,
@@ -1748,12 +2089,14 @@ export async function applyTDC(
           userid,
           role,
           transmissionType,
+          user_course_id,
         ]
       );
 
       // Update availability for the starting date
       if (transmissionType !== "Onsite") {
         await updateAvailability(
+          connection,
           instructor,
           startDate,
           startDateAMPM === "AM" ? true : undefined,
@@ -1763,6 +2106,7 @@ export async function applyTDC(
 
         // Update availability for the continuation date
         await updateAvailability(
+          connection,
           instructor,
           continuation,
           continuationAMPM === "AM" ? true : undefined,
@@ -1776,17 +2120,6 @@ export async function applyTDC(
 
       // Update Monthly Applicants
       await updateMonthlyApplicants(connection, 1);
-
-      //Update for the user course table
-      const user_course_id = await updateUserCoursesTable(
-        connection,
-        userid,
-        instructorName.instructor_name,
-        selectedProgramDetails.program_name,
-        selectedProgramDetails.program_duration,
-        selectedProgramDetails.program_fee,
-        startDate
-      );
 
       // Update attendance for startDate and continuation
       await updateAttendance(
@@ -1812,7 +2145,6 @@ export async function applyTDC(
 
       // Commit the transaction
       await connection.commit();
-      return result;
     } catch (error) {
       // Rollback the transaction in case of error
       await connection.rollback();
@@ -1825,6 +2157,99 @@ export async function applyTDC(
   } catch (error) {
     console.error("Error applying TDC:", error);
     throw error;
+  }
+}
+
+export async function addContinuationDate(
+  userID,
+  createdBy,
+  course,
+  instructor,
+  continuationDate,
+  dateAMPM,
+  transmissionType
+) {
+  // Get the transmission type for this course
+  let transmission;
+  if (transmissionType) {
+    transmission = transmissionType;
+  } else {
+    const [rows] = await pool.query(
+      `SELECT transmission FROM attendance WHERE user_course_id = ? LIMIT 1`,
+      [course]
+    );
+    transmission = rows[0]?.transmission;
+  }
+
+  if (transmission !== "Onsite") {
+    // Check if continuation slot is already taken
+    const continuationSlotTaken = await isSlotTaken(
+      instructor,
+      continuationDate,
+      dateAMPM === "AM" ? true : null,
+      dateAMPM === "PM" ? true : null
+    );
+    if (continuationSlotTaken) {
+      throw new Error("Continuation date slot is already taken.");
+    }
+  } else {
+    // Check availability for the continuation date
+    try {
+      await isOnsiteSlotFull(instructor, continuationDate);
+    } catch (error) {
+      if (
+        error.message === "Selected date is not available for this program."
+      ) {
+        throw new Error(
+          "Selected continuation date is not available for this program."
+        );
+      } else if (error.message === "Selected date is full.") {
+        throw new Error("Selected continuation date is full.");
+      } else {
+        throw error; // Re-throw other errors
+      }
+    }
+  }
+
+  let connection;
+  try {
+    connection = await pool.getConnection();
+    await connection.beginTransaction();
+
+    if (transmission !== "Onsite") {
+      // Update availability for the continuation date
+      await updateAvailability(
+        connection,
+        instructor,
+        continuationDate,
+        dateAMPM === "AM" ? true : undefined,
+        dateAMPM === "PM" ? true : undefined,
+        undefined
+      );
+    } else {
+      await updateOnsiteAvailability(instructor, continuationDate, 1);
+    }
+
+    await updateAttendance(
+      connection,
+      instructor,
+      continuationDate,
+      dateAMPM,
+      userID,
+      createdBy,
+      transmission,
+      course
+    );
+    // Commit the transaction
+    await connection.commit();
+  } catch (error) {
+    // Rollback the transaction in case of error
+    if (connection) await connection.rollback();
+    console.error("Database transaction error:", error);
+    throw error;
+  } finally {
+    // Release the connection
+    if (connection) connection.release();
   }
 }
 
@@ -1921,26 +2346,70 @@ export async function getAllPdcTdcTakers(type) {
   }
 }
 
-export async function changeAttendanceStatus(id, status, hours) {
+export async function changeUserAttendanceStatus(id, status, hours) {
+  console.log("id, status, hours", id, status, hours);
+  const [attendanceRows] = await pool.query(
+    `SELECT * FROM attendance WHERE attendance_id = ?`,
+    [id]
+  );
+  const attendanceInfo = attendanceRows[0];
+  if (!attendanceInfo) throw new Error("Attendance record not found");
+
+  const userCourseRows = await getTraineeCourseInfo(
+    attendanceInfo.user_course_id
+  );
+  const userCourseInfo = userCourseRows[0];
+  if (!userCourseInfo) throw new Error("User course not found");
+
+  let setters, params;
+
+  let safeHours = Number(hours);
+  if (!Number.isFinite(safeHours)) safeHours = 0;
+  console.log("safeHours", safeHours);
+  const updatedHours = userCourseInfo.total_hours + safeHours;
+  console.log("updatedHours", updatedHours);
+
+  if (updatedHours <= userCourseInfo.program_duration) {
+    const date = new Date();
+    setters = "date_completed = ?, total_hours = ?";
+    params = [formatDate(date), updatedHours, userCourseInfo.course_id];
+  } else {
+    setters = "total_hours = ?";
+    params = [updatedHours, userCourseInfo.course_id];
+  }
+  console.log(setters, params);
+  const connection = await pool.getConnection();
+
   try {
-    const [result] = await pool.query(
+    await connection.beginTransaction();
+
+    await connection.query(
       `UPDATE attendance SET status = ?, hours_attended = ? WHERE attendance_id = ?`,
       [status, hours, id]
     );
-    return result;
+    await connection.query(
+      `UPDATE user_courses SET ${setters} WHERE course_id = ?`,
+      params
+    );
+
+    await connection.commit();
+    return { userid: userCourseInfo.userId };
   } catch (error) {
+    await connection.rollback();
     console.error("Error changing attendance status", error);
     throw error;
+  } finally {
+    connection.release();
   }
 }
 
-export async function getUserAttendanceSchedule(userId) {
+export async function getUserAttendanceSchedule(userId, role) {
   try {
     const [result] = await pool.query(
       `SELECT *
       FROM attendance
-      WHERE creator_id = ?`,
-      [userId]
+      WHERE creator_id = ? AND created_by= ?`,
+      [userId, role]
     );
 
     const formattedResult = result.map((row) => ({
@@ -2037,13 +2506,14 @@ export async function addInstructor(
   manual,
   automatic,
   accreditaionNumber,
-  dateStarted
+  dateStarted,
+  profilePicture
 ) {
   try {
     const [result] = await pool.query(
       `
-  INSERT INTO instructor (instructor_name, rate_per_hour, instructor_type, isTdcOnsite, isManual, isAutomatic, date_started, accreditation_number)
-  VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  INSERT INTO instructor (instructor_name, rate_per_hour, instructor_type, isTdcOnsite, isManual, isAutomatic, date_started, instructor_profile_picture, accreditation_number)
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
   `,
       [
         name,
@@ -2053,6 +2523,7 @@ export async function addInstructor(
         manual,
         automatic,
         dateStarted,
+        profilePicture,
         accreditaionNumber,
       ]
     );
@@ -2068,7 +2539,7 @@ export async function updateInstructorInfo(userID, updatedProfile) {
     .map((field) => `${field} = ?`)
     .join(", ");
   const values = Object.values(updatedProfile);
-  values.push(+userID);
+  values.push(userID);
   const [result] = await pool.query(
     `UPDATE instructor 
     SET ${setClause} 
@@ -2078,11 +2549,11 @@ export async function updateInstructorInfo(userID, updatedProfile) {
   return result;
 }
 
-export async function assignAccountToInstructor(instructorID, accountID) {
+export async function assignAccountToInstructor(instructorID, prn, accountID) {
   try {
     const [result] = await pool.query(
-      `UPDATE instructor SET account_id = ? WHERE instructor_id = ?`,
-      [accountID, instructorID]
+      `UPDATE instructor SET account_id = ?, prn = ? WHERE instructor_id = ?`,
+      [accountID, prn, instructorID]
     );
     return result;
   } catch (error) {
@@ -2328,16 +2799,16 @@ export async function getInstructorDetailsForApplicants() {
 export async function getCompletedCourseList() {
   try {
     const [result] = await pool.query(`
-      SELECT *,
-      instructor.instructor_id AS instructor_id,
-      program_offers.program_id AS program_id,
-      user.user_name AS user_name
-      FROM user_courses
-      LEFT JOIN instructor ON user_courses.instructor_name = instructor.instructor_name
-      LEFT JOIN user ON user_courses.user_id = user.user_id
-      LEFT JOIN program_offers ON user_courses.program_name = program_offers.program_name
+      SELECT uc.*,
+      i.instructor_id AS instructor_id,
+      po.program_id AS program_id,
+      u.user_name AS user_name
+      FROM user_courses uc
+      LEFT JOIN instructor i ON uc.instructor_name = i.instructor_name
+      LEFT JOIN user u ON uc.user_id = u.user_id
+      LEFT JOIN program_offers po ON uc.program_name = po.program_name
+      WHERE uc.grading_status = 'Completed'
       `);
-    // WHERE user_courses.grading_status = 'Completed' --- add later
 
     const formattedResult = result.map((row) => ({
       ...row,
@@ -2433,11 +2904,12 @@ export async function getTraineeCourseInfo(courseId) {
 
 export async function editTraineeCompletedCourseInfo(id, totalHours) {
   try {
-    const [result] = await pool.query(
+    await pool.query(
       `UPDATE user_courses SET total_hours = ? WHERE course_id = ?`,
       [totalHours, id]
     );
-    return result;
+    const result = await getTraineeCourseInfo(id);
+    return result[0];
   } catch (error) {
     console.error("Error changing details", error);
     throw error;
@@ -2457,6 +2929,26 @@ export async function uploadTraineeCompletionCertificate(
 
   try {
     await pool.query(query, [fileBuffer, fileType, id]);
+  } catch (error) {
+    console.error("Error updating database:", error);
+    throw error;
+  }
+}
+
+export async function uploadTraineeGradeSheet(id, fileBuffer, grade) {
+  const setters =
+    grade == null
+      ? "grade_sheet = ?"
+      : "grade = ?, grade_sheet = ?, grade_status = 'Completed'";
+  const params = grade == null ? [fileBuffer, id] : [grade, fileBuffer, id];
+  const query = `
+    UPDATE user_courses
+    SET ${setters}
+    WHERE course_id = ?
+  `;
+
+  try {
+    await pool.query(query, params);
   } catch (error) {
     console.error("Error updating database:", error);
     throw error;
@@ -2605,6 +3097,10 @@ export async function addNotification(userId, role, type, message) {
 }
 
 export async function getNotifications(userId, role) {
+  const setters =
+    role == "admin" ? "user_role = ?" : "user_id = ? AND user_role = ?";
+  const params = role == "admin" ? [role] : [userId, role];
+
   const connection = await pool.getConnection();
   try {
     await connection.beginTransaction();
@@ -2612,13 +3108,14 @@ export async function getNotifications(userId, role) {
     const [result] = await connection.query(
       `SELECT notif_type, message, DATE_FORMAT(date_created, '%Y-%m-%d') AS date_created, isRead
        FROM notifications
-       WHERE user_id = ? AND user_role = ?
-       ORDER BY date_created DESC`,
-      [userId, role]
+       WHERE ${setters}
+       ORDER BY date_created DESC 
+      `,
+      params
     );
 
     // Pass the connection to the helper!
-    await markReadNotifications(userId, role, connection);
+    await markReadNotifications(connection, userId, role);
 
     await connection.commit();
     return result;
@@ -2631,10 +3128,31 @@ export async function getNotifications(userId, role) {
 }
 
 // Helper function that uses the same connection
-export async function markReadNotifications(userId, role, connection) {
+export async function markReadNotifications(connection, userId, role) {
+  const setters =
+    role == "admin" ? "user_role = ?" : "user_id = ? AND user_role = ?";
+  const params = role == "admin" ? [role] : [userId, role];
+
   const [result] = await connection.query(
-    `UPDATE notifications SET isRead = 1 WHERE user_id = ? AND user_role = ? AND isRead = 0`,
-    [userId, role]
+    `UPDATE notifications SET isRead = 1 WHERE ${setters} AND isRead = 0`,
+    params
   );
   return result;
+}
+
+export async function saveCertificateToDatabase(courseId, pdfBuffer, fileType) {
+  try {
+    const result = await pool.query(
+      `
+      INSERT INTO user_courses (certificate_file, certificate_file_type)
+      VALUES (?, ?)
+      WHERE user_course_id = ?
+      `,
+      [pdfBuffer, fileType, courseId]
+    );
+    return result;
+  } catch (error) {
+    console.error("Failed to upload the certificate", error);
+    throw error;
+  }
 }

@@ -1,6 +1,9 @@
+import { encryptData, decryptData } from "../f-webCryptoKeys.js";
+
 async function renderDetails() {
   const response = await fetch(`/api/user-profile`);
-  const data = await response.json();
+  const encrypted = await response.json();
+  const data = decryptData(encrypted.encrypted);
   const profileDisplay = document.getElementById("profile-display");
   console.log(data);
 
@@ -138,10 +141,12 @@ async function renderDetails() {
 
         const form = document.getElementById("profile-form");
         const formData = new FormData(form);
+        const encrypted = await encryptData(formData);
         try {
           const response = await fetch("/api/user-profile-submit", {
             method: "POST",
-            body: formData,
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ encryptedWithEncAesKey: encrypted }),
           });
           if (response.ok) {
             alert("Profile submitted successfully!");
@@ -345,20 +350,23 @@ async function renderDetails() {
 
         const form = document.getElementById("edit-profile-form");
         const formData = new FormData(form);
+        const encrypted = await encryptData(formData);
         try {
           const response = await fetch("/api/user-profile-edit", {
             method: "PUT",
-            body: formData,
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ encryptedWithEncAesKey: encrypted }),
           });
+          const data = await response.json();
           if (response.ok) {
-            alert("Profile submitted successfully!");
+            alert(data.message);
             window.location.href = "/user-profile";
           } else {
             alert("Failed to submit profile.");
           }
         } catch (error) {
           console.error("Error submitting profile:", error);
-          alert("An error occurred while submitting the profile.");
+          alert("An error occurred while submitting the profile.", data.error);
         }
       });
   }

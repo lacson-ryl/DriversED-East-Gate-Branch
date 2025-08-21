@@ -6,6 +6,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard</title>
     <link href="/f-css/output.css" rel="stylesheet">
+    <script type="module">
+        import Dexie from "https://cdn.jsdelivr.net/npm/dexie@3.2.4/dist/dexie.mjs";
+        window.Dexie = Dexie;
+    </script>
     <style>
         .clock {
             font-size: 2rem;
@@ -53,59 +57,121 @@
                 </div>
             </div>
             <div class="grid grid-cols-3 gap-x-7 gap-y-4 mt-16 mb-14 ml-5 px-2 text-white text-lg">
-                <a href="/applicants-list">
+                <!-- Number of Accepted Applicants -->
+                <a>
                     <div
-                        class="dashboard-placards bg-green-600 bg-opacity-95 shadow-md shadow-green-500/50 rounded-md p-5 hover:outline hover:outline-2 hover:outline-blue-900">
-                        <h4">Number of New Applicants</h4>
-                            <p class="text-right text-6xl">
-                                <%# !newusercount ? 0 : newusercount %>
+                        class="dashboard-placards grid grid-cols-2 bg-green-600 bg-opacity-95 shadow-md shadow-green-500/50 rounded-md px-5 py-3 hover:outline hover:outline-2 hover:outline-blue-900">
+                        <h4 class="col-span-2">Number of Users</h4>
+                        <div class="flex flex-col mr-2">
+                            <h2 class="text-base font-normal">month</h2>
+                            <p class="text-center text-5xl border-r-2 border-gray-200">
+                                <%= dashboardCounts.newApplicants.month %>
                             </p>
+                        </div>
+                        <div class="flex flex-col ml-2">
+                            <h2 class="text-base font-normal">year</h2>
+                            <p class="text-center text-5xl">
+                                <%= dashboardCounts.newApplicants.year %>
+                            </p>
+                        </div>
                     </div>
                 </a>
-                <div
-                    class="dashboard-placards bg-cyan-600  bg-opacity-95 shadow-md shadow-cyan-500/50 rounded-md p-5 hover:outline hover:outline-2 hover:outline-blue-900">
-                    <h4">Number of Accepted Applicants</h4>
-                        <p class="text-right text-6xl">0</p>
-                </div>
+
+                <a href="/applicants">
+                    <div
+                        class="dashboard-placards grid grid-cols-2 bg-cyan-600  bg-opacity-95 shadow-md shadow-cyan-500/50 rounded-md px-5 py-3 hover:outline hover:outline-2 hover:outline-blue-900">
+                        <h4 class="col-span-2">Number of Accepted Applicants</h4>
+                        <div class="flex flex-col mr-2">
+                            <h2 class="text-base font-normal">month</h2>
+                            <p class="text-center text-5xl border-r-2 border-gray-200">
+                                <%= dashboardCounts.acceptedApplicants.month %>
+                            </p>
+                        </div>
+                        <div class="flex flex-col ml-2">
+                            <h2 class="text-base font-normal">year</h2>
+                            <p class="text-center text-5xl">
+                                <%= dashboardCounts.acceptedApplicants.year %>
+                            </p>
+                        </div>
+                    </div>
+                </a>
+
+                <!-- Finished Applicants -->
                 <a href="/completed-course">
                     <div
-                        class="dashboard-placards bg-red-600 s bg-opacity-95 shadow-md shadow-red-400/50 rounded-md p-5 hover:outline hover:outline-2 hover:outline-blue-900">
-                        <h4">Finished Applicants</h4>
-                            <p class="text-right text-6xl">0</p>
+                        class="dashboard-placards grid grid-cols-2 bg-red-600 bg-opacity-95 shadow-md shadow-red-400/50 rounded-md px-5 py-3 hover:outline hover:outline-2 hover:outline-blue-900">
+                        <h4 class="col-span-2">Finished Applicants</h4>
+                        <div class="flex flex-col mr-2">
+                            <h2 class="text-base font-normal">month</h2>
+                            <p class="text-center text-5xl border-r-2 border-gray-200">
+                                <%= dashboardCounts.finishedApplicants.month %>
+                            </p>
+                        </div>
+                        <div class="flex flex-col ml-2">
+                            <h2 class="text-base font-normal">year</h2>
+                            <p class="text-center text-5xl">
+                                <%= dashboardCounts.finishedApplicants.year %>
+                            </p>
+                        </div>
                     </div>
                 </a>
+
+                <!-- TDC Takers -->
                 <a href="/attendance">
                     <div
-                        class="dashboard-placards bg-sky-900 s bg-opacity-95 shadow-md shadow-sky-500/50 rounded-md p-5 hover:outline hover:outline-2 hover:outline-black">
-                        <h4">TDC Takers</h4>
-                            <p class="text-right text-6xl">
-                                <%# newusercount - getpdc %>
+                        class="dashboard-placards grid grid-cols-2 bg-sky-900 bg-opacity-95 shadow-md shadow-sky-500/50 rounded-md px-5 py-3 hover:outline hover:outline-2 hover:outline-black">
+                        <h4 class="col-span-2">TDC Takers</h4>
+                        <div class="flex flex-col mr-2">
+                            <h2 class="text-base font-normal">month</h2>
+                            <p class="text-center text-5xl border-r-2 border-gray-200">
+                                <%= dashboardCounts.tdcTakers.month %>
                             </p>
+                        </div>
+                        <div class="flex flex-col ml-2">
+                            <h2 class="text-base font-normal">year</h2>
+                            <p class="text-center text-5xl">
+                                <%= dashboardCounts.tdcTakers.year %>
+                            </p>
+                        </div>
                     </div>
                 </a>
+
+                <!-- PDC Takers -->
                 <a href="/attendance">
                     <div
-                        class="dashboard-placards bg-sky-900 s bg-opacity-95 shadow-md shadow-sky-500/50 rounded-md p-5 hover:outline hover:outline-2 hover:outline-black">
-                        <h4">PDC Takers</h4>
-                            <p class="text-right text-6xl">
-                                <%# getpdc %>
+                        class="dashboard-placards grid grid-cols-2 bg-sky-900 bg-opacity-95 shadow-md shadow-sky-500/50 rounded-md px-5 py-3 hover:outline hover:outline-2 hover:outline-black">
+                        <h4 class="col-span-2">PDC Takers</h4>
+                        <div class="flex flex-col mr-2">
+                            <h2 class="text-base font-normal">month</h2>
+                            <p class="text-center text-5xl border-r-2 border-gray-200">
+                                <%= dashboardCounts.pdcTakers.month %>
                             </p>
+                        </div>
+                        <div class="flex flex-col ml-2">
+                            <h2 class="text-base font-normal">year</h2>
+                            <p class="text-center text-5xl">
+                                <%= dashboardCounts.pdcTakers.year %>
+                            </p>
+                        </div>
                     </div>
                 </a>
+
                 <a href="/vehicles">
                     <div
                         class="dashboard-placards bg-sky-900 s bg-opacity-95 shadow-md shadow-sky-500/50 rounded-md p-5 hover:outline hover:outline-2 hover:outline-black">
                         <h4">Number of Owned Vehicles</h4>
-                            <p class="text-right text-6xl">1</p>
+                            <p class="text-right text-6xl">
+                                <%= dashboardCounts.ownedVehicles %>
+                            </p>
                     </div>
                 </a>
             </div>
-            <h3 class="text-center my-16 text-3xl">Instructor Schedule</h3>
-            <div id="instructor-schedules" class="grid grid-cols-3 gap-x-5 gap-y-7 mt-5 ml-5 px-2 text-black text-lg">
+            <h3 class="text-center mt-16 mb-10 text-3xl">Instructor Schedule</h3>
+            <div id="instructor-schedules" class="grid grid-cols-3 gap-x-5 gap-y-7 ml-5 px-2 mb-10 text-black text-lg">
             </div>
 
             <div class="flex justify-between items-center mr-4 my-2">
-                <h2 class="text-lg ml-4"> Instructor Schedule</h2>
+                <h2 class="text-lg ml-4"> Payment Methods</h2>
                 <div id="notification" class="hidden notification"></div>
                 <button id="add-payment-method-button"
                     class="bg-blue-700 flex items-center hover:bg-gradient-to-t from-blue-400 to-blue-800 text-white rounded-lg px-2 py-1">
@@ -126,6 +192,9 @@
             </div>
     </div>
     <%# //main-content %>
+        <script type="module" src="../f-webCryptoKeys.js"></script>
+        <script type="module" src="../f-keyManager.js"></script>
+
         <script>
 
             document.addEventListener('DOMContentLoaded', async () => {
@@ -135,6 +204,7 @@
                     // Load the external script after successful authentication
                     const indexScript = document.createElement('script');
                     indexScript.src = '/f-jsfiles/index.js';
+                    indexScript.type = "module";
                     document.body.appendChild(indexScript);
 
                     const sidebarScript = document.createElement('script');

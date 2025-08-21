@@ -80,7 +80,7 @@
                 </a>
             </div>
             <div class="grid grid-rows-1 sm:grid md:grid-cols-3 gap-4">
-                <div class="col-span-1 bg-gray-200 ml-4 p-4 shadow-md">
+                <div class="col-span-1 bg-gray-200 ml-4 p-4 shadow-md rounded-lg">
                     <form id="applicationForm">
                         <div class="mb-4">
                             <label for="instructoroption"
@@ -123,20 +123,46 @@
                                 <option value="automatic">Automatic</option>
                             </select>
                         </div>
-                        <div class="flex flex-row justify-between">
-                            <button type="submit" class="bg-blue-500 text-white px-4 py-2 mt-4">Submit</button>
-                            <a id="setTdcDate" class="bg-blue-500 text-white px-4 py-2 mt-4 hover:cursor-pointer">Set
-                                Date for
-                                TDC</a>
+                        <div class="flex flex-row justify-between text-center items-center">
+                            <button type="submit"
+                                class="bg-blue-500 text-white px-4 py-2 mt-4 rounded-md hover:bg-blue-700">Submit</button>
+                            <div class="flex flex-col mt-4 gap-3">
+                                <a id="setTdcDate"
+                                    class="bg-blue-500 text-white px-3 py-2 rounded-md hover:cursor-pointer hover:bg-blue-700 text-sm md:text-base">
+                                    Set Date for TDC
+                                </a>
+                                <a id="add-continuation"
+                                    class="bg-blue-500 text-white px-3 py-2 rounded-md hover:cursor-pointer hover:bg-blue-700 text-sm md:text-base">
+                                    add Continuation
+                                </a>
+                            </div>
                         </div>
                     </form>
                 </div>
                 <!-- Calendar -->
-                <div class="col-span-2 bg-white p-4 shadow-md">
+                <div class="col-span-2 bg-white pt-2 p-4 rounded-lg shadow-md">
+                    <div id="color-stamps-instructions" class="place-content-center flex flex-row gap-4 ml-4">
+                        <div class="flex flex-row gap-3">
+                            <div class="circle available-am place-self-center">AM</div>
+                            <div class="circle available-pm place-self-center">PM</div>
+                            <p>- PDC slots taken</p>
+                        </div>
+                        <div class="flex flex-row gap-3">
+                            <div class="circle onsite-tdc place-self-center">25</div>
+                            <p>- TDC slots availability</p>
+                        </div>
+                        <div class="flex flex-row gap-3">
+                            <div class="bg-green-100 w-6 h-6 place-self-center"></div>
+                            <p>- no slots taken</p>
+                        </div>
+                    </div>
+
                     <div class="flex justify-between items-center mb-4">
-                        <button id="prevMonth" class="bg-blue-500 text-white px-4 py-2">Previous</button>
+                        <button id="prevMonth"
+                            class="w-24 text-center bg-blue-500 hover:bg-blue-700 text-white px-4 py-2 rounded-ss-3xl">Previous</button>
                         <div id="monthLabel" class="text-xl font-bold"></div>
-                        <button id="nextMonth" class="bg-blue-500 text-white px-4 py-2">Next</button>
+                        <button id="nextMonth"
+                            class="w-20 text center bg-blue-500 hover:bg-blue-700 text-white px-4 py-2 rounded-tr-3xl">Next</button>
                     </div>
                     <div class="grid grid-cols-7 mt-4 text-center">
                         <div class="pl-1 text-sm">Mon</div>
@@ -154,32 +180,7 @@
             </div>
 
             <div id="myModal" class="fixed inset-0 z-50 place-content-center hidden bg-gray-900 bg-opacity-50">
-                <div class="relative justify-self-center bg-white rounded-lg shadow-lg min-w-96 max-w-screen-lg p-6 ">
-                    <span
-                        class="close absolute top-0 right-2 text-3xl font-semibold text-gray-700 hover:text-gray-900 cursor-pointer">&times;</span>
-                    <h2 class="text-xl font-semibold">Set TDC Date</h2>
-                    <form id="tdcDateForm" class="mt-4">
-                        <div class="mb-4">
-                            <label for="tdcInstructor"
-                                class="block text-sm font-medium text-gray-700">Instructor</label>
-                            <select id="tdcInstructor" name="tdcInstructor" required>
 
-                            </select>
-                        </div>
-                        <div class="mb-4">
-                            <label for="tdcDate" class="block text-sm font-medium text-gray-700">Date</label>
-                            <input type="date" id="tdcDate" name="tdcDate" required
-                                class="date-input mt-1 block w-full outline outline-1 outline-gray-500 hover:outline-yellow-500 focus:outline-yellow-500 px-1">
-                        </div>
-                        <div class="mb-4">
-                            <label for="max-slot" class="block text-sm font-medium text-gray-700">Max Slots</label>
-                            <input type="number" id="max-slot" name="max-slot" required
-                                class="mt-1 block w-full outline outline-1 outline-gray-500 hover:outline-yellow-500 focus:outline-yellow-500 px-1">
-                        </div>
-                        <button type="submit" class="bg-blue-500 text-white px-4 py-2 mt-4">Submit</button>
-
-                    </form>
-                </div>
             </div>
         </div>
 

@@ -9,6 +9,7 @@ import {
   getUserAccountById,
   saveUser,
   findAccountByEmail,
+  addNotification,
 } from "./b-database.js";
 import { generateTemporaryPassword } from "./b-authenticate.js";
 import { sendEmail } from "./b-email-config.js";
@@ -47,7 +48,6 @@ adminPassport.use(
 );
 
 adminPassport.serializeUser((user, done) => {
-  console.log("Serializing admin:", user);
   done(null, { id: user.account_id, userType: "admin" });
 });
 
@@ -104,6 +104,13 @@ userPassport.use(
             generatedPassword: random8CharacPass,
             dateCreated: new Date().toLocaleDateString(),
           });
+          await addNotification(
+            userId,
+            "user",
+            "Welcome!!",
+            `Greetings to you, ${profile.displayName}!!
+            Thank you for choosing our driving school.`
+          );
           return done(null, newUser);
         }
       } catch (error) {

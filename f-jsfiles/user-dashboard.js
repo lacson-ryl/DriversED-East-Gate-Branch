@@ -57,7 +57,7 @@ async function renderUserCourseCards() {
         const courseId = arr.course_id;
         return `
           <div class="swiper-slide p-2">
-            <div class="card flex flex-col max-w-full max-h-screen gap-y-5 items-center">
+            <div class="card flex flex-col scale-75 md:scale-100 max-w-full max-h-screen gap-y-5 items-center">
               <div class="min-w-96 w-1/2 min-h-44 bg-white text-center text-black border-2 border-l-4 border-b-4 border-b-yellow-400 border-l-yellow-400 rounded-xl p-5 space-y-2 shadow-lg transform transition duration-500 hover:scale-105">
                 <h1 class="text-2xl mb-2 font-bold text-gray-800">${
                   arr.program_name
@@ -248,7 +248,7 @@ async function renderCourseCards() {
 
         return `
           <div class="swiper-slide p-2 mb-5">
-            <div class="card flex flex-col max-w-full max-h-screen gap-y-5 items-center">
+            <div class="card flex flex-col scale-75 md:scale-100 max-w-full max-h-screen gap-y-5 items-center">
               <div class="rounded-md overflow-hidden relative h-96 w-96 group [perspective:1000px]">
                 <div
                   class="relative h-full w-full rounded-md transition-all duration-500 [transform-style:preserve-3d] group-hover:[transform:rotateY(180deg)]">

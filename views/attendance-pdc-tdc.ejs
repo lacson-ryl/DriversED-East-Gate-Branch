@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Attendance for Trainees</title>
     <link href="/f-css/output.css" rel="stylesheet">
-    
+
 </head>
 
 <body class="flex flex-row w-full">
@@ -34,10 +34,12 @@
             <div class="flex w-full justify-between pr-4 my-2">
                 <h2 class="text-lg ml-4 my-2"> Manage Applicants</h2>
                 <div class="flex gap-2">
-                    <a id="pdc-takers-btn" class=" bg-sky-900 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg focus:outline-none focus:shadow-outline">
+                    <a id="pdc-takers-btn"
+                        class=" bg-sky-900 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg focus:outline-none focus:shadow-outline">
                         PDC
                     </a>
-                    <a id="tdc-takers-btn" class=" bg-sky-900 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg focus:outline-none focus:shadow-outline">
+                    <a id="tdc-takers-btn"
+                        class=" bg-sky-900 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg focus:outline-none focus:shadow-outline">
                         TDC
                     </a>
                 </div>
@@ -46,6 +48,14 @@
 
             </div>
 
+        </div>
+    </div>
+    <div id="myModal" class="fixed inset-0 z-50 items-center justify-center hidden bg-gray-900 bg-opacity-50">
+        <div class="relative bg-white rounded-lg shadow-lg min-w-96 min-w-screen-lg max-w-screen-lg p-6">
+            <span
+                class="close absolute top-0 right-2 text-3xl font-semibold text-gray-700 hover:text-gray-900 cursor-pointer">&times;</span>
+            <h2 id="title-details" class="text-xl font-semibold">Attendance</h2>
+            <div id="modal-details" class="mt-4">The details</div>
         </div>
     </div>
     <script>

@@ -13,14 +13,15 @@ async function renderCompletedCourseList() {
             class=" w-full text-center justify-items-start table-fixed border-collapse border-2 border-gray-300">
             <thead class="text-sm">
                 <tr>
-                    <th class="border border-gray-300 px-4 py-2 w-16">ID</th>
+                    <th class="border border-gray-300 px-4 py-2 w-12">ID</th>
                     <th class="border border-gray-300 px-4 py-2">User ID - Name</th>
                     <th class="border border-gray-300 px-4 py-2 ">Instructor ID - Name</th>
                     <th class="border border-gray-300 px-4 py-2">Program ID - Name</th>
                     <th class="border border-gray-300 px-4 py-2">Date</th>
                     <th class="border border-gray-300 px-3 py-2 w-16">Hours</th>
+                    <th class="border border-gray-300 px-4 py-2 w-32">Grade</th>
                     <th class="border border-gray-300 px-4 py-2 w-32">Certificate</th>
-                    <th class="border border-gray-300 px-4 py-2">Action</th>
+                    <th class="border border-gray-300 px-4 py-2 w-32">Action</th>
                 </tr>
             </thead>
             <tbody class="">
@@ -29,7 +30,7 @@ async function renderCompletedCourseList() {
                     (arr) =>
                       `
                     <tr class=" hover:outline outline-1 outline-black">
-                        <td class="border border-gray-300 px-4 py-2">
+                        <td class="text-xs font-semibold border border-gray-300 px-4 py-2">
                              ${arr.course_id} 
                         </td>
                         <td class="border border-gray-300 px-4 py-2">
@@ -47,49 +48,86 @@ async function renderCompletedCourseList() {
                              ${arr.date_completed}</td>
                         <td class="border border-gray-300 px-4 py-2">
                             ${arr.total_hours}
+                        </td><td class="border border-gray-300 px-4 py-2">
+                          <div>
+                              ${
+                                arr.grade_sheet
+                                  ? `
+                                  <a href="javascript:void(0);" class="bg-blue-700 hover:underline view-btn" data-id="${
+                                    arr.course_id
+                                  }" data-file='${JSON.stringify(
+                                      arr.grade_sheet
+                                    )}' data-file-type="image/jpeg">
+                                    <img src="/f-css/solid/icons_for_buttons/view-boards.svg" class="w-6 h-6 reverse-color" />  
+                                  </a>
+  
+                                  <button data-id="${
+                                    arr.course_id
+                                  }" class="grade-upload-btn bg-yellow-600 rounded-md px-2 hover:underline">
+                                    <img src="/f-css/solid/icons_for_buttons/upload.svg" class="w-6 h-6 reverse-color" />
+                                  </button>
+                                  `
+                                  : `
+                                  <button data-id="${arr.course_id}"
+                                  class="grade-upload-btn bg-yellow-600 rounded-md px-2 hover:underline">
+                                    <img src="/f-css/solid/icons_for_buttons/upload.svg" class="w-6 h-6 reverse-color" />
+                                  </button>
+                                  `
+                              }
+                          </div>
                         </td>
-                        <td class="border border-gray-300 px-4 py-2">
+                        <td class="border border-gray-300">
                           <div>
                               ${
                                 arr.certificate_file
                                   ? `
-                                  <a href="javascript:void(0);" class="text-blue-700 hover:underline view-btn" data-id="${
+                                  <a href="javascript:void(0);" class="bg-blue-700 hover:underline view-btn" data-id="${
                                     arr.course_id
                                   }" data-file='${JSON.stringify(
                                       arr.certificate_file
                                     )}' data-file-type="${
                                       arr.certificate_file_type
-                                    }">View</a>
+                                    }">
+                                      <img src="/f-css/solid/icons_for_buttons/view-boards.svg" class="w-6 h-6 reverse-color" />
+                                    </a>
   
                                   <button data-id="${
                                     arr.course_id
-                                  }" class="certification-upload-btn text-yellow-600 rounded-md px-2 hover:underline">Re-upload</button>
+                                  }" class="certification-upload-btn bg-blue-600 rounded-md px-2 hover:underline">
+                                    <img src="/f-css/solid/icons_for_buttons/upload.svg" class="w-6 h-6 reverse-color" />
+                                  </button>
                                   <button data-id="${
                                     arr.course_id
                                   }" data-user-id="${
                                       arr.user_id
                                     }" data-instructor-id="${
                                       arr.instructor_id
-                                    }" class="certification-create-btn text-yellow-600 rounded-md px-2 hover:underline">Create</button>
+                                    }" class="certification-create-btn bg-yellow-600 rounded-md px-2 hover:underline">Create</button>
                                   `
                                   : `
                                   <button data-id="${arr.course_id}"
-                                  class="certification-upload-btn text-yellow-600 rounded-md px-2 hover:underline">Upload</button>
+                                  class="certification-upload-btn bg-yellow-600 rounded-md px-2 hover:underline">
+                                    <img src="/f-css/solid/icons_for_buttons/upload.svg" class="w-6 h-6 reverse-color" />
+                                  </button>
                                   <button data-id="${arr.course_id}" data-user-id="${arr.user_id}" data-instructor-id="${arr.instructor_id}" 
-                                  class="certification-create-btn text-blue-600 rounded-md px-2 hover:underline">Create</button>
+                                  class="certification-create-btn bg-blue-600 rounded-md px-2 hover:underline">
+                                    <img src="/f-css/solid/icons_for_buttons/newspaper.svg" class="w-6 h-6 reverse-color" />
+                                  </button>
                                   `
                               }
                           </div>
                         </td>
-                        <td class="border border-gray-300 px-4 py-2">
+                        <td class="border border-gray-300">
                             <button data-id=" ${arr.course_id}  "
-                                class="trainees-info-edit-btn bg-blue-700 hover:bg-gradient-to-t from-sky-400 to-sky-800 text-white rounded-md px-2">Edit</button>
-                            <button data-user-id=" ${
-                              arr.user_id
-                            }  " data-date-started=" ${
-                        arr.date_started
-                      } " date-continuation=" ${arr.date_completed} "
-                                class="trainees-info-delete-btn bg-rose-700 hover:bg-gradient-to-t from-rose-400 to-rose-800 text-white rounded-md px-2">Delete</button>
+                                class="trainees-info-edit-btn bg-blue-700 hover:bg-gradient-to-t from-sky-400 to-sky-800 text-white rounded-md px-2">
+                                <img src="/f-css/solid/icons_for_buttons/pencil.svg" class="w-6 h-6 reverse-color" />  
+                              </button>
+                            <button data-user-id=" ${arr.user_id} " 
+                              data-date-started=" ${arr.date_started} " 
+                              date-continuation=" ${arr.date_completed} "
+                              class="trainees-info-delete-btn bg-rose-700 hover:bg-gradient-to-t from-rose-400 to-rose-800 text-white rounded-md px-2">
+                              <img src="/f-css/solid/icons_for_buttons/trash.svg" class="w-6 h-6 reverse-color" />
+                            </button>
                         </td>
                     </tr>
                     `
@@ -113,7 +151,7 @@ async function renderCompletedCourseList() {
 
 renderCompletedCourseList();
 
-function filterCertificateList(data, id) {
+function filterCompletedCourseList(data, id) {
   return data.filter((item) => item.course_id == id);
 }
 
@@ -135,7 +173,7 @@ function allButtons(data) {
         return;
       }
 
-      const filteredList = filterCertificateList(data, originalId);
+      const filteredList = filterCompletedCourseList(data, originalId);
       const result = filteredList[0];
 
       modalDetails.innerHTML = `
@@ -235,8 +273,9 @@ function allButtons(data) {
   document.querySelectorAll(".certification-upload-btn").forEach((button) => {
     button.addEventListener("click", function () {
       const rowId = this.getAttribute("data-id");
-      const filteredList = filterCertificateList(data, rowId);
+      const filteredList = filterCompletedCourseList(data, rowId);
       const result = filteredList[0];
+      console.log("result", result);
 
       if (!rowId) {
         console.error("ID not found");
@@ -248,7 +287,8 @@ function allButtons(data) {
       modalDetails.innerHTML = `
           <form id="certificate-completion-upload-form" class="min-w-96">
             <div class="mb-4">
-                <h3 class="text-lg font-semibold mb-4">Upload Template for certificate: <hr class="border-white"> ${result.course_id}</h3>
+                <h3 class="text-lg font-semibold mb-4">Upload certificate of completion: 
+                  <hr class="border-white">user-name:  ${result.user_name} | course: ${result.course_id} - ${result.program_name} </h3>
                 <input type="file" id="certificate-completion-file" name="certificate-completion-file" class="w-full rounded-md text-lg px-1" accept=".pdf"/>
             </div>
             <button id="completion-submit-button" type="submit" class="bg-blue-800 text-white rounded-md px-2">Submit</button>
@@ -278,6 +318,74 @@ function allButtons(data) {
               renderCompletedCourseList();
             } else {
               alert("Failed to upload Template. Please try again.");
+            }
+            modal.style.display = "none";
+          } catch (error) {
+            console.error("Error uploading Template", error);
+            alert("An error occurred while uploading Template.");
+          }
+        });
+    });
+  });
+
+  //Grading shhet for completed course upload
+  document.querySelectorAll(".grade-upload-btn").forEach((button) => {
+    button.addEventListener("click", function () {
+      const rowId = this.getAttribute("data-id");
+      const filteredList = filterCompletedCourseList(data, rowId);
+      const result = filteredList[0];
+
+      if (!rowId) {
+        console.error("ID not found");
+        modalDetails.innerHTML = "<p>ID not found.</p>";
+        modal.style.display = "flex";
+        return;
+      }
+
+      modalDetails.innerHTML = `
+          <form id="grade-completion-upload-form" class="min-w-96">
+            <div class="mb-4">
+                <h3 class="text-lg font-semibold mb-4">Grade
+                <input type="number" id="course-grade" name="course-grade" 
+                value="${result.grade}" 
+                class="w-full rounded-md text-lg px-1"/>
+            </div>
+            <div class="mb-4">
+                <h3 class="text-lg font-semibold mb-4">Upload of grade sheet: 
+                  <hr class="border-white">user-name:  ${result.user_name} | course: ${result.course_id} - ${result.program_name} </h3>
+                <input type="file" id="grade-completion-file" name="grade-completion-file" 
+                class="w-full rounded-md text-lg px-1" accept="image/*"/>
+            </div>
+            <button id="completion-submit-button" type="submit" class="bg-blue-800 text-white rounded-md px-2">Submit</button>
+          </form>
+        `;
+      modal.style.display = "flex";
+
+      document
+        .getElementById("grade-completion-upload-form")
+        .addEventListener("submit", async (event) => {
+          event.preventDefault();
+          const file = document.getElementById("grade-completion-file")
+            .files[0];
+          const courseGrade = document.getElementById("course-grade");
+          const formData = new FormData();
+          formData.append("grade-completion-file", file);
+          formData.append("courseGrade", courseGrade);
+
+          try {
+            const response = await fetch(
+              `/api/completed-course/grade-upload/${rowId}`,
+              {
+                method: "POST",
+                body: formData,
+              }
+            );
+            const data = await response.json();
+            if (response.ok) {
+              alert(data.message);
+              renderCompletedCourseList();
+            } else {
+              alert(data.error);
             }
             modal.style.display = "none";
           } catch (error) {

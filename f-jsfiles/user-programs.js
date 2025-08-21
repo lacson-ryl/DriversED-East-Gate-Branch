@@ -1,11 +1,5 @@
-//get id from the cookie
-function getCookie(name) {
-  const value = `; ${document.cookie}`;
-  const parts = value.split(`; ${name}=`);
-  if (parts.length === 2) return parts.pop().split(";").shift();
-  return null; // Return null if the cookie is not found
-}
-
+let instructorsInfo = [];
+let userCourseList = [];
 //form application
 async function renderForm() {
   // make the past dates unselectable.
@@ -26,6 +20,8 @@ async function renderForm() {
     const response = await fetch("/api/instructors");
     const data = await response.json();
     const instructors = data.instructors;
+    instructorsInfo = [];
+    instructorsInfo = instructors;
     const assignedProgramToInstructor = data.assignedProgramToInstructor;
 
     instructors.forEach((instructor) => {
@@ -136,6 +132,7 @@ async function renderForm() {
       console.error(error); // Log the error to the console for debugging
     }
   });
+  renderUserApplicationsList();
 }
 
 renderForm();
@@ -235,10 +232,17 @@ async function updateCalendar(instructorId) {
       // Check if the date is unavailable
       const slots = availability[dateKey];
       console.log("slots", slots);
-      if (slots || isSunday) {
+      if (isSunday) {
         dayDiv.classList.add("bg-red-100"); // Unavailable dates are red
+      } else if (slots) {
+        const allUnavailable =
+          (slots.am === 0 || slots.am === null) &&
+          (slots.pm === 0 || slots.pm === null) &&
+          (slots.onsite === 0 || slots.onsite === null);
 
-        if (!isSunday && slots) {
+        if (allUnavailable) {
+          dayDiv.classList.add("bg-green-100"); // Mark as available (green)
+        } else {
           const circleContainer = document.createElement("div");
           circleContainer.classList.add(
             "flex",
@@ -308,7 +312,6 @@ updateCalendar();
 
 // table for user applications
 async function renderUserApplicationsList() {
-  const table = document.getElementById("user-applications-table");
   const tableAnnouncement = document.getElementById("table-announcement");
   const userApplicationTable = document.getElementById(
     "user-applications-table"
@@ -327,8 +330,11 @@ async function renderUserApplicationsList() {
     tableAnnouncement.innerText = "No applications found";
     return;
   } else {
+    userCourseList = [];
+    userCourseList = data.userCourseList;
+    const userApplication = data.userApplication;
     tableAnnouncement.innerText = "Application Logs";
-    const desktopTable = data
+    const desktopTable = userApplication
       .map(
         (arr) =>
           `
@@ -361,7 +367,7 @@ async function renderUserApplicationsList() {
       )
       .join("");
 
-    const mobileTable = data
+    const mobileTable = userApplication
       .map(
         (arr) => `
     <tr class="border-b">
@@ -448,6 +454,74 @@ async function renderUserApplicationsList() {
     </div>
     `;
   }
+  addContinuationDate();
 }
 
-renderUserApplicationsList();
+async function addContinuationDate() {
+  const modal = document.getElementById("formModal");
+  const closeBtn = document.querySelector(".close");
+  const addContinuationBtn = document.getElementById("add-continuation");
+  const addContinuationForm = document.getElementById("add-continuation-form");
+  const courseSelect = document.getElementById("course");
+  const instructorSelect = document.getElementById("instructor-modal");
+
+  if (!userCourseList) addContinuationBtn.setAttribute("disable");
+
+  instructorsInfo.forEach((instructor) => {
+    const option = document.createElement("option");
+    option.value = instructor.instructor_id;
+    option.innerText =
+      instructor.instructor_name + " - " + instructor.instructor_type;
+    option.setAttribute("data-type", instructor.instructor_type);
+    option.setAttribute("data-is-tdc-onsite", instructor.isTdcOnsite);
+    option.setAttribute("data-is-manual", instructor.isManual);
+    option.setAttribute("data-is-automatic", instructor.isAutomatic);
+    instructorSelect.appendChild(option);
+  });
+
+  userCourseList.forEach((course) => {
+    const option = document.createElement("option");
+    option.value = course.course_id;
+    option.innerText = `#${course.course_id} - ${course.program_name} (${course.program_duration - course.total_hours})`;
+    option.setAttribute("data-course-id", course.user_course_id);
+    courseSelect.appendChild(option);
+  });
+
+  // Modal functionality
+  addContinuationBtn.addEventListener("click", () => {
+    modal.classList.remove("hidden");
+  });
+
+  closeBtn.addEventListener("click", () => {
+    modal.classList.add("hidden");
+  });
+
+  window.addEventListener("click", (event) => {
+    if (event.target === modal) {
+      modal.classList.add("hidden");
+    }
+  });
+
+  addContinuationForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+
+    const formData = new FormData(event.target);
+
+    try {
+      const response = await fetch("/api/user-application/add-continuation", {
+        method: "POST",
+        body: formData,
+      });
+      const data = await response.json();
+
+      if (!response.ok) alert(data.error);
+
+      alert(data.message);
+      renderForm(); // Refresh the calendar to show updated availability
+      renderUserApplicationsList();
+    } catch (error) {
+      alert("Sorry! Can’t connect to the server right now.");
+      console.error(error); // Log the error to the console for debugging
+    }
+  });
+}

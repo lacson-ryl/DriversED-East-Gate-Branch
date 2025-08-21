@@ -6,6 +6,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>User Profile</title>
     <link href="/f-css/output.css" rel="stylesheet">
+    <script type="module">
+        import Dexie from "https://cdn.jsdelivr.net/npm/dexie@3.2.4/dist/dexie.mjs";
+        window.Dexie = Dexie;
+    </script>
 </head>
 
 <body class="flex flex-row w-full over">
@@ -34,6 +38,9 @@
 
             </div>
         </div>
+        <script type="module" src="../f-webCryptoKeys.js"></script>
+        <script type="module" src="../f-keyManager.js"></script>
+
         <script>
 
             document.addEventListener('DOMContentLoaded', async () => {
@@ -47,6 +54,7 @@
                     profileScript.onload = () => {
                         renderDetails();
                     }
+                    profileScript.type = "module";
                     document.body.appendChild(profileScript);
 
                 } catch (error) {

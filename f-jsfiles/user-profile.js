@@ -131,7 +131,8 @@ function profileDetialsBlank(courseList) {
 
 async function renderDetails() {
   const response = await fetch("/api/user-profile");
-  const data = await response.json();
+  const encrypted = await response.json();
+  const data = decryptData(encrypted.encrypted);
   const profileDisplay = document.getElementById("profile-display");
   const userCourseInfoList = data.userCourseInfoList;
 
@@ -251,7 +252,7 @@ async function renderDetails() {
         </p>
     </div>
 
-    <div class="gap-4">${renderUserCourseTaken(userCourseInfoList)}</div>
+    <div class="gap-4 mb-5">${renderUserCourseTaken(userCourseInfoList)}</div>
 
     <a id="edit-profile-btn" href="/user-profile-form"
         class="bg-sky-900 hover:bg-red-600 m-auto text-white font-bold py-2 px-4 mt-9 rounded-lg focus:outline-none focus:shadow-outline"

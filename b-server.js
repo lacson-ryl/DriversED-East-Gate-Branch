@@ -99,8 +99,8 @@ app.use((req, res, next) => {
     cookie: {
       maxAge: 3600000,
       httpOnly: true,
-      //secure: true, // Requires HTTPS
-      sameSite: "Lax", // Protect against CSRF attacks // (Strict)
+      secure: true, // Requires HTTPS
+      sameSite: "Strict", // Protect against CSRF attacks // (Strict)
     },
   });
 
@@ -143,9 +143,12 @@ app.get(
     const token = jwt.sign(
       { userId: req.user.account_id, role: req.user.account_role },
       secretKey,
-      { expiresIn: "1h" }
+      { expiresIn: "3h" }
     );
-    res.cookie("jwtToken", token, { maxAge: 3600000, httpOnly: true });
+    res.cookie("jwtToken", token, {
+      maxAge: 3 * 60 * 60 * 1000,
+      httpOnly: true,
+    });
     res.redirect(`/login-success`);
   }
 );
@@ -166,10 +169,13 @@ app.get(
     const token = jwt.sign(
       { userId: req.user.user_id, role: req.user.user_role },
       secretKey,
-      { expiresIn: "1h" }
+      { expiresIn: "3h" }
     );
 
-    res.cookie("jwtToken", token, { maxAge: 3600000, httpOnly: true });
+    res.cookie("jwtToken", token, {
+      maxAge: 3 * 60 * 60 * 1000,
+      httpOnly: true,
+    });
     res.redirect(`/login-success`);
   }
 );
@@ -264,13 +270,15 @@ const upload = multer({ storage: storage });
 // import database queries
 import {
   addPrivKeyForUser,
-  getPrivKeyWithUserId,
+  getKeysWithUserId,
   findAccountForChangingPassOrEmail,
   findAccountByPRN,
+  findUserAccount,
+  userSearch,
   updateUserCredential,
   saveChangePasswordRequest,
   verifyOtp,
-  newUserCount,
+  getAllDashboardCounts,
   getDayplusTP,
   getInstructorScheduleForToday,
   getAllPaymentMethods,
@@ -280,8 +288,8 @@ import {
   deletePaymentMethod,
   getApplicants,
   getApplicant,
+  deleteUserCourse,
   deleteApplication,
-  getPDC,
   addProgram,
   getAllPrograms,
   editOneProgram,
@@ -316,8 +324,9 @@ import {
   updateAvailability,
   updateOnsiteAvailability,
   applyTDC,
+  addContinuationDate,
   getAllPdcTdcTakers,
-  changeAttendanceStatus,
+  changeUserAttendanceStatus,
   getAttendanceByInstructorId,
   getUserAttendanceSchedule,
   getInstructorDetailsForApplicants,
@@ -338,6 +347,7 @@ import {
   getCompletedCourseList,
   editTraineeCompletedCourseInfo,
   uploadTraineeCompletionCertificate,
+  uploadTraineeGradeSheet,
   getTraineeCourseList,
   getTraineeCourseInfo,
   deleteTraineeCourseInfo,
@@ -355,7 +365,9 @@ import {
   deletePaymentInfo,
   getUserPaymentsLogs,
   saveAdminAccount,
+  addNotification,
   getNotifications,
+  saveCertificateToDatabase,
 } from "./b-database.js";
 
 import {
@@ -388,23 +400,22 @@ app.post(
   upload.single("profile_picture"),
   async (req, res) => {
     try {
+      const { userId, role } = req.user;
+      const { encryptedWithEncAesKey } = req.body;
       const {
-        "first-name": firstName,
-        "middle-name": middleName,
-        "last-name": lastName,
-        "phone-number": phoneNumber,
+        firstName,
+        middleName,
+        lastName,
+        phoneNumber,
         email,
         nationality,
         gender,
-        "civil-status": civilStatus,
+        civilStatus,
         address,
-        "birth-date": birthDate,
-        "lto-client-id": ltoClientId,
-        "training-purpose": trainingPurpose,
-      } = req.body;
-      const { userId } = req.user;
-      console.log("userId", userId);
-      console.log("req.body", req.body);
+        birthDate,
+        ltoClientId,
+        trainingPurpose,
+      } = await decryptData(encryptedWithEncAesKey, userId, role);
 
       const profilePicture = req.file ? req.file.buffer : null;
 
@@ -424,6 +435,13 @@ app.post(
         profilePicture,
         userId
       );
+
+      await addNotification(
+        userId,
+        role,
+        "Profile",
+        "Profile successfully added"
+      );
       return res.status(200).json({ message: "Profile Submitted" });
     } catch (error) {
       console.error("Internal Server Error", error);
@@ -438,30 +456,27 @@ app.put(
   upload.single("profile_picture"),
   async (req, res) => {
     try {
+      const { userId, role } = req.user;
+
+      const { encryptedWithEncAesKey } = req.body;
       const {
-        "first-name": firstName,
-        "middle-name": middleName,
-        "last-name": lastName,
-        "phone-number": phoneNumber,
+        firstName,
+        middleName,
+        lastName,
+        phoneNumber,
         email,
         nationality,
         gender,
-        "civil-status": civilStatus,
+        civilStatus,
         address,
-        "birth-date": birthDate,
-        "lto-client-id": ltoClientId,
-        "training-purpose": trainingPurpose,
-      } = req.body;
-      const { userId } = req.user;
-      console.log("userId", userId);
-      console.log("req.body", req.body);
+        birthDate,
+        ltoClientId,
+        trainingPurpose,
+      } = await decryptData(encryptedWithEncAesKey, userId, role);
 
       const profilePicture = req.file ? req.file.buffer : null;
       // Fetch existing user profile from the database
       const existingProfile = await getProfilewithUserId(userId);
-
-      // Log the existing profile
-      //console.log("Existing Profile:", existingProfile);
 
       // Create an object with only the changed fields
       const updatedProfile = {};
@@ -495,8 +510,18 @@ app.put(
         updatedProfile.lto_client_id = ltoClientId;
       if (profilePicture) updatedProfile.profile_picture = profilePicture;
 
-      await updateUserProfile(userId, updatedProfile);
+      // Check if there are any fields to update
+      if (Object.keys(updatedProfile).length === 0) {
+        return res.status(200).json({ message: "No changes detected." });
+      }
 
+      await updateUserProfile(userId, updatedProfile);
+      await addNotification(
+        userId,
+        role,
+        "Profile",
+        "Profile changes successfully edited"
+      );
       return res.status(200).json({ message: "Profile updated successfully!" });
     } catch (error) {
       console.error("Error Updating Profile:", error);
@@ -509,36 +534,43 @@ app.get("/user-profile", authenticateToken, async (req, res) => {
   res.render("user-profile");
 });
 
-app.get("/api/user-profile", authenticateToken, async (req, res) => {
-  try {
-    const id = req.user.userId;
-    const userProfileDetails = await getProfilewithUserId(id);
-    console.log("userProfileDetails", userProfileDetails);
-    const profilePicture = userProfileDetails
-      ? `data:image/png;base64,${userProfileDetails.profile_picture.toString(
-          "base64"
-        )}`
-      : null;
-    if (profilePicture) userProfileDetails.profile_picture = profilePicture;
+app.get(
+  "/api/user-profile",
+  authenticateToken,
+  authorizeRole("user"),
+  async (req, res) => {
+    try {
+      const { userId, role } = req.user;
+      const userProfileDetails = await getProfilewithUserId(userId);
+      const profilePicture = userProfileDetails
+        ? `data:image/png;base64,${userProfileDetails.profile_picture.toString(
+            "base64"
+          )}`
+        : null;
+      if (profilePicture) userProfileDetails.profile_picture = profilePicture;
 
-    const courseList = await getTraineeCourseList(id);
-    const userCourseInfoList = courseList.map((course) => ({
-      program_name: course.program_name,
-      date_started: course.date_started,
-      date_completed: course.data_completed,
-      total_hours: course.total_hours,
-      program_duration: course.program_duration,
-    }));
+      const courseList = await getTraineeCourseList(userId);
+      const userCourseInfoList = courseList.map((course) => ({
+        program_name: course.program_name,
+        date_started: course.date_started,
+        date_completed: course.data_completed,
+        total_hours: course.total_hours,
+        program_duration: course.program_duration,
+      }));
 
-    return res.status(200).json({
-      message: "Fetch Complete!",
-      userProfileDetails,
-      userCourseInfoList,
-    });
-  } catch (error) {
-    return res.status(500).json({ error: "Cant fetch data right now!" });
+      const data = {
+        userProfileDetails: userProfileDetails,
+        userCourseInfoList: userCourseInfoList,
+      };
+      const encrypted = encryptData(data, userId, role);
+      return res.status(200).json({
+        encrypted: encrypted,
+      });
+    } catch (error) {
+      return res.status(500).json({ error: "Cant fetch data right now!" });
+    }
   }
-});
+);
 
 app.post("/api/user-registration", async (req, res) => {
   try {
@@ -576,6 +608,13 @@ app.post("/api/user-registration", async (req, res) => {
       dateCreated: new Date().toLocaleDateString(),
     });
 
+    await addNotification(
+      userId,
+      "user",
+      "Welcome!!",
+      `Greetings to you, ${name}!!
+      Thank you for choosing our driving school.`
+    );
     // Send a successful response with the token
     return res
       .status(201)
@@ -612,13 +651,13 @@ app.post("/user-login", async (req, res) => {
           { userId: user.user_id, role: user.user_role },
           secretKey,
           {
-            expiresIn: "1h",
+            expiresIn: "3h",
           }
         );
 
         // Set the JWT token in a cookie
         res.cookie("jwtToken", token, {
-          maxAge: 3600000,
+          maxAge: 3 * 60 * 60 * 1000,
           httpOnly: true,
         });
         return res.status(200).json({
@@ -660,9 +699,12 @@ app.get(
   authorizeRole("user"),
   async (req, res) => {
     try {
-      const { userId } = req.user;
+      const { userId, role } = req.user;
       const traineesCourseList = await getTraineeCourseList(userId);
-      const traineesCourseSchedule = await getUserAttendanceSchedule(userId);
+      const traineesCourseSchedule = await getUserAttendanceSchedule(
+        userId,
+        role
+      );
       res.status(200).json({ traineesCourseList, traineesCourseSchedule });
     } catch (error) {
       console.error("Error fetching data:", error);
@@ -728,7 +770,6 @@ app.post(
         transmissionType,
         program_id,
       } = req.body;
-      console.log("transmissionType,", transmissionType);
       const { userId, role } = req.user;
       await applyTDC(
         instructor,
@@ -745,11 +786,26 @@ app.post(
       if (userId !== 0) {
         const profile = await getUserAccountById(userId);
         let appliedDates = `${startDate} - ${continuation}`;
+        let enrolltype = transmissionType == "onsite" ? "TDC" : "PDC";
         await sendEmail("apply-enroll", profile.user_email, {
           name: profile.user_name,
           appliedDates: appliedDates,
         });
+        await addNotification(
+          profile.user_id,
+          profile.user_role,
+          `Applying ${enrolltype} course.`,
+          "Application successfully added!"
+        );
+      } else {
+        await addNotification(
+          userId,
+          role,
+          `Applying ${enrolltype} course.`,
+          "Application successfully added!"
+        );
       }
+
       return res.status(200).json({ message: "Submit Success!" });
     } catch (error) {
       console.error("Error applying TDC:", error);
@@ -778,10 +834,106 @@ app.post(
         maxSlots
       );
 
-      return res.status(200).json({ message: "TDC Date Set Successfully!" });
+      await addNotification(
+        userId,
+        role,
+        "Set TDC date",
+        `TDC Date Set to ${tdcDate} with ${maxSlots} slots Successfully!`
+      );
+      return res.status(200).json({ message: "T" });
     } catch (error) {
       console.error("Error setting TDC date:", error);
       return res.status(500).json({ error: "Error setting TDC date" });
+    }
+  }
+);
+
+app.post(
+  "/api/user-application/add-continuation",
+  authenticateToken,
+  authorizeRole(["admin", "user"]),
+  async (req, res) => {
+    const { instructor, courseOption, continuationDate, dateAMPM, clientId } =
+      req.body;
+    const { role } = req.user;
+
+    let userID, createdBy, course;
+    if (role == "user") {
+      userID = req.user.userId;
+      createdBy = role;
+      course = courseOption;
+    } else {
+      userID = clientId == null ? 0 : clientId;
+      createdBy = clientId == null ? "admin" : "user";
+      course = clientId == null ? 0 : courseOption;
+    }
+    try {
+      await addContinuationDate(
+        userID,
+        createdBy,
+        course,
+        instructor,
+        continuationDate,
+        dateAMPM
+      );
+      if (clientId !== null) {
+        await addNotification(
+          userID,
+          createdBy,
+          `Continuation date.`,
+          "Successfully added new continuation date to your course."
+        );
+      }
+      await addNotification(
+        0,
+        "admin",
+        `Continuation date.`,
+        "Successfully added new continuation date to your course."
+      );
+      return res.status(200).json({
+        message: "Successfully added continuation date to your course",
+      });
+    } catch (error) {
+      console.error("Error adding continuation to your course", error);
+      return res
+        .status(500)
+        .json({ error: "Error adding continuation to your course" });
+    }
+  }
+);
+
+app.post(
+  "/api/user-application/admin-add-continuation",
+  authenticateToken,
+  authorizeRole("admin"),
+  async (req, res) => {
+    const { instructor, continuationDate, dateAMPM, transmissionType } =
+      req.body;
+    const { role } = req.user;
+    try {
+      await addContinuationDate(
+        0,
+        "admin",
+        0,
+        instructor,
+        continuationDate,
+        dateAMPM,
+        transmissionType
+      );
+      await addNotification(
+        0,
+        "admin",
+        `Continuation date.`,
+        "Successfully added new continuation date to your course."
+      );
+      return res.status(200).json({
+        message: "Successfully added continuation date to your course",
+      });
+    } catch (error) {
+      console.error("Error adding continuation to your course", error);
+      return res
+        .status(500)
+        .json({ error: "Error adding continuation to your course" });
     }
   }
 );
@@ -801,7 +953,7 @@ app.get("/api/instructors/:id/availability", async (req, res) => {
       };
     });
 
-    res.json(availability);
+    res.status(200).json(availability);
   } catch (error) {
     console.error("Error fetching instructor availability:", error);
     return res
@@ -869,8 +1021,14 @@ app.get(
   async (req, res) => {
     try {
       const { userId } = req.user;
-      const applicantlist = await getApplicant(userId);
-      res.status(200).json(applicantlist);
+      const userApplication = await getApplicant(userId);
+      const courseList = await getTraineeCourseList(userId);
+      const filtered = courseList.filter(
+        (arr) => arr.program_duration > arr.total_hours
+      );
+      res
+        .status(200)
+        .json({ userApplication: userApplication, userCourseList: filtered });
     } catch (error) {
       console.error("Error fetching applicants:", error);
       res.status(500).send("Internal Server Error");
@@ -878,14 +1036,59 @@ app.get(
   }
 );
 
-app.get("/user-search", authenticateToken, async (req, res) => {
+app.get("/search", authenticateToken, async (req, res) => {
   try {
-    res.render("user-search");
+    res.render("search");
   } catch (error) {
     console.error("Internal Server Error", error);
     return res.status(500).json({ error: "Internal Server Error" });
   }
 });
+
+app.post(
+  "/api/user-search",
+  authenticateToken,
+  authorizeRole("admin"),
+  async (req, res) => {
+    try {
+      const { encryptedWithEncAesKey } = req.body;
+      const { userId, role } = req.user;
+      const { searchOption, userInfo } = await decryptData(
+        encryptedWithEncAesKey,
+        userId,
+        role
+      );
+      const profile = await findUserAccount(searchOption, userInfo);
+      const encryptedProfile = await encryptData(profile, userId, role);
+      return res.status(200).json({ encryptedProfile });
+    } catch (err) {
+      console.error("Error sending data to the server!");
+      return res
+        .status(500)
+        .json({ error: "Error sending data to the server!", err });
+    }
+  }
+);
+
+app.get(
+  "/api/user-search/:id",
+  authenticateToken,
+  authorizeRole("admin"),
+  async (req, res) => {
+    try {
+      const id = req.params.id;
+      const { userId, role } = req.user;
+      const profile = await userSearch(id);
+      const encryptedProfile = await encryptData(profile, userId, role);
+      return res.status(200).json({ encryptedProfile: encryptedProfile });
+    } catch (err) {
+      console.error("Error fetching data for user!", err);
+      return res
+        .status(500)
+        .json({ error: "Errorfetching data for user!", err });
+    }
+  }
+);
 
 app.get(
   "/user-requests",
@@ -903,14 +1106,19 @@ app.get(
 
 app.post("/api/submit-request", authenticateToken, async (req, res) => {
   try {
-    console.log(req.user);
-    const userID = req.user.userId;
+    const { userId, role } = req.user;
     const { titleRequest, detailsRequest } = req.body;
     if (!titleRequest || !detailsRequest) {
       res.status(400).json({ error: "Please Provide all fields!" });
       return;
     }
-    await addUserRequest(titleRequest, detailsRequest, userID);
+    await addUserRequest(titleRequest, detailsRequest, userId);
+    await addNotification(
+      userId,
+      role,
+      "Request submit",
+      "Request Form successfully submitted!"
+    );
     res.status(200).json({ message: "Request added successfully" });
   } catch (error) {
     console.error("Internal server error:", error);
@@ -934,9 +1142,8 @@ app.get(
   authenticateToken,
   async (req, res) => {
     try {
-      const userID = req.user.userId;
       const requestId = req.params.requestId;
-      const data = await getUserDetailRequest(userID, requestId);
+      const data = await getUserDetailRequest(requestId);
       res.status(200).json(data);
     } catch (err) {
       console.log("Error fetching data: ", err);
@@ -961,14 +1168,19 @@ app.get(
 
 app.post("/api/submit-report", authenticateToken, async (req, res) => {
   try {
-    const userID = req.user.userId;
+    const { userId, role } = req.user;
     const { titleReport, detailsReport } = req.body;
     if (!titleReport || !detailsReport) {
       return res.status(400).json({ error: "Please Provide all fields!" });
-    } else {
-      const reportId = await addUserReport(titleReport, detailsReport, userID);
-      res.status(201).json({ message: "Report added successfully", reportId });
     }
+    await addUserReport(titleReport, detailsReport, userId);
+    await addNotification(
+      userId,
+      role,
+      "Report submit",
+      "Report Form successfully submitted!"
+    );
+    res.status(201).json({ message: "Report added successfully" });
   } catch (error) {
     console.error("Internal server error:", error);
     return res.status(500).json({ error: "Internal server error!" });
@@ -988,9 +1200,8 @@ app.get("/api/user-reports", authenticateToken, async (req, res) => {
 
 app.get("/api/user-reports/:reportId", authenticateToken, async (req, res) => {
   try {
-    const userID = req.user.userId;
     const reportId = req.params.reportId;
-    const data = await getUserDetailReport(userID, reportId);
+    const data = await getUserDetailReport(reportId);
     res.json(data);
   } catch (err) {
     console.log("Error fetching data: ", err);
@@ -1022,8 +1233,8 @@ app.get(
   authenticateToken,
   async (req, res) => {
     try {
-      const id = req.user.userId;
-      const courseList = await getTraineeCourseList(id);
+      const { userId, role } = req.user;
+      const courseList = await getTraineeCourseList(userId);
       const methodList = await getAllPaymentMethods();
       const paymentCourses = courseList.map((payment) => ({
         course_id: payment.course_id,
@@ -1040,7 +1251,13 @@ app.get(
           : "",
       }));
 
-      res.status(200).json({ paymentMethods, paymentCourses });
+      const data = {
+        paymentMethods: paymentMethods,
+        paymentCourses: paymentCourses,
+      };
+      const encrypted = encryptData(data, userId, role);
+
+      res.status(200).json({ encrypted: encrypted });
     } catch (error) {
       res.status(500).json({ error: "Internal Server Error" });
     }
@@ -1095,6 +1312,13 @@ app.post("/api/admin-registration", async (req, res) => {
       generatedPassword: user_password,
       dateCreated: new Date().toLocaleDateString(),
     });
+    await addNotification(
+      userId,
+      "admin",
+      "New Admin account added.",
+      `Welcome to the company, ${admin_name} <br>
+      I look forward working with you!! `
+    );
 
     // Send a successful response with the token
     return res.status(201).json({ message: "Admin registered successfully" });
@@ -1132,12 +1356,12 @@ app.post("/adminlogin", async (req, res) => {
           { userId: admin.account_id, role: admin.account_role },
           secretKey,
           {
-            expiresIn: "1h",
+            expiresIn: "3h",
           }
         );
 
         res.cookie("jwtToken", token, {
-          maxAge: 3600000,
+          maxAge: 3 * 60 * 60 * 1000,
           httpOnly: true,
         });
 
@@ -1169,11 +1393,16 @@ app.get(
   async (req, res) => {
     try {
       const role = req.user.role;
-      return role === "admin"
-        ? res.render("admin-dashboard")
-        : role === "instructor"
-        ? res.render("instructor-dashboard")
-        : res.send("invalid role type");
+      if (role === "admin") {
+        const dashboardCounts = await getAllDashboardCounts();
+        res.render("admin-dashboard", {
+          dashboardCounts,
+        });
+      } else if (role === "instructor") {
+        res.render("instructor-dashboard");
+      } else {
+        res.status(401).send("invalid role type");
+      }
     } catch (error) {
       console.error("Error in /admin-dashboard endpoint:", error);
       res.status(500).send("Internal Server Error");
@@ -1186,6 +1415,7 @@ app.get("/api/admin-dashboard-time/:month/:year", async (req, res) => {
     const month = req.params.month;
     const year = parseInt(req.params.year, 10);
     const data = await getDayplusTP(month, year);
+    console.log("data", data);
     res.status(200).json(data);
   } catch (err) {
     console.log("Error fetching data: ", err);
@@ -1215,7 +1445,14 @@ app.post(
   upload.single("methodFile"),
   async (req, res) => {
     try {
-      const { methodName, availability } = req.body;
+      const { userId, role } = req.user;
+
+      const { encryptedWithEncAesKey } = req.body;
+      const { methodName, availability } = await decryptData(
+        encryptedWithEncAesKey,
+        userId,
+        role
+      );
       const methodFile = req.file ? req.file.buffer : null;
       const methodFileType = req.file ? req.file.mimetype : null;
 
@@ -1224,6 +1461,12 @@ app.post(
         availability,
         methodFile,
         methodFileType
+      );
+      await addNotification(
+        userId,
+        role,
+        "Payment",
+        `${methodName} Payment method successfully added!`
       );
       res.status(200).json({ message: "Payment Method Added Successfully!" });
     } catch (error) {
@@ -1250,19 +1493,38 @@ app.put(
   }
 );
 
-// Upload Payment Method File
 app.post(
-  "/api/payment-methods/upload/:methodId",
+  "/api/payment-methods/upload",
   authenticateToken,
   authorizeRole("admin"),
-  upload.single("method-file"),
+  upload.single("methodFile"),
   async (req, res) => {
     try {
-      const methodId = req.params.methodId;
+      const { userId, role } = req.user;
+
+      // Decrypt the encrypted payload
+      const { encryptedWithEncAesKey } = req.body;
+      if (!encryptedWithEncAesKey) {
+        return res.status(400).json({ error: "Missing encrypted data" });
+      }
+
+      // Decrypt the payload (assumes decryptData returns an object with methodId, etc.)
+      const decrypted = await decryptData(encryptedWithEncAesKey, userId, role);
+      const methodId = decrypted.methodId;
+      if (!methodId) {
+        return res.status(400).json({ error: "Missing methodId" });
+      }
+
+      // File handling
       const methodFile = req.file ? req.file.buffer : null;
       const methodFileType = req.file ? req.file.mimetype : null;
+      if (!methodFile) {
+        return res.status(400).json({ error: "No file uploaded" });
+      }
 
+      // Save to database (implement uploadPaymentMethodFile accordingly)
       await uploadPaymentMethodFile(methodId, methodFile, methodFileType);
+
       res.status(200).json({ message: "File uploaded successfully!" });
     } catch (error) {
       console.error("Error uploading file:", error);
@@ -1280,6 +1542,12 @@ app.delete(
     try {
       const methodId = req.params.methodId;
       await deletePaymentMethod(methodId);
+      await addNotification(
+        userId,
+        role,
+        "Payment",
+        `Payment method ID #${methodId} successfully deleted!`
+      );
       res
         .status(200)
         .json({ message: `Successfully Deleted Method ID no. ${methodId}` });
@@ -1324,6 +1592,23 @@ app.get(
 );
 
 app.get(
+  "/api/instructor-dashboard/grades-upload",
+  authenticateToken,
+  authorizeRole(["admin", "instructor"]),
+  async (req, res) => {
+    try {
+      const { encryptedWithEncAesKey } = req.body;
+      const decrypted = await decryptData(encryptedWithEncAesKey);
+      const data = await getTraineeCourseInfo(id);
+      res.status(200).json(data);
+    } catch (err) {
+      console.log("Error fetching data: ", err);
+      res.status(500).send("Internal Server Error");
+    }
+  }
+);
+
+app.get(
   "/attendance",
   authenticateToken,
   authorizeRole("admin"),
@@ -1356,12 +1641,30 @@ app.put(
     try {
       const id = req.params.id;
       const { status, hoursAttended } = req.body;
-      console.log("status, hoursAttended", status, hoursAttended);
-      const changeStatus = await changeAttendanceStatus(
+      console.log("id, status, hoursAttended", id, status, hoursAttended);
+      const { userid } = await changeUserAttendanceStatus(
         id,
         status,
         hoursAttended
       );
+      const { userId, role } = req.user; //admin
+      await addNotification(
+        userId,
+        role,
+        "Attendance",
+        `Attendance id#${id} Status has been change into "${status}" ${
+          !hoursAttended ? "" : `with ${hoursAttended} hours added`
+        }`
+      );
+      await addNotification(
+        userId,
+        "user",
+        "Attendance",
+        `Attendance id#${id} Status has been change into "${status}" ${
+          !hoursAttended ? "" : `with ${hoursAttended} hours added`
+        }`
+      );
+
       return res.status(200).json(changeStatus);
     } catch (error) {
       console.error("Error fetching data:", error);
@@ -1413,10 +1716,60 @@ app.get(
   }
 );
 
+app.post(
+  "/api/delete-application-by-course",
+  authenticateToken,
+  authorizeRole("admin"),
+  async (req, res) => {
+    const { userId, role } = req.user;
+    const { encryptedWithEncAesKey } = req.body;
+
+    const decrypted = await decryptData(encryptedWithEncAesKey, userId, role);
+
+    try {
+      const { clientId } = await deleteUserCourse(
+        decrypted.clientId,
+        decrypted.instructorName,
+        decrypted.dateStarted
+      );
+      await addNotification(
+        userId,
+        role,
+        "User Course",
+        `User course id#${decrypted.courseId} successfully deleted!`
+      );
+      await addNotification(
+        clientId,
+        "user",
+        "User Course",
+        `User course id#${decrypted.courseId} successfully deleted!`
+      );
+
+      res.status(200).json({ success: true });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: error });
+    }
+  }
+);
+
 app.delete("/api/applicant/:id", authenticateToken, async (req, res) => {
   try {
     const id = req.params.id;
+    const { userId, role } = req.user;
     const deleted = await deleteApplication(id);
+    await addNotification(
+      userId,
+      role,
+      "Application",
+      `Application id#${id} successfully deleted!`
+    );
+    await addNotification(
+      deleted.clientId,
+      "user",
+      "Application",
+      `User course id#${decrypted.courseId} successfully deleted!`
+    );
     return res.status(200).json({ deleted });
   } catch (error) {
     console.error("Error deleting application:", error);
@@ -1438,32 +1791,42 @@ app.get(
   }
 );
 
-app.get("/api/manage-people/list", authenticateToken, async (req, res) => {
-  try {
-    const instructorList = await getInstructors();
-    return res.status(200).json({ instructorList });
-  } catch (error) {
-    console.error("Error fetching Instructors Data:", error);
-    res.status(500).send("Internal Server Error");
+app.get(
+  "/api/manage-people/list",
+  authenticateToken,
+  authorizeRole("admin"),
+  async (req, res) => {
+    try {
+      const { userId, role } = req.user;
+      const instructorList = await getInstructors();
+      const encrypted = await encryptData(instructorList, userId, role);
+      return res.status(200).json({ encrypted: encrypted });
+    } catch (error) {
+      console.error("Error fetching Instructors Data:", error);
+      res.status(500).send("Internal Server Error");
+    }
   }
-});
+);
 
 app.post(
   "/api/manage-people/instructor-add",
   authenticateToken,
-  upload.none(),
+  upload.single("profile_picture"),
   async (req, res) => {
     try {
+      const { userId, role } = req.user;
+      const { encryptedWithEncAesKey } = req.body;
       const {
-        "instructor-name": name,
-        "rate-per-hour": rate,
-        "instructor-type": type,
-        "tdc-onsite": onsite,
-        "is-manual": manual,
-        "is-automatic": automatic,
-        "accreditaion-number": accreditationNumber,
-        "date-started": dateStarted,
-      } = req.body;
+        name,
+        rate,
+        type,
+        onsite,
+        manual,
+        automatic,
+        accreditationNumber,
+        dateStarted,
+      } = await decryptData(encryptedWithEncAesKey, userId, role);
+      const profilePicture = req.file ? req.file.buffer : null;
       await addInstructor(
         name,
         rate,
@@ -1472,7 +1835,14 @@ app.post(
         manual,
         automatic,
         accreditationNumber,
-        dateStarted
+        dateStarted,
+        profilePicture
+      );
+      await addNotification(
+        userId,
+        role,
+        "Add Instructor",
+        `New instructor has been successfully added!`
       );
       return res.status(200);
     } catch (error) {
@@ -1483,13 +1853,18 @@ app.post(
 );
 
 app.post(
-  "/api/manage-people/assign-account/:id",
+  "/api/manage-people/assign-account",
   authenticateToken,
   authorizeRole("admin"),
   async (req, res) => {
     try {
-      const id = req.params.id;
-      const { userName, userEmail, accountRole } = req.body;
+      const { userId, role } = req.user;
+      const { encryptedWithEncAesKey } = req.body;
+      const { id, userName, userEmail, accountRole, prn } = await decryptData(
+        encryptedWithEncAesKey,
+        userId,
+        role
+      );
 
       if (!validator.isEmail(userEmail)) {
         return res.status(400).json({ error: "Invalid email format." });
@@ -1517,7 +1892,7 @@ app.post(
 
       const accountId = await saveAdminAccount(newUser);
 
-      await assignAccountToInstructor(id, accountId);
+      await assignAccountToInstructor(id, prn, accountId);
 
       await sendEmail("new-account", userEmail, {
         name: userName,
@@ -1525,6 +1900,20 @@ app.post(
         generatedPassword: temporaryPass,
         dateCreated: new Date().toLocaleDateString(),
       });
+
+      await addNotification(
+        userId,
+        role,
+        "Assign Account",
+        `Instructor ${userName} successfully assigned a account!`
+      );
+      await addNotification(
+        accountId,
+        "instructor",
+        "User Course",
+        `Welcome to the company, ${userName} <br>
+        I look forward working with you!! `
+      );
 
       return res.status(201).json({ message: "Account assigned successfully" });
     } catch (error) {
@@ -1534,39 +1923,41 @@ app.post(
   }
 );
 
-app.get("/api/manage-people/:id", authenticateToken, async (req, res) => {
-  try {
-    const id = req.params.id;
-    const instructor = await getInstructorwithId(id);
-    return res.status(200).json({ instructor });
-  } catch (error) {
-    console.error("Error fetching Instructors Data:", error);
-    res.status(500).send("Internal Server Error");
-  }
-});
-
 app.put(
   "/api/manage-people/:id",
   authenticateToken,
   upload.none(),
   async (req, res) => {
     try {
-      const userID = req.params.id;
+      const { userId, role } = req.user;
+      const instructorId = req.params.id;
+      const { encryptedWithEncAesKey } = req.body;
       const {
-        "instructor-name": name,
-        "rate-per-hour": rate,
-        "instructor-type": type,
-        "tdc-onsite": onsite,
-        "is-manual": manual,
-        "is-automatic": automatic,
-        "accreditaion-number": accreditationNumber,
-        "date-started": dateStarted,
-      } = req.body;
+        name,
+        rate,
+        type,
+        onsite,
+        manual,
+        automatic,
+        accreditationNumber,
+        dateStarted,
+      } = await decryptData(encryptedWithEncAesKey, userId, role);
 
       // Fetch existing user profile from the database
-      const existingInstructor = await getInstructorwithId(userID);
+      const existingInstructor = await getInstructorwithId(instructorId);
 
       // Log the existing profile
+      console.log(
+        "name,rate,type,onsite,manual,automatic,accreditationNumber,dateStarted,:",
+        name,
+        rate,
+        type,
+        onsite,
+        manual,
+        automatic,
+        accreditationNumber,
+        dateStarted
+      );
       console.log("Existing Profile:", existingInstructor);
 
       // Create an object with only the changed fields
@@ -1574,26 +1965,33 @@ app.put(
 
       if (name && name !== existingInstructor.instructor_name)
         updatedProfile.instructor_name = name;
-      if (rate && rate !== existingInstructor.rate_per_hour)
+      if (+rate && +rate !== existingInstructor.rate_per_hour)
         updatedProfile.rate_per_hour = rate;
       if (type && type !== existingInstructor.instructor_type)
         updatedProfile.instructor_type = type;
-      if (onsite && onsite !== existingInstructor.isTdcOnsite)
+      if (+onsite && +onsite !== existingInstructor.isTdcOnsite)
         updatedProfile.isTdcOnsite = onsite;
-      if (manual && manual !== existingInstructor.isManual)
+      if (+manual && +manual !== existingInstructor.isManual)
         updatedProfile.isManual = manual;
-      if (automatic && automatic !== existingInstructor.isAutomatic)
+      if (+automatic && +automatic !== existingInstructor.isAutomatic)
         updatedProfile.isAutomatic = automatic;
       if (
         accreditationNumber &&
-        accreditationNumber !== existingInstructor.accreditationNumber
+        accreditationNumber !== existingInstructor.accreditation_number
       )
-        updatedProfile.accreditationNumber = accreditationNumber;
-      if (dateStarted && dateStarted !== existingInstructor.date_started)
+        updatedProfile.accreditation_number = accreditationNumber;
+      if (+dateStarted && +dateStarted !== existingInstructor.date_started)
         updatedProfile.date_started = dateStarted;
-      await updateInstructorInfo(userID, updatedProfile);
+      console.log("updatedProfile", updatedProfile);
+      // Check if there are any fields to update
+      if (Object.keys(updatedProfile).length === 0) {
+        return res.status(200).json({ message: "No changes detected." });
+      }
+      await updateInstructorInfo(instructorId, updatedProfile);
 
-      return res.status(200).json({ message: "Profile updated successfully!" });
+      return res
+        .status(200)
+        .json({ message: "Instructor Profile updated successfully!" });
     } catch (error) {
       console.error("Error Updating Profile:", error);
       return res.status(400).json({ error: "Error Updating Profile!" });
@@ -1639,6 +2037,17 @@ app.get(
     }
   }
 );
+
+app.get("/api/instructor-profile", authenticateToken, async (req, res) => {
+  try {
+    const id = req.user.userId;
+    const instructor = await getInstructorWithAccountId(id);
+    return res.status(200).json({ instructor });
+  } catch (error) {
+    console.error("Error fetching Instructors Data:", error);
+    res.status(500).send("Internal Server Error");
+  }
+});
 
 app.get(
   "/api/instructor-payments/monthly",
@@ -1686,6 +2095,19 @@ app.delete("/api/manage-people/:rowID", authenticateToken, async (req, res) => {
   try {
     const id = req.params.rowID;
     const deleted = await deleteInstructor(id);
+
+    await addNotification(
+      userId,
+      role,
+      "Instructor",
+      `Instructor profile id#${id} successfully deleted!`
+    );
+    await addNotification(
+      clientId,
+      "instructor",
+      "Instructor",
+      `Instructor profile id#${id} successfully deleted!`
+    );
     return res.json(deleted);
   } catch (error) {
     return res.status(500).json({ error: "Internal Server Error" });
@@ -1730,17 +2152,22 @@ app.post("/api/program/add", authenticateToken, async (req, res) => {
     } = req.body;
     if (!programName || !status) {
       return res.status(400).json({ error: "Please Provide all fields!" });
-    } else {
-      const reportId = await addProgram(
-        programName,
-        status,
-        programDuration,
-        programFee,
-        programDescription
-      );
-      res.status(201).json({ message: "Program added successfully", reportId });
     }
-    res.status;
+    await addProgram(
+      programName,
+      status,
+      programDuration,
+      programFee,
+      programDescription
+    );
+
+    await addNotification(
+      userId,
+      role,
+      "Program",
+      `Program ${programName} successfully added!`
+    );
+    res.status(201).json({ message: "Program added successfully" });
   } catch (error) {
     res.status(500).send("Internal Server Error");
   }
@@ -1825,6 +2252,35 @@ app.post("/api/assign-programs", async (req, res) => {
   }
 });
 
+app.post("/api/assign-programs", async (req, res) => {
+  const { instructor_id, program_ids, userId, role } = req.body;
+
+  if (
+    !instructor_id ||
+    !Array.isArray(program_ids) ||
+    program_ids.length === 0
+  ) {
+    return res.status(400).json({ error: "Invalid input" });
+  }
+
+  // Build the programMsg string
+  const programMsg = program_ids.join("&");
+
+  try {
+    await assignPrograms(instructor_id, program_ids);
+    await addNotification(
+      userId,
+      role,
+      "Program assign",
+      `Instructor id#${instructor_id} assigned programs id#${programMsg} successfully added!`
+    );
+    res.status(200).json({ message: "Programs assigned successfully" });
+  } catch (error) {
+    console.error("Error assigning programs:", error);
+    res.status(500).json({ error: "Failed to assign programs" });
+  }
+});
+
 app.get(
   "/api/programs/assigned-list",
   authenticateToken,
@@ -1865,6 +2321,12 @@ app.delete("/api/programs/:rowID", authenticateToken, async (req, res) => {
   try {
     const id = req.params.rowID;
     const deleted = await deleteProgram(id);
+    await addNotification(
+      userId,
+      role,
+      "Program",
+      `Program #${id} successfully deleted!`
+    );
     return res.status(200).json(deleted);
   } catch (error) {
     return res.status(500).json({ error: "Internal Server Error" });
@@ -1917,9 +2379,27 @@ app.put(
   async (req, res) => {
     try {
       const { status, reason, rowId } = req.body;
-      console.log(status, reason, rowId);
-      const request = await editUserRequest(status, reason, rowId);
-      return res.status(200).json(request);
+      const { userId, role } = req.user;
+      const { clientId, title, reqStatus } = await editUserRequest(
+        status,
+        reason,
+        rowId
+      );
+
+      await addNotification(
+        userId,
+        role,
+        "Request",
+        `Request titled "${title}" has been updated to ${reqStatus}`
+      );
+      await addNotification(
+        clientId,
+        "user",
+        "Request",
+        `Request titled "${title}" has been updated to ${reqStatus}`
+      );
+
+      return res.status(200).json({ message: "Success" });
     } catch (error) {
       console.error("Error changing request details:", error);
       res.status(500).json({ error: "Internal Server Error" });
@@ -1954,15 +2434,20 @@ app.post("/api/certificate/add", authenticateToken, async (req, res) => {
     const { certificateID, certificateName } = req.body;
     if ((!certificateID, !certificateName)) {
       return res.status(400).json({ error: "Please Provide all fields!" });
-    } else {
-      const certificatetId = await addCertificate(
-        certificateID,
-        certificateName
-      );
-      res
-        .status(201)
-        .json({ message: "Certificate added successfully", certificatetId });
     }
+
+    const certificatetId = await addCertificate(certificateID, certificateName);
+
+    await addNotification(
+      userId,
+      role,
+      "Certificate",
+      `${certificateName} Certificate successfully added!`
+    );
+    res
+      .status(201)
+      .json({ message: "Certificate added successfully", certificatetId });
+
     res.status;
   } catch (error) {
     res.status(500).send("Internal Server Error");
@@ -2006,6 +2491,12 @@ app.delete("/api/certificates/:rowID", authenticateToken, async (req, res) => {
   try {
     const id = req.params.rowID;
     const deleted = await deleteCertificate(id);
+    await addNotification(
+      userId,
+      role,
+      "Certificate",
+      `Certificate id#${id} successfully deleted!`
+    );
     return res.json(deleted);
   } catch (error) {
     return res.status(500).json({ error: "Internal Server Error" });
@@ -2053,9 +2544,25 @@ app.put(
   async (req, res) => {
     try {
       const { status, reason, rowId } = req.body;
-      console.log(status, reason, rowId);
-      const report = await editUserReport(status, reason, rowId);
-      return res.status(200).json(report);
+      const { clientId, title, repStatus } = await editUserReport(
+        status,
+        reason,
+        rowId
+      );
+      await addNotification(
+        userId,
+        role,
+        "Report",
+        `Report titled "${title}" has been updated to ${repStatus}`
+      );
+      await addNotification(
+        clientId,
+        "user",
+        "Report",
+        `Report titled "${title}" has been updated to ${repStatus}`
+      );
+
+      return res.status(200).json({ message: "Success" });
     } catch (error) {
       console.error("Error changing report details:", error);
       res.status(500).json({ error: "Internal Server Error" });
@@ -2102,13 +2609,28 @@ app.post(
   upload.single("screenshotReceipt"),
   async (req, res) => {
     try {
-      const { accountName, id, amount, paymentMethod, courseSelect } = req.body;
+      const { userId, role } = req.user;
+      const { encryptedWithEncAesKey } = req.body;
+      // Destructure fields from req.body
+      const { accountName, id, amount, paymentMethod, courseSelect } =
+        await decryptData(encryptedWithEncAesKey, userId, role);
+      // For admin, id is sent; for user, use req.user.userId
+      const clientId = role === "admin" ? (id !== undefined ? id : 0) : userId;
+
+      console.log(
+        "accountName, id, amount, paymentMethod, courseSelect",
+        accountName,
+        id,
+        amount,
+        paymentMethod,
+        courseSelect
+      );
+
       if (!accountName || !amount || !paymentMethod || !courseSelect) {
         return res.status(400).json({ error: "Please Provide all fields!" });
       }
-      const userId = req.user.role === "admin" ? id : req.user.userId;
-      let compressedReceipt = null;
 
+      let compressedReceipt = null;
       if (req.file) {
         compressedReceipt = await sharp(req.file.buffer)
           .jpeg({ quality: 85 })
@@ -2116,15 +2638,45 @@ app.post(
       }
 
       await addPayments(
-        userId,
+        clientId,
         accountName,
         amount,
         paymentMethod,
         compressedReceipt,
         courseSelect
       );
-      res.status(200).json({ message: "Payment added successfully!" });
+
+      if (role === "user") {
+        await addNotification(
+          clientId,
+          role,
+          "Payment",
+          `User #${userId} made a payment using: <br>
+           ${paymentMethod} : ${amount} `
+        );
+        await addNotification(
+          0,
+          "admin",
+          "Payment",
+          `User #${userId} made a payment using: <br>
+           ${paymentMethod} : ${amount} `
+        );
+      } else {
+        const message =
+          clientId == 0
+            ? `Manually added payment ${amount}`
+            : `User #${userId} made a payment using: <br>
+             ${paymentMethod} : ${amount}`;
+
+        await addNotification(0, "admin", "Payment", message);
+        if (userId) {
+          await addNotification(clientId, "user", "Payment", message);
+        }
+      }
+
+      return res.status(200).json({ message: "Payment added successfully!" });
     } catch (error) {
+      console.error("Error in /api/payment/add:", error);
       res.status(500).json({ error: "Internal Server Error" });
     }
   }
@@ -2133,7 +2685,7 @@ app.post(
 app.post(
   "/api/payments/receipt/:id",
   authenticateToken,
-  authorizeRole("admin"),
+  authorizeRole(["admin", "user"]),
   upload.single("screenshot-receipt"),
   async (req, res) => {
     try {
@@ -2161,7 +2713,16 @@ app.put(
   async (req, res) => {
     try {
       const { paymentId, status } = req.body;
-      await changePaymentStatus(paymentId, status);
+      const { user_id, payment_method, amount, payStatus } =
+        await changePaymentStatus(paymentId, status);
+
+      await addNotification(
+        user_id,
+        "user",
+        "Payment",
+        `Your payment has change status into "${payStatus}" <br>
+           ${payment_method} : ${amount} `
+      );
       res.status(200).json({ message: "Payment Status changed successfully!" });
     } catch (error) {
       console.error("Error fetching report details:", error);
@@ -2171,18 +2732,21 @@ app.put(
 );
 
 app.delete(
-  "/api/payments/:id",
+  "/api/payments/delete",
   authenticateToken,
   authorizeRole("admin"),
   async (req, res) => {
     try {
-      const id = req.params.id;
-      await deletePaymentInfo(id);
+      const { userId, role } = req.user;
+      const { encryptedWithEncAesKey } = req.body;
+      const { rowId } = await decryptData(encryptedWithEncAesKey, userId, role);
+      await deletePaymentInfo(rowId);
       return res
         .status(200)
         .json({ message: "Trainee course info Deleted successfully!" });
-    } catch (error) {
-      res.status(500).send("Internal Server Error");
+    } catch (err) {
+      console.error("Cant delete payment right now!", err);
+      res.status(500).json({ error: "Internal Server Error", err });
     }
   }
 );
@@ -2262,7 +2826,35 @@ app.post(
         .status(200)
         .json({ message: "Completion Certificate uploaded successfully!" });
     } catch (error) {
-      res.status(500).send("Internal Server Error");
+      console.error(error);
+      res
+        .status(500)
+        .json({ error: "Cant upload completion certificate right now!" });
+    }
+  }
+);
+
+app.post(
+  "/api/completed-course/grade-upload/:id",
+  authenticateToken,
+  authorizeRole(["admin", "instructor"]),
+  upload.single("grade-completion-file"),
+  async (req, res) => {
+    try {
+      const id = req.params.id;
+      const file = req.file;
+      const { courseGrade } = req.body;
+      await uploadTraineeGradeSheet(id, file.buffer, courseGrade);
+      if (req.user.role == "instructor") {
+        const userCourse = await getTraineeCourseInfo(id);
+        return res.status(200).json(userCourse);
+      }
+      return res
+        .status(200)
+        .json({ message: "Grade Sheet uploaded successfully!" });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: "Cant upload grade sheet right now." });
     }
   }
 );
@@ -2275,6 +2867,19 @@ app.delete(
     try {
       const { userId, dateStarted, continuation } = req.body;
       await deleteTraineeCourseInfo(userId, dateStarted, continuation);
+
+      await addNotification(
+        req.user.userId,
+        req.user.role,
+        "User Course",
+        `User course id#${decrypted.courseId} successfully deleted!`
+      );
+      await addNotification(
+        userId,
+        "user",
+        "User Course",
+        `User course id#${decrypted.courseId} successfully deleted!`
+      );
       return res
         .status(200)
         .json({ message: "Trainee course info Deleted successfully!" });
@@ -2306,27 +2911,41 @@ app.get("/api/vehicles", authenticateToken, async (req, res) => {
   }
 });
 
-app.post("/api/vehicle/add", authenticateToken, async (req, res) => {
-  try {
-    const { plateNumber, vehicleModel, year, vehicleType } = req.body;
-    if ((!plateNumber, !vehicleModel, !year, !vehicleType)) {
-      return res.status(400).json({ error: "Please Provide all fields!" });
-    } else {
-      const vehicletId = await addVehicle(
+app.post(
+  "/api/vehicle/add",
+  authenticateToken,
+  authorizeRole("admin"),
+  async (req, res) => {
+    try {
+      const { userId, role } = req.user;
+      const { plateNumber, vehicleModel, year, vehicleType } = req.body;
+      if ((!plateNumber, !vehicleModel, !year, !vehicleType)) {
+        return res.status(400).json({ error: "Please Provide all fields!" });
+      }
+      const vehicleId = await addVehicle(
         plateNumber,
         vehicleModel,
         year,
         vehicleType
       );
+
+      await addNotification(
+        userId,
+        role,
+        "Add vehicle",
+        `Successfully added! <br>
+        ${vehicleType} ${vehicleModel} ${year} - ${plateNumber} `
+      );
       res
         .status(201)
         .json({ message: "Vehicle added successfully", plateNumber });
+
+      res.status;
+    } catch (error) {
+      res.status(500).send("Internal Server Error");
     }
-    res.status;
-  } catch (error) {
-    res.status(500).send("Internal Server Error");
   }
-});
+);
 
 app.put(
   "/api/vehicles/:rowID/:status",
@@ -2416,15 +3035,27 @@ app.put("/api/vehicles/:id", authenticateToken, async (req, res) => {
   }
 });
 
-app.delete("/api/vehicles/:rowID", authenticateToken, async (req, res) => {
-  try {
-    const id = req.params.rowID;
-    const deleted = await deleteVehicle(id);
-    return res.json(deleted);
-  } catch (error) {
-    return res.status(500).json({ error: "Internal Server Error" });
+app.delete(
+  "/api/vehicles/:rowID",
+  authenticateToken,
+  authorizeRole("admin"),
+  async (req, res) => {
+    try {
+      const { userId, role } = req.user;
+      const id = req.params.rowID;
+      const deleted = await deleteVehicle(id);
+      await addNotification(
+        userId,
+        role,
+        "Vehicle",
+        `Vehicle id#${id} Successfully deleted! `
+      );
+      return res.json(deleted);
+    } catch (error) {
+      return res.status(500).json({ error: "Internal Server Error" });
+    }
   }
-});
+);
 
 app.get(
   "/api/notifications",
@@ -2749,7 +3380,6 @@ app.get(
           res.clearCookie("adminSession", { path: "/" });
           res.clearCookie("userSession", { path: "/" });
           res.clearCookie("jwtToken", { path: "/" });
-          res.clearCookie("publicKey", { path: "/" });
 
           // Redirect only after clearing cookies
           return res.redirect(logoutLink);
@@ -2843,13 +3473,13 @@ app.get("/certificates-completion-pdc", async (req, res) => {
   userProfile[0].picture = profilePicture;
 
   const userCourse = [
-    {
-      courseName: trainee_course.program_name,
-      date_started: trainee_course.date_started,
-      date_finished: trainee_course.date_completed,
-      total_hours: trainee_course.total_hours,
-    },
-  ];
+      {
+        courseName: trainee_course[0].program_name,
+        date_started: trainee_course[0].date_started,
+        date_finished: trainee_course[0].date_completed,
+        total_hours: trainee_course[0].total_hours,
+      },
+    ];
 
   const instructorProfile = [
     {
@@ -2875,14 +3505,6 @@ app.post("/certificates-completion-pdc/:type", async (req, res) => {
   try {
     const { userId, instructorId, courseId, dlCodesLeft, dlCodesRight } =
       req.body;
-    console.log(
-      "userId, courseId, instructorId, dlCodesRight, dlCodesLeft",
-      userId,
-      courseId,
-      instructorId,
-      dlCodesRight,
-      dlCodesLeft
-    );
 
     const logoPath = path.join(
       __dirname,
@@ -2938,10 +3560,10 @@ app.post("/certificates-completion-pdc/:type", async (req, res) => {
 
     const userCourse = [
       {
-        courseName: trainee_course.program_name,
-        date_started: trainee_course.date_started,
-        date_finished: trainee_course.date_completed,
-        total_hours: trainee_course.total_hours,
+        courseName: trainee_course[0].program_name,
+        date_started: trainee_course[0].date_started,
+        date_finished: trainee_course[0].date_completed,
+        total_hours: trainee_course[0].total_hours,
       },
     ];
 
@@ -3006,6 +3628,22 @@ app.post("/certificates-completion-pdc/:type", async (req, res) => {
         name: user.first_name,
         certificate: pdfBuffer,
       });
+      await addNotification(
+        userId,
+        "user",
+        "Certificate of Completion",
+        `${user.first_name + " " + user.last_name} - ${
+          trainee_course.program_name
+        } Course Certificate `
+      );
+      await addNotification(
+        0,
+        "admin",
+        "Certificate of Completion",
+        `${user.first_name + " " + user.last_name} - ${
+          trainee_course.program_name
+        } Course Certificate `
+      );
     }
 
     res.setHeader(
@@ -3076,10 +3714,10 @@ app.get("/certificates-completion-tdc", async (req, res) => {
 
     const userCourse = [
       {
-        courseName: trainee_course.program_name,
-        date_started: trainee_course.date_started,
-        date_finished: trainee_course.date_completed,
-        total_hours: trainee_course.total_hours,
+        courseName: trainee_course[0].program_name,
+        date_started: trainee_course[0].date_started,
+        date_finished: trainee_course[0].date_completed,
+        total_hours: trainee_course[0].total_hours,
       },
     ];
 
@@ -3107,6 +3745,7 @@ app.get("/certificates-completion-tdc", async (req, res) => {
 
 app.post("/certificates-completion-tdc/:type", async (req, res) => {
   try {
+    const type = req.params.type;
     const { userId, courseId, instructorId, onsite, online } = req.body;
 
     const instructor = await getInstructorwithId(instructorId);
@@ -3159,10 +3798,10 @@ app.post("/certificates-completion-tdc/:type", async (req, res) => {
 
     const userCourse = [
       {
-        courseName: trainee_course.program_name,
-        date_started: trainee_course.date_started,
-        date_finished: trainee_course.date_completed,
-        total_hours: trainee_course.total_hours,
+        courseName: trainee_course[0].program_name,
+        date_started: trainee_course[0].date_started,
+        date_finished: trainee_course[0].date_completed,
+        total_hours: trainee_course[0].total_hours,
         modality: onsite ? "onsite" : online ? "online" : "",
       },
     ];
@@ -3226,6 +3865,22 @@ app.post("/certificates-completion-tdc/:type", async (req, res) => {
         name: user.first_name,
         certificate: pdfBuffer,
       });
+      await addNotification(
+        userId,
+        "user",
+        "Certificate of Completion",
+        `${user.first_name + " " + user.last_name} - ${
+          trainee_course.program_name
+        } Course Certificate `
+      );
+      await addNotification(
+        0,
+        "admin",
+        "Certificate of Completion",
+        `${user.first_name + " " + user.last_name} - ${
+          trainee_course.program_name
+        } Course Certificate `
+      );
     }
 
     res.setHeader(
@@ -3240,23 +3895,28 @@ app.post("/certificates-completion-tdc/:type", async (req, res) => {
   }
 });
 
-app.get("/sample", authenticateToken, authorizeRole("user"), (req, res) => {
-  try {
-    res.render("sample");
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "failed to load page", err });
+app.get(
+  "/sample",
+  authenticateToken,
+  authorizeRole(["user", "admin"]),
+  (req, res) => {
+    try {
+      res.render("sample");
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: "failed to load page", err });
+    }
   }
-});
+);
 
 app.post(
   "/sample/:type",
   authenticateToken,
-  authorizeRole("user"),
+  authorizeRole(["user", "admin"]),
   async (req, res) => {
     const type = req.params.type;
     const { userId, role } = req.user;
-    const encPrivKey = await getPrivKeyWithUserId(userId, role);
+    const encPrivKey = await getKeysWithUserId(userId, role);
     const encKey = {
       encrypted: encPrivKey.encrypted,
       iv: encPrivKey.iv,
@@ -3275,7 +3935,7 @@ app.post(
       } else if (type == "encrypt") {
         const { encMsg } = req.body;
         const dataFromDb = await getUserAccountById(encMsg);
-        const encrypted = encryptData(dataFromDb, clientPubKey);
+        const encrypted = await encryptData(dataFromDb, userId, role);
         return res.status(200).json({ encrypted });
       }
     } catch (err) {

@@ -1,3 +1,5 @@
+import { encryptData, decryptData } from "../f-webCryptoKeys.js";
+
 //start clock of admin dashboard
 function updateClock() {
   const clockElement = document.getElementById("clock");
@@ -159,8 +161,6 @@ async function fetchDashboardDetails() {
     }
     const data = await response.json();
     dashboardDetails.push(data);
-
-    console.log("dashboardDetails", dashboardDetails);
   } catch (error) {
     console.error("Error fetching dashboard details:", error);
     showNotification("Error fetching dashboard details", "error");
@@ -265,7 +265,6 @@ async function renderInstructorsSchedule() {
   }
   const data = dashboardDetails[0];
   const scheduleList = data.scheduleList;
-  console.log("scheduleList", scheduleList);
   const instructorsSchedules = document.getElementById("instructor-schedules");
 
   // Check if all instructors have null in their date
@@ -327,7 +326,7 @@ function paymentButtons(methodList) {
         <form id="add-payment-method-form" class="w-96">
           <div class="mb-4">
             <h3 class="text-xl font-semibold mb-3">Method Name</h3>
-            <input type="text" id="method-name" name="method-name" class="w-full outline outline-1 outline-gray-300 rounded-md text-lg px-1" placeholder="Enter Method Name" />
+            <input type="text" id="method-name" name="methodName" class="w-full outline outline-1 outline-gray-300 rounded-md text-lg px-1" placeholder="Enter Method Name" />
           </div>
           <div class="mb-4">
             <h3 class="text-xl font-semibold mb-3">Availability</h3>
@@ -338,7 +337,7 @@ function paymentButtons(methodList) {
           </div>
           <div class="mb-4">
             <h3 class="text-xl font-semibold mb-3">Method File</h3>
-            <input type="file" id="method-file" name="method-file" class="w-full outline outline-1 outline-gray-300 rounded-md text-lg px-1" accept="image/*" />
+            <input type="file" id="method-file" name="methodFile" class="w-full outline outline-1 outline-gray-300 rounded-md text-lg px-1" accept="image/*" />
           </div>
           <button id="payment-method-submit-button" type="submit" class="bg-blue-800 text-white rounded-md px-2">Submit</button>
         </form>
@@ -352,19 +351,15 @@ function paymentButtons(methodList) {
         .getElementById("add-payment-method-form")
         .addEventListener("submit", async (event) => {
           event.preventDefault();
-          const methodName = document.getElementById("method-name").value;
-          const availability = document.getElementById("availability").value;
-          const methodFile = document.getElementById("method-file").files[0];
 
-          const formData = new FormData();
-          formData.append("methodName", methodName);
-          formData.append("availability", availability);
-          formData.append("methodFile", methodFile);
+          const formData = new FormData(event.target);
+          const encrypting = await encryptData(formData);
 
           try {
             const response = await fetch("/api/payment-methods/add", {
               method: "POST",
-              body: formData,
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ encryptedWithEncAesKey: encrypting }),
             });
             if (response.ok) {
               showNotification("Payment Method Added Successfully!", "success");
@@ -447,7 +442,6 @@ function paymentButtons(methodList) {
   document.querySelectorAll(".upload-file-btn").forEach((button) => {
     button.addEventListener("click", function () {
       const methodId = this.getAttribute("data-id");
-      console.log("Upload file for method ID:", methodId);
 
       if (!methodId) {
         console.error("ID not found");
@@ -473,14 +467,18 @@ function paymentButtons(methodList) {
           event.preventDefault();
           const methodFile = document.getElementById("method-file").files[0];
           const formData = new FormData();
-          formData.append("method-file", methodFile);
+          formData.append("methodId", methodId)
+          formData.append("methodFile", methodFile);
+
+          const encrypting = await encryptData(formData);
 
           try {
             const response = await fetch(
-              `/api/payment-methods/upload/${methodId}`,
+              `/api/payment-methods/upload`,
               {
                 method: "POST",
-                body: formData,
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ encryptedWithEncAesKey: encrypting }),
               }
             );
             if (response.ok) {
@@ -501,7 +499,6 @@ function paymentButtons(methodList) {
   document.querySelectorAll(".delete-btn").forEach((button) => {
     button.addEventListener("click", function () {
       const methodId = this.getAttribute("data-id");
-      console.log("Delete method with ID:", methodId);
 
       if (!methodId) {
         console.error("ID not found");

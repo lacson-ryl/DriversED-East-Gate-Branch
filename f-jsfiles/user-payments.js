@@ -1,3 +1,5 @@
+import { encryptData, decryptData } from "../f-webCryptoKeys.js";
+
 //initialize modal elements;
 const modal = document.getElementById("myModal");
 const spanX = document.getElementsByClassName("close")[0];
@@ -9,7 +11,8 @@ async function renderUserPaymentsForm() {
   const paymentMethodSelect = document.getElementById("payment-method");
   const courseSelect = document.getElementById("course-select");
 
-  const data = await response.json();
+  const encrypted = await response.json();
+  const data = decryptData(encrypted.encrypted);
   const paymentMethods = data.paymentMethods;
   const paymentCourses = data.paymentCourses;
 
@@ -20,6 +23,7 @@ async function renderUserPaymentsForm() {
     paymentCourses.length === 0 ||
     !paymentCourses
   ) {
+    modalDetails.innerHTML = "";
     modalDetails.innerHTML = `
     <h2 class="text-lg font-semibold">Error</h2>
     <p class="mt-4">Sorry! Can't fetch Payment form details right now. Please try again later.</p>
@@ -53,25 +57,16 @@ async function renderUserPaymentsForm() {
     .addEventListener("submit", async function (event) {
       event.preventDefault();
 
-      const accountName = document.getElementById("account-name").value;
-      const amount = document.getElementById("amount").value;
-      const paymentMethod = document.getElementById("payment-method").value;
-      const screenshotReceipt =
-        document.getElementById("screenshot-receipt").files[0];
-      const courseSelect = document.getElementById("course-select").value;
-
-      const formData = new FormData();
-      formData.append("accountName", accountName);
-      formData.append("amount", amount);
-      formData.append("paymentMethod", paymentMethod);
-      formData.append("screenshotReceipt", screenshotReceipt);
-      formData.append("courseSelect", courseSelect);
+      const formData = new FormData(event.target);
+      const encrypting = await encryptData(formData);
 
       try {
         const response = await fetch("/api/payment/add", {
           method: "POST",
-          body: formData,
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ encryptedWithEncAesKey: encrypting }),
         });
+        modalDetails.innerHTML = "";
         if (!response.ok) {
           titleDetails.innerText = "Error Payment";
           modalDetails.innerText =
@@ -112,42 +107,14 @@ async function renderUserPaymentsList() {
   const tableAnnouncement = document.getElementById("table-announcement");
   const userPaymentTable = document.getElementById("user-payments-table");
 
-  /*
   // fetch user payments from the server
   const response = await fetch("/api/user-payments/list");
   if (!response.ok) {
     tableAnnouncement.innerText = "Sorry! can't fetch data right now";
     return;
   }
-  */
 
-  //const data = await response.json();
-  const data = [
-    {
-      user_payment_id: 101,
-      user_id: 7,
-      user_name: "Reynan Lacson",
-      account_name: "Railley Lacson",
-      amount: "₱2,500.00",
-      payment_method: "GCash",
-      screenshot_receipt: {
-        data: "sampleImageBase64DataHere", // You can replace this with actual data URI if you want preview
-      },
-      status: "Verified", // Options: "Verified", "Deny", "Verifying"
-      date_created: "2025-07-04 14:35",
-    },
-    {
-      user_payment_id: 102,
-      user_id: 7,
-      user_name: "Reynan Lacson",
-      account_name: "Rainiel LAcson",
-      amount: "₱1,200.00",
-      payment_method: "Bank Transfer",
-      screenshot_receipt: null,
-      status: "Verifying",
-      date_created: "2025-07-04 14:42",
-    },
-  ];
+  const data = await response.json();
 
   if (data.length === 0) {
     tableAnnouncement.innerText = "No payments found";
@@ -155,13 +122,6 @@ async function renderUserPaymentsList() {
       <table id="applicants-table" class="w-full border-collapse">
         <thead class="">
           <tr class="text-center">
-            <th class="border border-gray-300 px-4 py-2 w-12">ID</th>
-            <th class="border border-gray-300 px-4 py-2">User ID - Name</th>
-            <th class="border border-gray-300 px-4 py-2">Account Name- Amount</th>
-            <th class="border border-gray-300 px-4 py-2">Pay Method </th>
-            <th class="border border-gray-300 px-4 py-2 w-24">Receipt</th>
-            <th class="border border-gray-300 px-4 py-2 w-24">Status</th>
-            <th class="border border-gray-300 px-4 py-2 w-28">Date</th>
           </tr>
         </thead>
         <tbody class="">
@@ -330,10 +290,92 @@ async function renderUserPaymentsList() {
       </table>
     `;
   }
-  allButtons();
+  allButtons(data);
 }
 
-function allButtons() {
+function filterPaymentList(data, id) {
+  return data.filter((item) => item.user_payment_id == id);
+}
+function showNotification(message, type) {
+  const notification = document.getElementById("notification");
+  notification.innerHTML = `
+    <p class="notification-${type}">${message}</p>
+  `;
+  notification.style.display = "block";
+  setTimeout(() => {
+    notification.style.display = "none";
+  }, 3000);
+}
+
+function allButtons(data) {
+  //Payment upload
+  document.querySelectorAll(".receipt-upload-btn").forEach((button) => {
+    button.addEventListener("click", function () {
+      const rowId = this.getAttribute("data-id");
+      const filteredList = filterPaymentList(data, rowId);
+      const result = filteredList[0];
+
+      modalDetails.innerHTML = "";
+      if (!rowId) {
+        console.error("ID not found");
+        modalDetails.innerHTML = "<p>ID not found.</p>";
+        modal.style.display = "flex";
+        return;
+      }
+      modalDetails.innerHTML = `
+          <form id="payment-receipt-upload-form" class="min-w-96">
+            <div class="mb-4">
+                <h3 class="text-lg font-semibold mb-4">Upload Photo Receipt of payment: <hr class="border-white"> ${result.account_name}</h3>
+                <input type="file" id="screenshot-receipt" name="screenshot-receipt" 
+                class="w-full rounded-md text-lg px-1 file:mr-4 file:rounded-full file:border-0 file:bg-blue-50 file:px-4 file:py-2 file:text-base file:font-semibold file:text-blue-700 hover:file:bg-blue-100 ..."
+                accept="image/*" />
+            </div>
+            <button id="receipt-submit-button" type="submit" class="bg-blue-800 text-white rounded-md px-2">Submit</button>
+            <div id="error-indicator"></div>
+          </form>
+        `;
+      modal.style.display = "flex";
+      const uploadForm = document.getElementById("payment-receipt-upload-form");
+
+      uploadForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const formData = new FormData(uploadForm);
+
+        try {
+          const response = await fetch(`/api/payments/receipt/${rowId}`, {
+            method: "POST",
+            body: formData,
+          });
+          const responseData = await response.json();
+          const notification = document.getElementById("notification");
+          if (response.ok) {
+            notification.innerHTML = `
+                <p class="text-green-700">${responseData.message}</p>
+              `;
+            notification.style.display = "block"; // Show success notification
+            renderUserPaymentsList();
+          } else {
+            notification.innerHTML = `
+                <p class="text-red-700">${responseData.error}</p>
+              `;
+            notification.style.display = "block";
+          }
+
+          setTimeout(() => {
+            notification.style.display = "none";
+          }, 3000);
+          modal.style.display = "none";
+        } catch (error) {
+          console.error("Error uploading Template", error);
+          showNotification(
+            "An error occurred while uploading Template.",
+            "error"
+          ); // Show error notification
+        }
+      });
+    });
+  });
+
   // View receipt
   document.querySelectorAll(".view-btn").forEach((button) => {
     button.addEventListener("click", function () {

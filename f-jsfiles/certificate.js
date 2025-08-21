@@ -153,7 +153,9 @@ function allButtons(data) {
             alert("Internal Server error");
           }
         });
-    }); // Edit Certificate
+    });
+
+  // Edit Certificate
   document.querySelectorAll(".certificate-edit-btn").forEach((button) => {
     button.addEventListener("click", async function () {
       const originalId = this.getAttribute("data-id");

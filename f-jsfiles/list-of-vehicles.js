@@ -12,7 +12,7 @@ async function renderVehicleList() {
   console.log(data);
   vehicleTable.innerHTML = `
         <table id="applicants-table"
-            class=" w-full text-center justify-items-start table-fixed border-collapse border-2 border-gray-300">
+            class=" w-full text-center justify-items-center table-fixed border-collapse border-2 border-gray-300">
             <thead class="text-sm">
                 <tr>
                     <th class="border border-gray-300 px-3 py-2 w-10">ID</th>
@@ -21,9 +21,9 @@ async function renderVehicleList() {
                     <th class="border border-gray-300 px-4 py-2 w-16">Year</th>
                     <th class="border border-gray-300 px-4 py-2 w-28">Type</th>
                     <th class="border border-gray-300 px-4 py-2 w-24">Registered</th>
-                    <th class="border border-gray-300 px-4 py-2 w-32">LTO Doc</th>
-                    <th class="border border-gray-300 px-4 py-2 w-32">Car Image</th>
-                    <th class="border border-gray-300 px-4 py-2">Actions</th>
+                    <th class="border border-gray-300 px-4 py-2 w-36">LTO Doc</th>
+                    <th class="border border-gray-300 px-4 py-2 w-36">Car Image</th>
+                    <th class="border border-gray-300 px-4 py-2 w-36">Actions</th>
                 </tr>
             </thead>
             <tbody class="">
@@ -58,49 +58,64 @@ async function renderVehicleList() {
                                     ? '<div class="text-red-700 hover:font-semibold rounded-md">No</div>'
                                     : `<div class="text-yellow-700 hover:font-semibold rounded-md">Pending</div>`
                                 }</button></td>
-                        <td class="border border-gray-300 px-4 py-2">
-                            <div>${
+                        <td class=" border border-gray-300 px-4 py-2">
+                          <div class="flex flex-row items-center justify-center gap-1">
+                            ${
                               arr.lto_document
                                 ? `
-                                  <a href="javascript:void(0);" class="text-blue-700 hover:underline view-btn" data-id="${
-                                    arr.vehicle_id
-                                  }" data-lto='${JSON.stringify(
+                                  <a href="javascript:void(0);" class="bg-blue-600 rounded-md px-2 view-btn" 
+                                  data-id="${arr.vehicle_id}" 
+                                  data-lto='${JSON.stringify(
                                     arr.lto_document.data
-                                  )}' data-file-type="${
-                                    arr.lto_document_type
-                                  }">View</a>
+                                  )}' data-file-type="${arr.lto_document_type}">
+                                    <img src="/f-css/solid/icons_for_buttons/view-boards.svg" class="w-6 h-6 reverse-color" />
+                                  </a>
                                     
                                 <button data-id="${
                                   arr.vehicle_id
-                                }" class="lto-upload-btn  text-red-700 rounded-md px-2 hover:underline">Re-upload</button>
+                                }" class="lto-upload-btn  bg-red-600 rounded-md px-2">
+                                  <img src="/f-css/solid/icons_for_buttons/upload.svg" class="w-6 h-6 reverse-color" />
+                                </button>
                                 `
                                 : `<button data-id=" ${arr.vehicle_id}  "
-                                class="lto-upload-btn  text-red-700 rounded-md px-2 hover:underline">Upload</button>`
+                                class="lto-upload-btn  bg-red-600 rounded-md px-2 ">
+                                  <img src="/f-css/solid/icons_for_buttons/upload.svg" class="w-6 h-6 reverse-color" />
+                                </button>`
                             }
-                            </div>
+                          </div>
                         </td>
                         <td class="border border-gray-300 px-4 py-2">
                             <div>${
                               arr.car_picture
                                 ? `
-                                  <a href="javascript:void(0);" class="text-blue-700 hover:underline view-car-btn" data-id="${
+                                  <a href="javascript:void(0);" class="bg-blue-700 px-2 view-car-btn" data-id="${
                                     arr.vehicle_id
                                   }" data-car='${JSON.stringify(
                                     arr.car_picture.data
-                                  )}' data-file-type="image/jpeg">View</a>
+                                  )}' data-file-type="image/jpeg">
+                                    <img src="/f-css/solid/icons_for_buttons/view-boards.svg" class="w-6 h-6 reverse-color" />
+                                  </a>
                                   <button data-id="${
                                     arr.vehicle_id
-                                  }" class="vehicle-upload-btn text-red-700 rounded-md px-2 hover:underline">Re-upload</button>
+                                  }" class="vehicle-upload-btn bg-red-700 rounded-md px-2 hover:underline">
+                                    <img src="/f-css/solid/icons_for_buttons/upload.svg" class="w-6 h-6 reverse-color" />
+                                  </button>
                                 `
-                                : `<button data-id="${arr.vehicle_id}" class="vehicle-upload-btn text-red-700 rounded-md px-2 hover:underline">Upload</button> `
+                                : `<button data-id="${arr.vehicle_id}" class="vehicle-upload-btn bg-red-600 rounded-md px-2 hover:underline">
+                                    <img src="/f-css/solid/icons_for_buttons/upload.svg" class="w-6 h-6 reverse-color" />
+                                   </button> `
                             }
                             </div>
                         </td>
                         <td class="border border-gray-300 px-4 py-2">
                             <button data-id=" ${arr.vehicle_id}  "
-                                class="vehicle-edit-btn bg-blue-700 hover:bg-gradient-to-t from-sky-400 to-sky-800 text-white rounded-md px-2">Edit</button>
+                                class="vehicle-edit-btn bg-blue-700 hover:bg-gradient-to-t from-sky-400 to-sky-800 text-white rounded-md px-2">
+                                <img src="/f-css/solid/icons_for_buttons/pencil.svg" class="w-6 h-6 reverse-color" />  
+                              </button>
                             <button data-id=" ${arr.vehicle_id}  "
-                                class="vehicle-delete-btn bg-rose-700 hover:bg-gradient-to-t from-rose-400 to-rose-800 text-white rounded-md px-2">Delete</button>
+                                class="vehicle-delete-btn bg-rose-700 hover:bg-gradient-to-t from-rose-400 to-rose-800 text-white rounded-md px-2">
+                                <img src="/f-css/solid/icons_for_buttons/trash.svg" class="w-6 h-6 reverse-color" />  
+                              </button>
                         </td>
   
                     </tr>

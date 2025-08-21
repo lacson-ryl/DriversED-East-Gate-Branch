@@ -1,3 +1,5 @@
+import { encryptData, decryptData } from "../f-webCryptoKeys.js";
+
 // Initialize modal and its components
 const modal = document.getElementById("myModal");
 const span = document.getElementsByClassName("close")[0];
@@ -5,12 +7,14 @@ const modalDetails = document.getElementById("modal-details");
 
 async function renderInstructorsList() {
   const response = await fetch("/api/manage-people/list");
-  const data = await response.json();
+  const encrypted = await response.json();
+  const data = await decryptData(encrypted.encrypted);
+  console.log("data", data);
   const instructorTable = document.getElementById(
     "instructors-payroll-history-table"
   );
 
-  if (!data.instructorList) {
+  if (!data) {
     instructorTable.innerHTML = `
         <table id="instructors-table" class="mt-3 mb-5 mx-3 text-left justify-items-start table-fixed border-collapse border-2 border-gray-300">
           <thead>
@@ -21,7 +25,7 @@ async function renderInstructorsList() {
         </table>
       `;
   } else {
-    const details = data.instructorList;
+    const details = data;
     let tableRows = details
       .map(
         (arr) => `
@@ -70,14 +74,17 @@ async function renderInstructorsList() {
               : `<button data-id="${arr.instructor_id}"
               class="instructor-assign-account-btn bg-blue-700 hover:bg-gradient-to-t from-sky-400 to-sky-800 text-white rounded-md px-2"
               >Assign</button>`
-          }
-            
+          } 
           </td>
-          <td class="border border-gray-300 px-4 py-2">
+          <td class="border border-gray-300">
             <button data-id="${arr.instructor_id}"
-              class="instructor-edit-btn bg-blue-700 hover:bg-gradient-to-t from-sky-400 to-sky-800 text-white rounded-md px-2">Edit</button>
+              class="instructor-edit-btn bg-blue-700 hover:bg-gradient-to-t from-sky-400 to-sky-800 text-white rounded-md px-2">
+              <img src="/f-css/solid/icons_for_buttons/pencil.svg" class="w-6 h-6 reverse-color" />
+            </button>
             <button data-id="${arr.instructor_id}"
-              class="instructor-delete-btn bg-rose-700 hover:bg-gradient-to-t from-rose-400 to-rose-800 text-white rounded-md px-2">Delete</button>
+              class="instructor-delete-btn bg-rose-700 hover:bg-gradient-to-t from-rose-400 to-rose-800 text-white rounded-md px-2">
+              <img src="/f-css/solid/icons_for_buttons/trash.svg" class="w-6 h-6 reverse-color" />
+            </button>
           </td>
         </tr>
       `
@@ -97,7 +104,7 @@ async function renderInstructorsList() {
               <th class="border border-gray-300 px-4 py-2 text-sm">Benefits <hr class="border border-black"> SSS | Pagibig | PhilHealth</th>
               <th class="border border-gray-300 px-4 py-2 w-24">Payroll</th>
               <th class="border border-gray-300 px-4 py-2 w-24">Account</th>
-              <th class="border border-gray-300 px-4 py-2 w-36">Actions</th>
+              <th class="border border-gray-300 px-4 py-2 w-24">Actions</th>
             </tr>
           </thead>
           <tbody>${tableRows}</tbody>
@@ -156,15 +163,18 @@ function allButton(details) {
     <form id="add-instructor-form" enctype="multipart/form-data" class="min-w-96">
       <div class="mb-4">
         <h3 class="text-xl font-semibold mb-3">Instructor Name</h3>
-        <input type="text" id="instructor-name" name="instructor-name" required class="w-full outline outline-1 outline-gray-300 rounded-md text-lg px-1" placeholder="Enter Instructor Name" />
+        <input type="text" id="instructor-name" name="instructor-name" required
+          class="w-full outline outline-1 outline-gray-300 rounded-md text-lg px-1" placeholder="Enter Instructor Name" />
       </div>
       <div class="mb-4">
         <h3 class="text-xl font-semibold mb-3">Rate per Hour</h3>
-        <input type="number" id="rate-per-hour" name="rate-per-hour" class="w-full outline outline-1 outline-gray-300 rounded-md text-lg px-1" placeholder="Enter Rate per Hour" />
+        <input type="number" id="rate-per-hour" name="rate-per-hour"
+          class="w-full outline outline-1 outline-gray-300 rounded-md text-lg px-1" placeholder="Enter Rate per Hour" />
       </div>
       <div class="mb-4">
         <h3 class="text-xl font-semibold mb-3">Instructor Type</h3>
-        <select id="instructor-type" name="instructor-type" class="mt-1 text-lg block w-full outline outline-1 outline-gray-300 rounded-sm px-1">
+        <select id="instructor-type" name="instructor-type"
+          class="mt-1 text-lg block w-full outline outline-1 outline-gray-300 rounded-sm px-1">
           <option value="PDC">PDC</option>
           <option value="TDC">TDC</option>
           <option value="(P|T)DC">(P|T)DC</option>
@@ -173,21 +183,24 @@ function allButton(details) {
       <div class="flex flex-col md:flex-row gap-4 mb-4">
         <div class="">
           <h3 class="text-xl font-semibold mb-3">TDC Onsite</h3>
-          <select id="tdc-onsite" name="tdc-onsite" required class="mt-1 text-lg block w-full outline outline-1 outline-gray-300 rounded-sm px-1">
+          <select id="tdc-onsite" name="tdc-onsite" required
+            class="mt-1 text-lg block w-full outline outline-1 outline-gray-300 rounded-sm px-1">
             <option value="0">False</option>
             <option value="1">True</option>
           </select>
         </div>
         <div class="">
           <h3 class="text-xl font-semibold mb-3">Manual</h3>
-          <select id="is-manual" name="is-manual" required class="mt-1 text-lg block w-full outline outline-1 outline-gray-300 rounded-sm px-1">
+          <select id="is-manual" name="is-manual" required
+            class="mt-1 text-lg block w-full outline outline-1 outline-gray-300 rounded-sm px-1">
             <option value="0">False</option>
             <option value="1">True</option>
           </select>
         </div>
         <div class="">
           <h3 class="text-xl font-semibold mb-3">Automatic</h3>
-          <select id="is-automatic" name="is-automatic" required class="mt-1 text-lg block w-full outline outline-1 outline-gray-300 rounded-sm px-1">
+          <select id="is-automatic" name="is-automatic" required
+            class="mt-1 text-lg block w-full outline outline-1 outline-gray-300 rounded-sm px-1">
             <option value="0">False</option>
             <option value="1">True</option>
           </select>
@@ -195,16 +208,24 @@ function allButton(details) {
       </div>
       <div class="mb-4">
         <h3 class="text-xl font-semibold mb-3">Accreditation Number</h3>
-        <input type="text" id="accreditation-number" name="accreditation-number" class="w-full outline outline-1 outline-gray-300 rounded-md text-lg px-1"   />
+        <input type="text" id="accreditation-number" name="accreditation-number"
+          class="w-full outline outline-1 outline-gray-300 rounded-md text-lg px-1" />
       </div>
       <div class="mb-4">
         <h3 class="text-xl font-semibold mb-3">Date Started</h3>
-        <input type="date" id="date-started" name="date-started" class="w-full outline outline-1 outline-gray-300 rounded-md text-lg px-1" placeholder="Enter Program Name" />
+        <input type="date" id="date-started" name="date-started"
+          class="w-full outline outline-1 outline-gray-300 rounded-md text-lg px-1" placeholder="Enter Program Name" />
+      </div>
+      <div>
+        <img id="profile-picture-preview"
+          class="w-36 h-32 rounded-md border-2 content-center border-gray-300 mb-4 object-fill" src="defaultavatar.png"
+          alt="Profile Picture Preview">
+        <input type="file" id="profile-picture-input" name="profile_picture" accept="image/*" class="text-sm text-gray-600">
       </div>
       </div>
       <button id="instructor-submit-button" type="submit" class="bg-blue-800 text-white rounded-md px-2">Submit</button>
     </form>
-    `;
+  `;
 
   // Event listener for add instructor button
   const addButton = document.getElementById("add-instructor-button");
@@ -218,13 +239,14 @@ function allButton(details) {
         .getElementById("add-instructor-form")
         .addEventListener("submit", async function (event) {
           event.preventDefault();
-          const form = document.getElementById("add-instructor-form");
-          const formData = new FormData(form);
+          const formData = new FormData(event.target);
+          const encrypting = await encryptData(formData);
 
           try {
             const response = await fetch("/api/manage-people/instructor-add", {
               method: "POST",
-              body: formData,
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ encryptedWithEncAesKey: encrypting }),
             });
             if (response.ok) {
               alert("Instructor Added Successfully!");
@@ -269,7 +291,7 @@ function allButton(details) {
               </label>
               <input
                 class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight hover:border-blue-900 focus:outline-none focus:border-blue-900"
-                id="user_name" name="user_name" type="text" value="${filteredData.instructor_name}">
+                id="user_name" name="userName" type="text" value="${filteredData.instructor_name}">
             </div>
             <div class="mb-4">
               <label for="user_email" class="block text-gray-700 text-sm font-bold mb-2">
@@ -277,17 +299,25 @@ function allButton(details) {
               </label>
               <input
                 class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight hover:border-blue-900 focus:outline-none focus:border-blue-900"
-                id="user_email" name="user_email" type="text" placeholder="Enter your email: Ex. myemail@mail.my">
+                id="user_email" name="userEmail" type="text" placeholder="Enter your email: Ex. myemail@mail.my">
             </div>
             <div class="mb-4">
               <label for="account_role" class="block text-gray-700 text-sm font-bold mb-2">
                 Role
               </label>
-              <select id="account_role" name="account_role"
+              <select id="account_role" name="accountRole"
                 class="mt-1 text-lg block w-full outline outline-1 outline-gray-300 rounded-sm px-1">
                 <option value="instructor">Instructor</option>
                 <option value="admin">Admin</option>
               </select>
+            </div>
+            <div class="mb-4">
+              <label for="prn" class="block text-gray-700 text-sm font-bold mb-2">
+                Role
+              </label>
+              <input
+                class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight hover:border-blue-900 focus:outline-none focus:border-blue-900"
+                id="prn" name="prn" type="text" placeholder="Do not include special characters and spaces">
             </div>
             <div class="flex items-center">
               <button id="assign-account-button"
@@ -304,21 +334,18 @@ function allButton(details) {
           .getElementById("assign-account-form")
           .addEventListener("submit", async (event) => {
             event.preventDefault();
-            const assignAccBtn = document.getElementById(
-              "assign-account-button"
-            );
             assignAccBtn.innerText = "Assigning...";
-            const userName = document.getElementById("user_name").value;
-            const userEmail = document.getElementById("user_email").value;
-            const accountRole = document.getElementById("account_role").value;
+            const formData = new FormData(event.target);
+            formData.append("id", rowId);
+            const encrypting = await encryptData(formData);
 
             try {
               const response = await fetch(
-                `/api/manage-people/assign-account/${rowId}`,
+                `/api/manage-people/assign-account`,
                 {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ userName, userEmail, accountRole }),
+                  body: JSON.stringify({ encryptedWithEncAesKey: encrypting }),
                 }
               );
 
@@ -350,128 +377,123 @@ function allButton(details) {
         return;
       }
 
-      try {
-        const response = await fetch(`/api/manage-people/${originalId}`);
-        const result = await response.json();
-        const data = result.instructor;
+      const data = filterDataById(details, "instructor_id", originalId);
 
-        if (response.ok) {
-          modalDetails.innerHTML = `
+      modalDetails.innerHTML = `
             <form id="edit-instructor-form" enctype="multipart/form-data" class="w-96">
               <div class="mb-4">
                 <h3 class="text-xl font-semibold mb-3">Instructor Name</h3>
-                <input type="text" id="instructor-name" name="instructor-name" value="${
+                <input type="text" id="instructor-name" name="name" value="${
                   data.instructor_name
                 }" required class="w-full outline outline-1 outline-gray-300 rounded-md text-lg px-1" placeholder="Enter Instructor Name" />
               </div>
-              <div class="mb-4">
-                <h3 class="text-xl font-semibold mb-3">Rate per Hour</h3>
-                <input type="number" id="rate-per-hour" name="rate-per-hour" value="${
-                  data.rate_per_hour
-                }" class="w-full outline outline-1 outline-gray-300 rounded-md text-lg px-1" placeholder="Enter Rate per Hour" />
+              <div class="flex flex-row gap-4 mb-4">
+                <div class="w-1/2">
+                  <h3 class="text-xl font-semibold mb-3">Rate per Hour</h3>
+                  <input type="number" id="rate-per-hour" name="rate" value="${
+                    data.rate_per_hour
+                  }" class="w-full outline outline-1 outline-gray-300 rounded-md text-lg px-1" placeholder="Enter Rate per Hour" />
+                </div>
+                <div class="w-1/2">
+                  <h3 class="text-xl font-semibold mb-3">Instructor Type</h3>
+                  <select id="instructor-type" name="type" class="mt-1 text-lg block w-full outline outline-1 outline-gray-300 rounded-sm px-1">
+                    <option value="PDC" ${
+                      data.instructor_type === "PDC" ? "selected" : ""
+                    }>PDC</option>
+                    <option value="TDC" ${
+                      data.instructor_type === "TDC" ? "selected" : ""
+                    }>TDC</option>
+                    <option value="(P|T)DC" ${
+                      data.instructor_type === "(P|T)DC" ? "selected" : ""
+                    }>(P|T)DC</option>
+                  </select>
+                </div>
               </div>
-              <div class="mb-4">
-                <h3 class="text-xl font-semibold mb-3">Instructor Type</h3>
-                <select id="instructor-type" name="instructor-type" class="mt-1 text-lg block w-full outline outline-1 outline-gray-300 rounded-sm px-1">
-                  <option value="PDC" ${
-                    data.instructor_type === "PDC" ? "selected" : ""
-                  }>PDC</option>
-                  <option value="TDC" ${
-                    data.instructor_type === "TDC" ? "selected" : ""
-                  }>TDC</option>
-                  <option value="(P|T)DC" ${
-                    data.instructor_type === "(P|T)DC" ? "selected" : ""
-                  }>(P|T)DC</option>
-                </select>
-              </div>
-              <div class="mb-4">
-                <h3 class="text-xl font-semibold mb-3">TDC Onsite</h3>
-                <select id="tdc-onsite" name="tdc-onsite" required class="mt-1 text-lg block w-full outline outline-1 outline-gray-300 rounded-sm px-1">
-                  <option value="0" ${
-                    data.isTdcOnsite === 0 ? "selected" : ""
-                  }>False</option>
-                  <option value="1" ${
-                    data.isTdcOnsite === 1 ? "selected" : ""
-                  }>True</option>
-                </select>
-              </div>
-              <div class="mb-4">
-                <h3 class="text-xl font-semibold mb-3">Manual</h3>
-                <select id="is-manual" name="is-manual" required class="mt-1 text-lg block w-full outline outline-1 outline-gray-300 rounded-sm px-1">
-                  <option value="0" ${
-                    data.isManual === 0 ? "selected" : ""
-                  }>False</option>
-                  <option value="1" ${
-                    data.isManual === 1 ? "selected" : ""
-                  }>True</option>
-                </select>
-              </div>
-              <div class="mb-4">
-                <h3 class="text-xl font-semibold mb-3">Automatic</h3>
-                <select id="is-automatic" name="is-automatic" required class="mt-1 text-lg block w-full outline outline-1 outline-gray-300 rounded-sm px-1">
-                  <option value="0" ${
-                    data.isAutomatic === 0 ? "selected" : ""
-                  }>False</option>
-                  <option value="1" ${
-                    data.isAutomatic === 1 ? "selected" : ""
-                  }>True</option>
-                </select>
+              <div class="flex flex-row mb-4 gap-4">
+                <div class="w-1/3">
+                  <h3 class="text-xl font-semibold mb-3">TDC Onsite</h3>
+                  <select id="tdc-onsite" name="onsite" required class="mt-1 text-lg block w-full outline outline-1 outline-gray-300 rounded-sm px-1">
+                    <option value="0" ${
+                      data.isTdcOnsite === 0 ? "selected" : ""
+                    }>False</option>
+                    <option value="1" ${
+                      data.isTdcOnsite === 1 ? "selected" : ""
+                    }>True</option>
+                  </select>
+                </div>
+                <div class="w-1/3">
+                  <h3 class="text-xl font-semibold mb-3">Manual</h3>
+                  <select id="is-manual" name="manual" required class="mt-1 text-lg block w-full outline outline-1 outline-gray-300 rounded-sm px-1">
+                    <option value="0" ${
+                      data.isManual === 0 ? "selected" : ""
+                    }>False</option>
+                    <option value="1" ${
+                      data.isManual === 1 ? "selected" : ""
+                    }>True</option>
+                  </select>
+                </div>
+                <div class="w-1/3">
+                  <h3 class="text-xl font-semibold mb-3">Automatic</h3>
+                  <select id="is-automatic" name="automatic" required class="mt-1 text-lg block w-full outline outline-1 outline-gray-300 rounded-sm px-1">
+                    <option value="0" ${
+                      data.isAutomatic === 0 ? "selected" : ""
+                    }>False</option>
+                    <option value="1" ${
+                      data.isAutomatic === 1 ? "selected" : ""
+                    }>True</option>
+                  </select>
+                </div>
               </div>
               <div class="mb-4">
                 <h3 class="text-xl font-semibold mb-3">Accreditation Number</h3>
-                <input type="text" id="accreditation-number" name="accreditation-number" value="${
-                  data.accreditaion_number ? data.accreditaion_number : ""
+                <input type="text" id="accreditation-number" name="accreditationNumber" value="${
+                  data.accreditation_number ? data.accreditation_number : ""
                 }" class="w-full outline outline-1 outline-gray-300 rounded-md text-lg px-1" />
               </div>
-              <div class="mb-4">
+              <div class="flex flex-row mb-4 gap-3">
                 <h3 class="text-xl font-semibold mb-3">Date Started</h3>
-                <input type="date" id="date-started" name="date-started" value="${
+                <input type="date" id="date-started" name="dateStarted" value="${
                   data.date_started
-                }" class="w-full outline outline-1 outline-gray-300 rounded-md text-lg px-1" placeholder="Enter Program Name" />
+                }" class=" items-center outline outline-1 outline-gray-300 rounded-md text-lg px-1" 
+                placeholder="Enter Program Name" />
               </div>
               <button id="instructor-submit-button" type="submit" class="bg-blue-800 text-white rounded-md px-2">Submit</button>
             </form>
           `;
-          modal.style.display = "flex";
+      modal.style.display = "flex";
 
-          // Attach event listener for form submission
-          document
-            .getElementById("edit-instructor-form")
-            .addEventListener("submit", async (event) => {
-              event.preventDefault();
-              const formData = new FormData(event.target);
+      // Attach event listener for form submission
+      const editForm = document.getElementById("edit-instructor-form");
+      editForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const formData = new FormData(editForm);
 
-              try {
-                const updateResponse = await fetch(
-                  `/api/manage-people/${originalId}`,
-                  {
-                    method: "PUT",
-                    body: formData,
-                  }
-                );
-                if (updateResponse.ok) {
-                  alert("Instructor updated successfully!");
-                  renderInstructorsList();
-                } else {
-                  alert("Failed to update instructor. Please try again.");
-                }
-                modal.style.display = "none";
-              } catch (error) {
-                console.error("Error updating instructor data", error);
-                alert("An error occurred while updating the instructor.");
-                modal.style.display = "none";
-              }
-            });
-        } else {
-          console.error("Failed to fetch instructor data");
-          modalDetails.innerHTML = "<p>Failed to fetch instructor data.</p>";
-          modal.style.display = "flex";
+        const encrypting = await encryptData(formData);
+        console.log("encrypting", encrypting);
+
+        try {
+          const updateResponse = await fetch(
+            `/api/manage-people/${originalId}`,
+            {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ encryptedWithEncAesKey: encrypting }),
+            }
+          );
+          const data = await updateResponse.json();
+          if (updateResponse.ok) {
+            alert(data.message);
+            renderInstructorsList();
+          } else {
+            alert(data.error);
+          }
+          modal.style.display = "none";
+        } catch (error) {
+          console.error("Error updating instructor data", error);
+          alert("An error occurred while updating the instructor.");
+          modal.style.display = "none";
         }
-      } catch (error) {
-        console.error("Error fetching instructor data", error);
-        modalDetails.innerHTML = "<p>Error fetching instructor data.</p>";
-        modal.style.display = "flex";
-      }
+      });
     });
   });
 
@@ -479,7 +501,7 @@ function allButton(details) {
     "instructors-current-payroll-table"
   );
   const backButton = document.getElementById("back-button");
-  
+
   //Event listeners for payroll buttons
   document.querySelectorAll(".instructor-payroll-btn").forEach((button) => {
     button.addEventListener("click", async function () {
@@ -774,24 +796,3 @@ window.onclick = function (event) {
     modal.style.display = "none";
   }
 };
-
-/*
-document
-  .getElementById("year-month-payroll-filter-form")
-  .addEventListener("submit", async (event) => {
-    event.preventDefault();
-    const year = document.getElementById("year").value;
-    const month = document.getElementById("month").value;
-
-    const month_year = `${month} ${year}`;
-    const response = await fetch(`/api/manage-people/payroll/${month_year}`);
-    const data = await response.json();
-
-    if (!resppnse.ok) {
-      currentPayrollTable.innerText = "Failed to fetch this week payroll data";
-      return;
-    }
-
-    renderDataTable(data);
-  });
-*/

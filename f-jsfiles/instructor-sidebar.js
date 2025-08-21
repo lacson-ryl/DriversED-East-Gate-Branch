@@ -18,13 +18,6 @@ const sidebarContent = `
                     <span class="sidebar-label">Dashboard</span>
                 </a>
             </li>
-            <li id="profile"
-                class="flex justify-items-center items-center rounded-3xl hover:font-bold py-1 px-2 hover:hover-bg-custom ">
-                <a class="side-nav-link flex justify-items-center items-center w-full gap-5" href="/instructor-profile">
-                    <img src="/f-css/solid/white/user.svg" class="side-icons" />
-                    <span class="sidebar-label">Profile</span>
-                </a>
-            </li>
             <li id="payments"
                 class="flex justify-items-center items-center rounded-3xl hover:font-bold py-1 px-2 hover:hover-bg-custom">
                 <a class="side-nav-link flex justify-items-center items-center w-full gap-5" href="/payments">
@@ -102,7 +95,6 @@ currentPath = window.location.pathname;
 navLinks = document.querySelectorAll(".side-nav-link");
 iconMap = {
   "/admin-dashboard": "/f-css/solid/black/view-grid.svg",
-  "/instructor-profile": "/f-css/solid/black/user.svg",
   "/payments": "/f-css/solid/black/cash.svg",
   "/logout": "/f-css/solid/black/logout.svg",
 };
