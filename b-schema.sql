@@ -7,16 +7,8 @@ CREATE TABLE
     monthly_applicants (
         currDay DATE PRIMARY KEY,
         currMonth VARCHAR(20),
+        currYear INT,
         totalApplicants INT
-    );
-
-ALTER TABLE monthly_applicants
-ADD COLUMN currYear INT AFTER currMonth;
-
-CREATE TABLE
-    current_Status (
-        status_id INT NOT NULL PRIMARY KEY,
-        position_name VARCHAR(30)
     );
 
 CREATE TABLE
@@ -38,15 +30,6 @@ CREATE TABLE
         account_id INT,
         FOREIGN KEY (account_id) REFERENCES admin_account (account_id)
     );
-
-ALTER TABLE instructor
-ADD COLUMN accreditation_number VARCHAR(50);
-
-ALTER TABLE instructor
-ADD COLUMN prn VARCHAR(50);
-
-ALTER TABLE instructor
-ADD COLUMN account_id INT;
 
 CREATE TABLE
     program_offers (
@@ -73,7 +56,9 @@ CREATE TABLE
 CREATE TABLE
     certificates_completion (
         certificate_id INT PRIMARY KEY NOT NULL,
-        certificate_name VARCHAR(100) NOT NULL
+        certificate_name VARCHAR(100) NOT NULL,
+        certificate_template MEDIUMBLOB,
+        template_file_type VARCHAR(255),
     );
 
 CREATE TABLE
@@ -86,9 +71,6 @@ CREATE TABLE
         isVerify VARCHAR(20) DEFAULT 'false',
         date_created DATE DEFAULT (CURRENT_DATE)
     );
-
-ALTER TABLE user
-ADD COLUMN date_created TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
 
 CREATE TABLE
     reports_table (
@@ -109,30 +91,8 @@ CREATE TABLE
         user_email VARCHAR(100) NOT NULL UNIQUE,
         user_password VARCHAR(255) NOT NULL,
         account_role VARCHAR(50) NOT NULL,
-        isVerify VARCHAR(20)
-    );
-
-ALTER TABLE admin_account ADD account_role VARCHAR(50) NOT NULL DEFAULT 'admin';
-
-ALTER TABLE admin_account ADD isVerify VARCHAR(20) NOT NULL DEFAULT "No";
-
-ALTER TABLE admin_account ADD date_created TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
-
-INSERT INTO
-    admin_account (
-        admin_name,
-        user_email,
-        user_password,
-        account_role,
-        isVerify
-    )
-VALUES
-    (
-        'rainiel lacson',
-        'lacsonryl@gmail.com',
-        '$2b$10$jOATnTHfIpwDxp/K4h/6EuqXuGLMkt54US.5y7VQik3DzAR9QWioi',
-        'admin',
-        true
+        isVerify VARCHAR(20) NOT NULL DEFAULT "No",
+        date_created TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     );
 
 CREATE TABLE
@@ -158,9 +118,9 @@ CREATE TABLE
         continuation_am_pm ENUM ('AM', 'PM'),
         creator_id INT, -- Combined field for both user and admin IDs
         created_by ENUM ('user', 'admin'), -- Column to specify the type of creator
-        user_course_id INT NOT NULL,
         transmission ENUM ("Manual", "Automatic", "onsite"),
         created TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        user_course_id INT NOT NULL,
         FOREIGN KEY (instructor_id) REFERENCES instructor (instructor_id)
     );
 
@@ -174,8 +134,6 @@ CREATE TABLE
         onsite_slots INT DEFAULT 0,
         FOREIGN KEY (instructor_id) REFERENCES instructor (instructor_id)
     );
-
-ALTER TABLE availability CHANGE COLUMN onsite_available onsite_slots INT DEFAULT 0;
 
 CREATE TABLE
     user_profile (
@@ -194,12 +152,11 @@ CREATE TABLE
         training_purpose VARCHAR(50),
         profile_picture MEDIUMBLOB,
         user_id INT,
+        identification_card VARCHAR(50),
+        identification_card_picture MEDIUMBLOB,
+        prn VARCHAR(255),
         FOREIGN KEY (user_id) REFERENCES user (user_id)
     );
-
-ALTER TABLE user_profile ADD identification_card VARCHAR(50),
-ADD identification_card_picture MEDIUMBLOB,
-ADD prn VARCHAR(255);
 
 CREATE TABLE
     payment_methods (
@@ -221,13 +178,7 @@ CREATE TABLE
         screenshot_receipt MEDIUMBLOB,
         status VARCHAR(50) DEFAULT 'verifying',
         date_created DATE DEFAULT (CURRENT_DATE),
-        FOREIGN KEY (user_id) REFERENCES user (user_id),
-        FOREIGN KEY (course_id) REFERENCES user_courses (course_id)
     );
-
-ALTER TABLE user_payments ADD date_created DATE DEFAULT (CURRENT_DATE);
-
-ALTER TABLE `user_payments` CHANGE `name` `account_name` varchar(255) DEFAULT NULL;
 
 CREATE TABLE
     instructor_payroll_history (
@@ -284,18 +235,9 @@ CREATE TABLE
         vehicle_type VARCHAR(50) NOT NULL,
         isRegistered VARCHAR(20) DEFAULT "Pending",
         lto_document MEDIUMBLOB,
-        lto_document_type VARCHAR(50),
+        lto_document_type VARCHAR(255),
         car_picture MEDIUMBLOB
     );
-
-ALTER TABLE vehicle_list MODIFY lto_document_type VARCHAR(255);
-
-ALTER TABLE certificates_completion ADD certificate_template MEDIUMBLOB,
-template_file_type;
-
--- Added column for MIME type of car pictures
--- Use the existing database
-USE drivereadydb;
 
 -- Create the user_courses table
 CREATE TABLE
@@ -310,7 +252,7 @@ CREATE TABLE
         date_started DATE,
         date_completed DATE,
         total_hours INT DEFAULT 0,
-        grade DECIMAL(5, 2),
+        grade DECIMAL(5, 2) DEFAULT 0,
         grading_status VARCHAR(50) DEFAULT 'Pending',
         grade_sheet MEDIUMBLOB,
         certificate_file MEDIUMBLOB,
@@ -348,202 +290,4 @@ CREATE TABLE
         priv_key_iv VARCHAR(32) NOT NULL,
         pub_key_web_crypto TEXT NOT NULL,
         date_created TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    );
-
-INSERT INTO
-    instructor_payroll_history (
-        instructor_id,
-        rate_per_hour,
-        date_start,
-        date_end,
-        month_year,
-        attended_hours,
-        gross_income,
-        benefits,
-        net_income,
-        isPaid
-    )
-VALUES
-    -- January
-    (
-        1,
-        500,
-        '2024-01-01',
-        '2025-01-31',
-        'January 2025',
-        160,
-        80000,
-        2000,
-        78000,
-        TRUE
-    ),
-    (
-        2,
-        450,
-        '2025-01-01',
-        '2025-01-31',
-        'January 2025',
-        140,
-        63000,
-        1500,
-        61500,
-        TRUE
-    ),
-    (
-        3,
-        550,
-        '2025-01-01',
-        '2025-01-31',
-        'January 2025',
-        170,
-        93500,
-        2500,
-        91000,
-        TRUE
-    ),
-    (
-        4,
-        400,
-        '2025-01-01',
-        '2025-01-31',
-        'January 2025',
-        150,
-        60000,
-        1250,
-        58750,
-        TRUE
-    ),
-    (
-        5,
-        600,
-        '2025-01-01',
-        '2025-01-31',
-        'January 2025',
-        180,
-        108000,
-        2300,
-        105700,
-        TRUE
-    ),
-    -- February
-    (
-        1,
-        500,
-        '2025-02-01',
-        '2025-02-28',
-        'February 2025',
-        150,
-        75000,
-        2000,
-        73000,
-        TRUE
-    ),
-    (
-        2,
-        450,
-        '2025-02-01',
-        '2025-02-28',
-        'February 2025',
-        130,
-        58500,
-        1500,
-        57000,
-        TRUE
-    ),
-    (
-        3,
-        550,
-        '2025-02-01',
-        '2025-02-28',
-        'February 2025',
-        160,
-        88000,
-        2500,
-        85500,
-        TRUE
-    ),
-    (
-        4,
-        400,
-        '2025-02-01',
-        '2025-02-28',
-        'February 2025',
-        140,
-        56000,
-        1250,
-        54750,
-        TRUE
-    ),
-    (
-        5,
-        600,
-        '2025-02-01',
-        '2025-02-28',
-        'February 2025',
-        170,
-        102000,
-        2300,
-        99700,
-        TRUE
-    ),
-    -- March
-    (
-        1,
-        500,
-        '2025-03-01',
-        '2025-03-31',
-        'March 2025',
-        165,
-        82500,
-        2000,
-        80500,
-        TRUE
-    ),
-    (
-        2,
-        450,
-        '2025-03-01',
-        '2025-03-31',
-        'March 2025',
-        145,
-        65250,
-        1500,
-        63750,
-        TRUE
-    ),
-    (
-        3,
-        550,
-        '2025-03-01',
-        '2025-03-31',
-        'March 2025',
-        175,
-        96250,
-        2500,
-        93750,
-        TRUE
-    ),
-    (
-        4,
-        400,
-        '2025-03-01',
-        '2025-03-31',
-        'March 2025',
-        155,
-        62000,
-        1250,
-        60750,
-        TRUE
-    ),
-    (
-        5,
-        600,
-        '2025-03-01',
-        '2025-03-31',
-        'March 2025',
-        185,
-        111000,
-        2300,
-        108700,
-        TRUE
     );

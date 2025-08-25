@@ -1,10 +1,11 @@
 {
   "name": "newproj",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "b-server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "concurrently \"nodemon b-server.js\" \"npx tailwindcss -i ./f-tailcss/main.css -o ./f-css/output.css --watch\""
+    "dev": "concurrently \"nodemon b-server.js\" \"npx tailwindcss -i ./f-tailcss/main.css -o ./f-css/output.css --watch\"",
+    "start": "node b-server.js"
   },
   "keywords": [],
   "author": "",
@@ -34,7 +35,9 @@
     "passport": "^0.7.0",
     "passport-google-oauth20": "^2.0.0",
     "puppeteer": "^24.8.2",
+    "redis": "^5.8.2",
     "sharp": "^0.34.1",
+    "uuid": "^11.1.0",
     "validator": "^13.15.0"
   },
   "devDependencies": {

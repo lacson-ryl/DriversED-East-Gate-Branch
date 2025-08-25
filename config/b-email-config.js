@@ -1,4 +1,4 @@
-import createTransporter from "./b-mailer.js";
+import createTransporter from "../controllers/b-mailer.js";
 
 const businessName = "East Gate Driver's ED Driving School";
 

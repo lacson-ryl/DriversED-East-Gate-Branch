@@ -32,9 +32,8 @@
     <!-- Hidden role input (populated by server) -->
     <input type="hidden" id="role" value="<%= role %>" />
 
-    <script type="module" src="/f-keyManager.js"></script>
     <script type="module">
-        import { KeyManager } from "/f-keyManager.js";
+        import { KeyManager } from "../utils/f-keyManager.js";
 
         const role = document.getElementById("role").value;
         const roleLabel = document.getElementById("role-label");

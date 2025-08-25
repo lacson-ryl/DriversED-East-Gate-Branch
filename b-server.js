@@ -20,14 +20,14 @@ import {
   adminPassport,
   changePasswordPassport,
   userPassport,
-} from "./b-passport.js";
+} from "./config/b-passport.js";
 
 import {
   encryptData,
   decryptData,
   generateKeyPair,
   handlePrivateKey,
-} from "./b-encrypt-decrypt.js";
+} from "./utils/b-encrypt-decrypt.js";
 dotenv.config();
 
 const PORT = process.env.port;
@@ -368,17 +368,38 @@ import {
   addNotification,
   getNotifications,
   saveCertificateToDatabase,
-} from "./b-database.js";
+} from "./config/b-database.js";
 
 import {
   authenticateToken,
   authorizeRole,
   authenticateTokenForChangingCredentials,
   generateTemporaryPassword,
-} from "./b-authenticate.js";
+  verifyDeleteToken,
+} from "./middleware/b-authenticate.js";
 
-import { sendEmail } from "./b-email-config.js";
-import { get } from "http";
+import { sendEmail } from "./config/b-email-config.js";
+import { v4 as uuidv4 } from "uuid";
+import redis from "./config/redis.js";
+
+app.post("/api/delete-token", authenticateToken, async (req, res) => {
+  const { rowId, path } = req.body;
+  if (!rowId || !path) return res.status(400).json({ error: "rowId and path required" });
+
+  const payload = {
+    sub: req.user.id,       // bind to user
+    rowId,                  // bind to resource
+    path,                   // bind to exact endpoint
+    jti: uuidv4(),          // unique per request
+  };
+
+  const deleteToken = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: TTL_SEC });
+
+  // optional audit store
+  await redis.setEx(`del:issued:${payload.jti}`, TTL_SEC, "1");
+
+  res.status(200).json({ deleteToken });
+});
 
 app.get("/login-success", authenticateToken, (req, res) => {
   res.render("login-loading", {

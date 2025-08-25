@@ -3,7 +3,7 @@ import {
   clearKeyStorage,
   calculateAndInsertWeeklyPayroll,
   calculateAndInsertMonthlyPayroll,
-} from "./b-database";
+} from "../config/b-database";
 
 // Weekly Payroll Cron Job (Runs every Sunday at midnight)
 cron.schedule("0 0 * * 0", async () => {

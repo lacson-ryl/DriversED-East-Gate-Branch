@@ -1,4 +1,4 @@
-import { encryptData, decryptData } from "../f-webCryptoKeys.js";
+import { encryptData, decryptData } from "../utils/f-webCryptoKeys.js";
 
 //initialize modal elements;
 const modal = document.getElementById("myModal");

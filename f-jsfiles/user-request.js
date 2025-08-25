@@ -1,5 +1,3 @@
-console.log("user-request loaded");
-
 const fetchUserRequestList = async () => {
   try {
     const response = await fetch(`/api/user-requests`, {

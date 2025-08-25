@@ -192,8 +192,8 @@
             </div>
     </div>
     <%# //main-content %>
-        <script type="module" src="../f-webCryptoKeys.js"></script>
-        <script type="module" src="../f-keyManager.js"></script>
+        <script type="module" src="../utils/f-webCryptoKeys.js"></script>
+        <script type="module" src="../utils/f-keyManager.js"></script>
 
         <script>
 
@@ -203,7 +203,7 @@
                 try {
                     // Load the external script after successful authentication
                     const indexScript = document.createElement('script');
-                    indexScript.src = '/f-jsfiles/index.js';
+                    indexScript.src = '/f-jsfiles/admin-dashboard.js';
                     indexScript.type = "module";
                     document.body.appendChild(indexScript);
 
