@@ -5,10 +5,10 @@ dotenv.config();
 
 export const pool = mysql
   .createPool({
-    host: process.env.mysql_HOST,
-    user: process.env.mysql_USER,
-    password: process.env.mysql_PASSWORD,
-    database: process.env.mysql_DATABASE,
+    host: process.env.MYSQL_HOST,
+    user: process.env.MYSQL_USER,
+    password: process.env.MYSQL_PASSWORD,
+    database: process.env.MYSQL_DATABASE,
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0,
@@ -341,6 +341,7 @@ export async function saveUser(newUser) {
     );
     return result.insertId;
   } catch (error) {
+    console.error(error);
     throw error;
   }
 }
@@ -3091,7 +3092,7 @@ export async function addNotification(userId, role, type, message) {
     const [result] = await pool.query(query, [role, userId, type, message]);
     return result;
   } catch (error) {
-    console.error("Error marking notifications as read:", error);
+    console.error("Error marking saving this as notification", error);
     throw error;
   }
 }

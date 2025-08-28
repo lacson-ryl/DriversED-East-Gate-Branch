@@ -380,7 +380,7 @@ import {
 
 import { sendEmail } from "./config/b-email-config.js";
 import { v4 as uuidv4 } from "uuid";
-import redis from "./config/redis.js";
+import redis from "./config/b-redis.js";
 
 app.post("/api/delete-token", authenticateToken, async (req, res) => {
   const { rowId, path } = req.body;

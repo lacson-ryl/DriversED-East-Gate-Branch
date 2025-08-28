@@ -1,15 +1,56 @@
-version: "3.8"
 services:
+  mysql:
+    image: mysql:8.0
+    ports:
+      - "3306:3306"
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./mysql-init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    env_file:
+      - .env
+
   redis:
     image: redis
     ports:
       - "6379:6379"
+    restart: unless-stopped
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    env_file:
+      - .env
 
   nodeapp:
     build: .
     ports:
-      - "8000:8000"
+      - "${port}:${port}"
     depends_on:
       - redis
-    environment:
-      - REDIS_URL=redis://redis:6379
+      - mysql
+    env_file:
+      - .env
+    volumes:
+      - .:/app
+      - app-node-modules:/app/node_modules
+    working_dir: /app
+    command: npm run dev
+
+volumes:
+  redis-data:
+  mysql-data:
+  app-node-modules:

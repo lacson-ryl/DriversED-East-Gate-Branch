@@ -1,18 +1,30 @@
-# Use official Node.js image
-FROM node:20
-
-# Set working directory
+# Stage 1: Builder
+FROM node:20 AS builder
 WORKDIR /app
 
-# Copy package files and install dependencies
+# Install app dependencies
 COPY package*.json ./
 RUN npm install
 
-# Copy the rest of your app
-COPY . .
+# Copy all source files
+COPY ./b-server.js ./f-tailcss ./f-css ./views ./f-jsfiles ./config ./utils ./middleware ./controllers ./tailwind.config.js ./
 
-# Expose your app's port
+# Stage 2: Runtime
+FROM node:20-alpine
+WORKDIR /app
+
+# Copy everything from builder
+COPY --from=builder /app ./
+
+# Install app dependencies again (needed in final image)
+COPY package*.json ./
+RUN npm install
+
+# Install global dev tools
+RUN npm install -g concurrently tailwindcss nodemon
+
+# Alpine setup
+RUN apk update && apk upgrade
+
 EXPOSE 8000
-
-# Start the app
-CMD ["npm", "start"]
+CMD ["npm", "run", "dev"]
