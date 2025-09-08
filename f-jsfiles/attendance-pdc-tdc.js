@@ -218,7 +218,7 @@ function allButtons() {
     }
   });
 
-  // Delete button
+  // Delete Applicant
   document.querySelectorAll(".delete-applicant-btn").forEach((button) => {
     button.addEventListener("click", async function (event) {
       event.preventDefault();
@@ -231,38 +231,72 @@ function allButtons() {
         return;
       }
 
+      modalDetails.innerHTML = "";
       modalDetails.innerHTML = `
-          <p>Are you sure you want to delete ID #${id}?</p>
-          <div class="justify-self-end space-x-4 mt-5">
-            <button id="delete-yes" class="bg-blue-700 hover:bg-gradient-to-t from-sky-400 to-sky-800 text-white text-lg rounded-md px-2">Yes</button>
-            <button id="delete-no" class="bg-rose-700 hover:bg-gradient-to-t from-rose-400 to-rose-800 text-white text-lg rounded-md px-2">No</button>
-          </div>
-        `;
+      <p id="delete-token-indicator" class="font-sm animate-pulse text-gray-500">fetching delete token...</p>
+      <p>Are you sure you want to delete Applicant ID #${id}?</p>
+      <div class="justify-self-end space-x-4 mt-5">
+        <button id="delete-yes" class="bg-blue-700 hover:bg-gradient-to-t from-sky-400 to-sky-800 text-white text-lg rounded-md px-2" disabled>Yes</button>
+        <button id="delete-no" class="bg-rose-700 hover:bg-gradient-to-t from-rose-400 to-rose-800 text-white text-lg rounded-md px-2">No</button>
+      </div>
+    `;
       modal.style.display = "flex";
 
-      document
-        .getElementById("delete-yes")
-        .addEventListener("click", async () => {
-          try {
-            const response = await fetch(`/api/applicant/${id}`, {
-              method: "DELETE",
-              headers: { "Content-Type": "application/json" },
-            });
-            if (response.ok) {
-              alert(`Successfully Deleted ID no. ${id}`);
-              renderAttendanceTable();
-            } else {
-              alert(`Can't Delete ID no. ${id}`);
-            }
-            modal.style.display = "none";
-          } catch (error) {
-            console.error("Error deleting application.", error);
-            modalDetails.innerHTML =
-              "<p>An error occurred while deleting application.</p>";
-            modal.style.display = "flex";
-          }
-        });
+      const tokenIndicator = document.getElementById("delete-token-indicator");
+      const response = await fetch("/api/delete-token", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id,
+          path: `/api/applicant/${id}`,
+        }),
+      });
 
+      const data = await response.json();
+      if (!response.ok) {
+        tokenIndicator.innerText =
+          data.error || "Failed to fetch delete token.";
+        tokenIndicator.classList.add("text-red-600");
+      } else {
+        tokenIndicator.innerText = "token available";
+        tokenIndicator.classList.add("text-green-600");
+
+        const deleteYes = document.getElementById("delete-yes");
+        deleteYes.disabled = false;
+        deleteYes.addEventListener(
+          "click",
+          async () => {
+            try {
+              const deleteResponse = await fetch(`/api/applicant/${id}`, {
+                method: "DELETE",
+                headers: {
+                  "Content-Type": "application/json",
+                  "x-delete-token": data.deleteToken,
+                },
+              });
+              if (deleteResponse.ok) {
+                tokenIndicator.innerText = `Successfully Deleted Applicant ID #${id}`;
+                renderAttendanceTable();
+              } else {
+                tokenIndicator.innerText = `Can't Delete Applicant ID #${id}`;
+              }
+              setTimeout(() => {
+                modal.style.display = "none";
+              }, 3000);
+            } catch (error) {
+              console.error("Error deleting applicant.", error);
+              tokenIndicator.innerText = "An error occurred while deleting.";
+              tokenIndicator.classList.add("text-red-600");
+              setTimeout(() => {
+                modal.style.display = "none";
+              }, 3000);
+            }
+          },
+          { once: true }
+        );
+      }
+
+      tokenIndicator.classList.remove("animate-pulse");
       document.getElementById("delete-no").addEventListener("click", () => {
         modal.style.display = "none";
       });

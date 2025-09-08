@@ -207,7 +207,7 @@ app.get(
       if (profile.email !== req.tokenData.email) {
         const error = "Email mismatch.";
         console.log("Redirecting with error:", error);
-        return res.status(401).send(error);
+        return res.status(401).json({ error });
       }
 
       // Successful authentication
@@ -382,24 +382,40 @@ import { sendEmail } from "./config/b-email-config.js";
 import { v4 as uuidv4 } from "uuid";
 import redis from "./config/b-redis.js";
 
-app.post("/api/delete-token", authenticateToken, async (req, res) => {
-  const { rowId, path } = req.body;
-  if (!rowId || !path) return res.status(400).json({ error: "rowId and path required" });
+app.post(
+  "/api/delete-token",
+  authenticateToken,
+  authorizeRole("admin"),
+  async (req, res) => {
+    try {
+      const { id, path } = req.body;
+      console.log("path", path);
+      if (!id || !path)
+        return res.status(400).json({ error: "rowId and path required" });
 
-  const payload = {
-    sub: req.user.id,       // bind to user
-    rowId,                  // bind to resource
-    path,                   // bind to exact endpoint
-    jti: uuidv4(),          // unique per request
-  };
+      const payload = {
+        sub: req.user.userId, // bind to user
+        id, // bind to resource
+        path, // bind to exact endpoint
+        jti: uuidv4(), // unique per request
+      };
 
-  const deleteToken = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: TTL_SEC });
+      const TTL_SEC = 120;
 
-  // optional audit store
-  await redis.setEx(`del:issued:${payload.jti}`, TTL_SEC, "1");
+      const deleteToken = jwt.sign(payload, secretKey, {
+        expiresIn: TTL_SEC,
+      });
 
-  res.status(200).json({ deleteToken });
-});
+      // optional audit store
+      await redis.setEx(`del:issued:${payload.jti}`, TTL_SEC, "1");
+
+      res.status(200).json({ deleteToken });
+    } catch (error) {
+      console.error("delete token error:", error);
+      res.status(500).json({ error: "Cant make delete token right now." });
+    }
+  }
+);
 
 app.get("/login-success", authenticateToken, (req, res) => {
   res.render("login-loading", {
@@ -408,11 +424,23 @@ app.get("/login-success", authenticateToken, (req, res) => {
 });
 
 app.get("/user-registration-form", (req, res) => {
-  res.render("user-registration-form");
+  try {
+    res.render("user-registration-form");
+  } catch (error) {
+    res.render("error-500", {
+      error,
+    });
+  }
 });
 
 app.get("/user-profile-form", (req, res) => {
-  res.render("user-profile-form");
+  try {
+    res.render("user-profile-form");
+  } catch (error) {
+    res.render("error-500", {
+      error,
+    });
+  }
 });
 
 app.post(
@@ -552,7 +580,13 @@ app.put(
 );
 
 app.get("/user-profile", authenticateToken, async (req, res) => {
-  res.render("user-profile");
+  try {
+    res.render("user-profile");
+  } catch (error) {
+    res.render("error-500", {
+      error,
+    });
+  }
 });
 
 app.get(
@@ -651,7 +685,9 @@ app.get("/user-login", async (req, res) => {
     res.render("user-login");
   } catch (error) {
     console.error("Internal Server Error", error);
-    return res.status(500).json({ error: "Internal Server Error" });
+    res.render("error-500", {
+      error,
+    });
   }
 });
 
@@ -709,7 +745,9 @@ app.get(
       res.render("user-dashboard");
     } catch (error) {
       console.error("Internal Server Error", error);
-      return res.status(500).json({ error: "Internal Server Error" });
+      res.render("error-500", {
+        error,
+      });
     }
   }
 );
@@ -729,7 +767,7 @@ app.get(
       res.status(200).json({ traineesCourseList, traineesCourseSchedule });
     } catch (error) {
       console.error("Error fetching data:", error);
-      res.status(500).send("Internal Server Error");
+      res.status(500).json({ error: "Error fetching data" });
     }
   }
 );
@@ -861,7 +899,9 @@ app.post(
         "Set TDC date",
         `TDC Date Set to ${tdcDate} with ${maxSlots} slots Successfully!`
       );
-      return res.status(200).json({ message: "T" });
+      return res.status(200).json({
+        message: `TDC Date Set to ${tdcDate} with ${maxSlots} slots Successfully!`,
+      });
     } catch (error) {
       console.error("Error setting TDC date:", error);
       return res.status(500).json({ error: "Error setting TDC date" });
@@ -983,44 +1023,6 @@ app.get("/api/instructors/:id/availability", async (req, res) => {
   }
 });
 
-/*
-// Update Instructor Availability Endpoint
-app.post(
-  "/api/instructors/:id/availability",
-  authenticateToken,
-  async (req, res) => {
-    try {
-      const instructorId = req.params.id;
-      const { startDate, startDateAMPM, continuation, continuationAMPM } =
-        req.body;
-
-      // Update availability for the starting date
-      await updateAvailability(
-        instructorId,
-        startDate,
-        startDateAMPM === "AM" ? true : undefined,
-        startDateAMPM === "PM" ? true : undefined,
-        undefined
-      );
-
-      // Update availability for the continuation date
-      await updateAvailability(
-        instructorId,
-        continuation,
-        continuationAMPM === "AM" ? true : undefined,
-        continuationAMPM === "PM" ? true : undefined,
-        undefined
-      );
-
-      res.json({ message: "Availability updated for both dates" });
-    } catch (error) {
-      console.error("Error updating availability:", error);
-      return res.status(500).json({ error: "Error updating availability" });
-    }
-  }
-);
-*/
-
 app.get(
   "/user-programs",
   authenticateToken,
@@ -1030,7 +1032,9 @@ app.get(
       res.render("user-programs");
     } catch (error) {
       console.error("Internal Server Error", error);
-      return res.status(500).json({ error: "Internal Server Error" });
+      res.render("error-500", {
+        error,
+      });
     }
   }
 );
@@ -1052,7 +1056,7 @@ app.get(
         .json({ userApplication: userApplication, userCourseList: filtered });
     } catch (error) {
       console.error("Error fetching applicants:", error);
-      res.status(500).send("Internal Server Error");
+      res.status(500).json({ error: "Error fetching applicants" });
     }
   }
 );
@@ -1062,7 +1066,9 @@ app.get("/search", authenticateToken, async (req, res) => {
     res.render("search");
   } catch (error) {
     console.error("Internal Server Error", error);
-    return res.status(500).json({ error: "Internal Server Error" });
+    res.render("error-500", {
+      error,
+    });
   }
 });
 
@@ -1120,7 +1126,9 @@ app.get(
       res.render("user-requests");
     } catch (error) {
       console.error("Internal Server Error", error);
-      return res.status(500).json({ error: "Internal Server Error" });
+      res.render("error-500", {
+        error,
+      });
     }
   }
 );
@@ -1154,7 +1162,7 @@ app.get("/api/user-requests", authenticateToken, async (req, res) => {
     res.status(200).json(data);
   } catch (err) {
     console.log("Error fetching data: ", err);
-    res.status(500).send("Internal Server Error");
+    res.status(500).json({ error: "Internal Server Error" });
   }
 });
 
@@ -1168,7 +1176,7 @@ app.get(
       res.status(200).json(data);
     } catch (err) {
       console.log("Error fetching data: ", err);
-      res.status(500).send("Internal Server Error");
+      res.status(500).json({ error: "Internal Server Error" });
     }
   }
 );
@@ -1182,7 +1190,9 @@ app.get(
       res.render("user-reports");
     } catch (error) {
       console.error("Internal Server Error", error);
-      return res.status(500).json({ error: "Internal Server Error" });
+      res.render("error-500", {
+        error,
+      });
     }
   }
 );
@@ -1215,7 +1225,7 @@ app.get("/api/user-reports", authenticateToken, async (req, res) => {
     res.json(data);
   } catch (err) {
     console.log("Error fetching data: ", err);
-    res.status(500).send("Internal Server Error");
+    res.status(500).json({ error: "Internal Server Error" });
   }
 });
 
@@ -1226,12 +1236,18 @@ app.get("/api/user-reports/:reportId", authenticateToken, async (req, res) => {
     res.json(data);
   } catch (err) {
     console.log("Error fetching data: ", err);
-    res.status(500).send("Internal Server Error");
+    res.status(500).json({ error: "Internal Server Error" });
   }
 });
 
 app.get("/user-payments", authenticateToken, (req, res) => {
-  res.render("user-payment");
+  try {
+    res.render("user-payment");
+  } catch (error) {
+    res.render("error-500", {
+      error,
+    });
+  }
 });
 
 app.get(
@@ -1289,7 +1305,9 @@ app.get("/admin-registration", async (req, res) => {
   try {
     res.render("admin-registration-form");
   } catch (error) {
-    res.send("Failed to render registration form for admin");
+    res.render("error-500", {
+      error,
+    });
   }
 });
 
@@ -1355,7 +1373,9 @@ app.get("/adminlogin", (req, res) => {
     res.render("adminlogin", { error });
   } catch (error) {
     console.error("Internal Server Error", error);
-    return res.status(500).json({ error: "Internal Server Error" });
+    res.render("error-500", {
+      error,
+    });
   }
 });
 
@@ -1422,11 +1442,13 @@ app.get(
       } else if (role === "instructor") {
         res.render("instructor-dashboard");
       } else {
-        res.status(401).send("invalid role type");
+        res.status(401).json({ error: "invalid role type" });
       }
     } catch (error) {
       console.error("Error in /admin-dashboard endpoint:", error);
-      res.status(500).send("Internal Server Error");
+      res.render("error-500", {
+        error,
+      });
     }
   }
 );
@@ -1440,7 +1462,7 @@ app.get("/api/admin-dashboard-time/:month/:year", async (req, res) => {
     res.status(200).json(data);
   } catch (err) {
     console.log("Error fetching data: ", err);
-    res.status(500).send("Internal Server Error");
+    res.status(500).json({ error: "Internal Server Error" });
   }
 });
 
@@ -1454,7 +1476,7 @@ app.get(
       res.status(200).json({ methodList, scheduleList });
     } catch (err) {
       console.log("Error fetching data: ", err);
-      res.status(500).send("Internal Server Error");
+      res.status(500).json({ error: "Internal Server Error" });
     }
   }
 );
@@ -1558,9 +1580,11 @@ app.post(
 app.delete(
   "/api/payment-methods/:methodId",
   authenticateToken,
+  verifyDeleteToken,
   authorizeRole("admin"),
   async (req, res) => {
     try {
+      const { userId, role } = req.user;
       const methodId = req.params.methodId;
       await deletePaymentMethod(methodId);
       await addNotification(
@@ -1593,7 +1617,7 @@ app.get(
       res.status(200).json(data);
     } catch (err) {
       console.log("Error fetching data: ", err);
-      res.status(500).send("Internal Server Error");
+      res.status(500).json({ error: "Internal Server Error" });
     }
   }
 );
@@ -1607,7 +1631,7 @@ app.get(
       res.status(200).json(data);
     } catch (err) {
       console.log("Error fetching data: ", err);
-      res.status(500).send("Internal Server Error");
+      res.status(500).json({ error: "Internal Server Error" });
     }
   }
 );
@@ -1624,7 +1648,7 @@ app.get(
       res.status(200).json(data);
     } catch (err) {
       console.log("Error fetching data: ", err);
-      res.status(500).send("Internal Server Error");
+      res.status(500).json({ error: "Internal Server Error" });
     }
   }
 );
@@ -1634,7 +1658,13 @@ app.get(
   authenticateToken,
   authorizeRole("admin"),
   async (req, res) => {
-    res.render("attendance-pdc-tdc");
+    try {
+      res.render("attendance-pdc-tdc");
+    } catch (error) {
+      res.render("error-500", {
+        error,
+      });
+    }
   }
 );
 
@@ -1703,7 +1733,9 @@ app.get(
       res.render("applicants");
     } catch (error) {
       console.error("Error fetching applicants:", error);
-      res.status(500).send("Internal Server Error");
+      res.render("error-500", {
+        error,
+      });
     }
   }
 );
@@ -1717,7 +1749,7 @@ app.get(
       res.render("applicants-list");
     } catch (error) {
       console.error("Error fetching applicants:", error);
-      res.status(500).send("Internal Server Error");
+      res.status(500).json({ error: "Internal Server Error" });
     }
   }
 );
@@ -1732,27 +1764,23 @@ app.get(
       res.status(200).json(applicantlist);
     } catch (error) {
       console.error("Error fetching applicants:", error);
-      res.status(500).send("Internal Server Error");
+      res.status(500).json({ error: "Internal Server Error" });
     }
   }
 );
 
-app.post(
+app.delete(
   "/api/delete-application-by-course",
   authenticateToken,
+  verifyDeleteToken,
   authorizeRole("admin"),
   async (req, res) => {
     const { userId, role } = req.user;
-    const { encryptedWithEncAesKey } = req.body;
 
-    const decrypted = await decryptData(encryptedWithEncAesKey, userId, role);
+    const { clientId, instructorName, dateStarted } = req.body;
 
     try {
-      const { clientId } = await deleteUserCourse(
-        decrypted.clientId,
-        decrypted.instructorName,
-        decrypted.dateStarted
-      );
+      await deleteUserCourse(clientId, instructorName, dateStarted);
       await addNotification(
         userId,
         role,
@@ -1774,29 +1802,37 @@ app.post(
   }
 );
 
-app.delete("/api/applicant/:id", authenticateToken, async (req, res) => {
-  try {
-    const id = req.params.id;
-    const { userId, role } = req.user;
-    const deleted = await deleteApplication(id);
-    await addNotification(
-      userId,
-      role,
-      "Application",
-      `Application id#${id} successfully deleted!`
-    );
-    await addNotification(
-      deleted.clientId,
-      "user",
-      "Application",
-      `User course id#${decrypted.courseId} successfully deleted!`
-    );
-    return res.status(200).json({ deleted });
-  } catch (error) {
-    console.error("Error deleting application:", error);
-    res.status(500).json({ error: "Internal Server Error" });
+app.delete(
+  "/api/applicant/:id",
+  authenticateToken,
+  verifyDeleteToken,
+  authorizeRole("admin"),
+  async (req, res) => {
+    try {
+      const id = req.params.id;
+      const { userId, role } = req.user;
+      const deleted = await deleteApplication(id);
+      await addNotification(
+        userId,
+        role,
+        "Application",
+        `Application id#${id} successfully deleted!`
+      );
+      await addNotification(
+        deleted.clientId,
+        "user",
+        "Application",
+        `User course id#${decrypted.courseId} successfully deleted!`
+      );
+      return res.status(200).json({
+        message: `User course id#${decrypted.courseId} successfully deleted!`,
+      });
+    } catch (error) {
+      console.error("Error deleting application:", error);
+      res.status(500).json({ error: "Internal Server Error" });
+    }
   }
-});
+);
 
 app.get(
   "/manage-people",
@@ -1807,7 +1843,9 @@ app.get(
       res.render("manage-people");
     } catch (error) {
       console.error("Error fetching employees:", error);
-      res.status(500).send("Internal Server Error");
+      res.render("error-500", {
+        error,
+      });
     }
   }
 );
@@ -1824,7 +1862,9 @@ app.get(
       return res.status(200).json({ encrypted: encrypted });
     } catch (error) {
       console.error("Error fetching Instructors Data:", error);
-      res.status(500).send("Internal Server Error");
+      res
+        .status(500)
+        .json({ error: "Error fetching Instructors Data: " + error.message });
     }
   }
 );
@@ -1848,6 +1888,7 @@ app.post(
         dateStarted,
       } = await decryptData(encryptedWithEncAesKey, userId, role);
       const profilePicture = req.file ? req.file.buffer : null;
+
       await addInstructor(
         name,
         rate,
@@ -1863,12 +1904,14 @@ app.post(
         userId,
         role,
         "Add Instructor",
-        `New instructor has been successfully added!`
+        `${name} has been successfully added!`
       );
-      return res.status(200);
+      return res
+        .status(200)
+        .json({ message: `New instructor has been successfully added!` });
     } catch (error) {
       console.error("Error fetching Instructors Data:", error);
-      res.status(500).send("Internal Server Error");
+      res.status(500).json({ error: "Internal Server Error" });
     }
   }
 );
@@ -1900,6 +1943,7 @@ app.post(
       }
 
       const temporaryPass = generateTemporaryPassword(8);
+      console.log("temporaryPass", temporaryPass);
       const hashedPassword = await bcrypt.hash(temporaryPass, 10);
 
       // Save the new user to the database
@@ -2066,7 +2110,7 @@ app.get("/api/instructor-profile", authenticateToken, async (req, res) => {
     return res.status(200).json({ instructor });
   } catch (error) {
     console.error("Error fetching Instructors Data:", error);
-    res.status(500).send("Internal Server Error");
+    res.status(500).json({ error: "Internal Server Error" });
   }
 });
 
@@ -2112,28 +2156,26 @@ app.get(
   }
 );
 
-app.delete("/api/manage-people/:rowID", authenticateToken, async (req, res) => {
-  try {
-    const id = req.params.rowID;
-    const deleted = await deleteInstructor(id);
+app.delete(
+  "/api/manage-people/:rowID",
+  authenticateToken,
+  verifyDeleteToken,
+  authorizeRole("admin"),
+  async (req, res) => {
+    try {
+      const { userId, role } = req.user;
+      const id = req.params.rowID;
+      const deleted = await deleteInstructor(id);
+      const message = `Instructor profile id#${id} successfully deleted!`;
 
-    await addNotification(
-      userId,
-      role,
-      "Instructor",
-      `Instructor profile id#${id} successfully deleted!`
-    );
-    await addNotification(
-      clientId,
-      "instructor",
-      "Instructor",
-      `Instructor profile id#${id} successfully deleted!`
-    );
-    return res.json(deleted);
-  } catch (error) {
-    return res.status(500).json({ error: "Internal Server Error" });
+      await addNotification(userId, role, "Instructor", message);
+      await addNotification(id, "instructor", "Instructor", message);
+      return res.status(200).json({ message: message });
+    } catch (error) {
+      return res.status(500).json({ error: "Internal Server Error" });
+    }
   }
-});
+);
 
 app.get(
   "/programs",
@@ -2143,7 +2185,9 @@ app.get(
     try {
       res.render("programs");
     } catch (error) {
-      res.status(500).send("Internal Server Error");
+      res.render("error-500", {
+        error,
+      });
     }
   }
 );
@@ -2164,6 +2208,7 @@ app.get(
 
 app.post("/api/program/add", authenticateToken, async (req, res) => {
   try {
+    const { userId, role } = req.user;
     const {
       programName,
       status,
@@ -2186,11 +2231,11 @@ app.post("/api/program/add", authenticateToken, async (req, res) => {
       userId,
       role,
       "Program",
-      `Program ${programName} successfully added!`
+      `${programName} successfully added!`
     );
     res.status(201).json({ message: "Program added successfully" });
   } catch (error) {
-    res.status(500).send("Internal Server Error");
+    res.status(500).json({ error: "Internal Server Error" });
   }
 });
 
@@ -2248,7 +2293,7 @@ app.get("/api/programs/name-list", authenticateToken, async (req, res) => {
     return res.status(200).json({ instructorsNameList });
   } catch (error) {
     console.error("Error fetching Instructors Data:", error);
-    res.status(500).send("Internal Server Error");
+    res.status(500).json({ error: "Internal Server Error" });
   }
 });
 
@@ -2338,21 +2383,30 @@ app.post("/api/unassign-programs", async (req, res) => {
   }
 });
 
-app.delete("/api/programs/:rowID", authenticateToken, async (req, res) => {
-  try {
-    const id = req.params.rowID;
-    const deleted = await deleteProgram(id);
-    await addNotification(
-      userId,
-      role,
-      "Program",
-      `Program #${id} successfully deleted!`
-    );
-    return res.status(200).json(deleted);
-  } catch (error) {
-    return res.status(500).json({ error: "Internal Server Error" });
+app.delete(
+  "/api/programs/:rowID",
+  authenticateToken,
+  verifyDeleteToken,
+  authorizeRole("admin"),
+  async (req, res) => {
+    try {
+      const { userId, role } = req.user;
+      const id = req.params.rowID;
+      await deleteProgram(id);
+      await addNotification(
+        userId,
+        role,
+        "Program",
+        `Program #${id} successfully deleted!`
+      );
+      return res
+        .status(200)
+        .json({ message: `Program #${id} successfully deleted!` });
+    } catch (error) {
+      return res.status(500).json({ error: "Internal Server Error" });
+    }
   }
-});
+);
 
 app.get(
   "/requests",
@@ -2362,7 +2416,9 @@ app.get(
     try {
       res.render("requests");
     } catch (error) {
-      res.status(500).send("Internal Server Error");
+      res.render("error-500", {
+        error,
+      });
     }
   }
 );
@@ -2436,7 +2492,9 @@ app.get(
     try {
       res.render("certificates");
     } catch (error) {
-      res.status(500).send("Internal Server Error");
+      res.render("error-500", {
+        error,
+      });
     }
   }
 );
@@ -2446,7 +2504,7 @@ app.get("/api/certificates", authenticateToken, async (req, res) => {
     const certList = await getAllCert();
     return res.json({ certList });
   } catch (error) {
-    res.status(500).send("Internal Server Error");
+    res.status(500).json({ error: "Internal Server Error" });
   }
 });
 
@@ -2471,7 +2529,7 @@ app.post("/api/certificate/add", authenticateToken, async (req, res) => {
 
     res.status;
   } catch (error) {
-    res.status(500).send("Internal Server Error");
+    res.status(500).json({ error: "Internal Server Error" });
   }
 });
 
@@ -2508,21 +2566,30 @@ app.put("/api/certificates/:id", authenticateToken, async (req, res) => {
   }
 });
 
-app.delete("/api/certificates/:rowID", authenticateToken, async (req, res) => {
-  try {
-    const id = req.params.rowID;
-    const deleted = await deleteCertificate(id);
-    await addNotification(
-      userId,
-      role,
-      "Certificate",
-      `Certificate id#${id} successfully deleted!`
-    );
-    return res.json(deleted);
-  } catch (error) {
-    return res.status(500).json({ error: "Internal Server Error" });
+app.delete(
+  "/api/certificates/:rowID",
+  authenticateToken,
+  verifyDeleteToken,
+  authorizeRole("admin"),
+  async (req, res) => {
+    try {
+      const { userId, role } = req.user;
+      const id = req.params.rowID;
+      await deleteCertificate(id);
+      await addNotification(
+        userId,
+        role,
+        "Certificate",
+        `Certificate id#${id} successfully deleted!`
+      );
+      return res
+        .status(200)
+        .json({ message: `Certificate id#${id} successfully deleted!` });
+    } catch (error) {
+      return res.status(500).json({ error: "Internal Server Error" });
+    }
   }
-});
+);
 
 app.get(
   "/reports",
@@ -2532,7 +2599,9 @@ app.get(
     try {
       res.render("reports");
     } catch (error) {
-      res.status(500).send("Internal Server Error");
+      res.render("error-500", {
+        error,
+      });
     }
   }
 );
@@ -2604,7 +2673,9 @@ app.get(
         return res.render("instructor-payments");
       }
     } catch (error) {
-      res.status(500).send("Internal Server Error");
+      res.render("error-500", {
+        error,
+      });
     }
   }
 );
@@ -2753,18 +2824,24 @@ app.put(
 );
 
 app.delete(
-  "/api/payments/delete",
+  "/api/payments/delete/:rowId",
   authenticateToken,
+  verifyDeleteToken,
   authorizeRole("admin"),
   async (req, res) => {
     try {
       const { userId, role } = req.user;
-      const { encryptedWithEncAesKey } = req.body;
-      const { rowId } = await decryptData(encryptedWithEncAesKey, userId, role);
+      const rowId = req.params.rowId;
       await deletePaymentInfo(rowId);
+      await addNotification(
+        userId,
+        role,
+        "Payment",
+        `Payment id#${rowId} info Deleted successfully!`
+      );
       return res
         .status(200)
-        .json({ message: "Trainee course info Deleted successfully!" });
+        .json({ message: "Payment info Deleted successfully!" });
     } catch (err) {
       console.error("Cant delete payment right now!", err);
       res.status(500).json({ error: "Internal Server Error", err });
@@ -2798,7 +2875,9 @@ app.get(
     try {
       res.render("finished-trainees-course");
     } catch (error) {
-      res.status(500).send("Internal Server Error");
+      res.render("error-500", {
+        error,
+      });
     }
   }
 );
@@ -2812,7 +2891,7 @@ app.get(
       const completedCourseList = await getCompletedCourseList();
       return res.status(200).json(completedCourseList);
     } catch (error) {
-      res.status(500).send("Internal Server Error");
+      res.status(500).json({ error: "Internal Server Error" });
     }
   }
 );
@@ -2826,9 +2905,11 @@ app.put(
       const id = req.params.id;
       const totalHours = req.body.totalHours;
       await editTraineeCompletedCourseInfo(id, totalHours);
-      return res.status(200).send("Trainee course hours updated successfully!");
+      return res
+        .status(200)
+        .json({ message: "Trainee course hours updated successfully!" });
     } catch (error) {
-      res.status(500).send("Internal Server Error");
+      res.status(500).json({ error: "Internal Server Error" });
     }
   }
 );
@@ -2883,6 +2964,7 @@ app.post(
 app.delete(
   "/api/completed-course/:id",
   authenticateToken,
+  verifyDeleteToken,
   authorizeRole("admin"),
   async (req, res) => {
     try {
@@ -2904,8 +2986,11 @@ app.delete(
       return res
         .status(200)
         .json({ message: "Trainee course info Deleted successfully!" });
-    } catch (error) {
-      res.status(500).send("Internal Server Error");
+    } catch (err) {
+      console.error("deleting user course:", err);
+      res
+        .status(500)
+        .json({ error: `Deleting user course, please try again later` });
     }
   }
 );
@@ -2918,7 +3003,9 @@ app.get(
     try {
       res.render("list-of-vehicles");
     } catch (error) {
-      res.status(500).send("Internal Server Error");
+      res.render("error-500", {
+        error,
+      });
     }
   }
 );
@@ -2928,7 +3015,7 @@ app.get("/api/vehicles", authenticateToken, async (req, res) => {
     const vehicleList = await getAllVehicle();
     return res.json({ vehicleList });
   } catch (error) {
-    res.status(500).send("Internal Server Error");
+    res.status(500).json({ error: "Internal Server Error" });
   }
 });
 
@@ -2963,7 +3050,7 @@ app.post(
 
       res.status;
     } catch (error) {
-      res.status(500).send("Internal Server Error");
+      res.status(500).json({ error: "Internal Server Error" });
     }
   }
 );
@@ -3049,7 +3136,7 @@ app.put("/api/vehicles/:id", authenticateToken, async (req, res) => {
       vehicleType,
       vehicleID
     );
-    return res.status(200).json(vehicle);
+    return res.status(200).json({ message: "Vehicle Update!" });
   } catch (error) {
     console.error("Error fetching report details:", error);
     return res.status(500).json({ error: "Internal Server Error" });
@@ -3059,6 +3146,7 @@ app.put("/api/vehicles/:id", authenticateToken, async (req, res) => {
 app.delete(
   "/api/vehicles/:rowID",
   authenticateToken,
+  verifyDeleteToken,
   authorizeRole("admin"),
   async (req, res) => {
     try {
@@ -3071,7 +3159,9 @@ app.delete(
         "Vehicle",
         `Vehicle id#${id} Successfully deleted! `
       );
-      return res.json(deleted);
+      return res
+        .status(200)
+        .json({ message: `Vehicle id#${id} Successfully deleted! ` });
     } catch (error) {
       return res.status(500).json({ error: "Internal Server Error" });
     }
@@ -3103,7 +3193,9 @@ app.get(
     try {
       res.render("instructor-payments");
     } catch (error) {
-      res.status(500).send("Internal Server Error");
+      res.render("error-500", {
+        error,
+      });
     }
   }
 );
@@ -3115,7 +3207,7 @@ app.get("/change-password-email-option", async (req, res) => {
       captchaSiteKey,
     });
   } catch (error) {
-    res.status(500).send("Internal Server Error");
+    res.status(500).json({ error: "Internal Server Error" });
   }
 });
 
@@ -3494,13 +3586,13 @@ app.get("/certificates-completion-pdc", async (req, res) => {
   userProfile[0].picture = profilePicture;
 
   const userCourse = [
-      {
-        courseName: trainee_course[0].program_name,
-        date_started: trainee_course[0].date_started,
-        date_finished: trainee_course[0].date_completed,
-        total_hours: trainee_course[0].total_hours,
-      },
-    ];
+    {
+      courseName: trainee_course[0].program_name,
+      date_started: trainee_course[0].date_started,
+      date_finished: trainee_course[0].date_completed,
+      total_hours: trainee_course[0].total_hours,
+    },
+  ];
 
   const instructorProfile = [
     {
@@ -3675,7 +3767,9 @@ app.post("/certificates-completion-pdc/:type", async (req, res) => {
     res.status(200).end(Buffer.from(pdfBuffer));
   } catch (error) {
     console.error("Error generating PDF:", error);
-    res.status(500).send("An error occurred while generating the PDF.");
+    res
+      .status(500)
+      .json({ error: "An error occurred while generating the PDF." });
   }
 });
 
@@ -3760,7 +3854,7 @@ app.get("/certificates-completion-tdc", async (req, res) => {
     });
   } catch (error) {
     console.error(error);
-    res.status(500).send("Internal Server Error");
+    res.status(500).json({ error: "Internal Server Error" });
   }
 });
 
@@ -3912,7 +4006,7 @@ app.post("/certificates-completion-tdc/:type", async (req, res) => {
     res.status(200).end(Buffer.from(pdfBuffer));
   } catch (error) {
     console.error("Error generating PDF:", error);
-    res.status(500).send("An error occurred while generating the PDF.");
+    res.status(500)({ error: "An error occurred while generating the PDF." });
   }
 });
 
@@ -3930,41 +4024,27 @@ app.get(
   }
 );
 
-app.post(
-  "/sample/:type",
-  authenticateToken,
-  authorizeRole(["user", "admin"]),
-  async (req, res) => {
-    const type = req.params.type;
-    const { userId, role } = req.user;
-    const encPrivKey = await getKeysWithUserId(userId, role);
-    const encKey = {
-      encrypted: encPrivKey.encrypted,
-      iv: encPrivKey.iv,
-    };
-    const privKey = handlePrivateKey("decrypt", secretKey, null, encKey);
-    const clientPubKey = encPrivKey.pubKeyWebCrypto;
-    try {
-      if (type == "decrypt") {
-        const { encryptedData, iv, encAesKey } = req.body;
-        const encData = { encryptedData, iv, encAesKey };
-        const decrypted = await decryptData(encData, privKey);
-        console.log("decrypted", decrypted);
-        return res.status(200).json({
-          message: decrypted,
-        });
-      } else if (type == "encrypt") {
-        const { encMsg } = req.body;
-        const dataFromDb = await getUserAccountById(encMsg);
-        const encrypted = await encryptData(dataFromDb, userId, role);
-        return res.status(200).json({ encrypted });
-      }
-    } catch (err) {
-      console.error(err);
-      res.status(500).json({ error: "failed to load page", err });
-    }
+process.on("SIGINT", async () => {
+  console.log("🛑 Shutting down...");
+  try {
+    await redis.quit();
+    console.log("✅ Redis disconnected");
+  } catch (err) {
+    console.error("❌ Error disconnecting Redis:", err);
   }
-);
+  process.exit(0);
+});
+
+process.on("SIGTERM", async () => {
+  console.log("🛑 SIGTERM received. Cleaning up...");
+  try {
+    await redis.quit();
+    console.log("✅ Redis disconnected");
+  } catch (err) {
+    console.error("❌ Error disconnecting Redis:", err);
+  }
+  process.exit(0);
+});
 
 app.listen(PORT, () => {
   console.log(`Server is running at ${PORT}`);

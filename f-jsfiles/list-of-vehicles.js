@@ -1,3 +1,10 @@
+import {
+  showLoadingMessage,
+  showOperationResult,
+  showBtnLoading,
+  showBtnResult,
+} from "../utils/modal-feedback.js";
+
 async function renderVehicleList() {
   const response = await fetch("/api/vehicles");
   const result = await response.json();
@@ -183,6 +190,7 @@ function allButtons(data) {
       event.preventDefault();
       modalDetails.innerHTML = modalform;
       modal.style.display = "flex";
+      const vehicleSubmitBtn = document.getElementById("vehicle-submit-button");
 
       document
         .getElementById("add-vehicle-form")
@@ -192,6 +200,8 @@ function allButtons(data) {
           const vehicleModel = document.getElementById("vehicle-model").value;
           const year = document.getElementById("year").value;
           const vehicleType = document.getElementById("vehicle-type").value;
+
+          showBtnLoading(vehicleSubmitBtn);
 
           try {
             const response = await fetch("/api/vehicle/add", {
@@ -205,9 +215,11 @@ function allButtons(data) {
               }),
             });
             if (response.ok) {
+              showBtnResult(vehicleSubmitBtn, true);
               alert("Vehicle Added Successful!");
               renderVehicleList();
             } else {
+              showBtnResult(vehicleSubmitBtn, false);
               alert("Cant add Vehicle right now!");
             }
             modal.style.display = "none";
@@ -269,6 +281,7 @@ function allButtons(data) {
               `;
 
       modal.style.display = "flex";
+      const vehicleSubmitBtn = document.getElementById("vehicle-submit-button");
 
       // Attach event listener for form submission
       document
@@ -279,7 +292,7 @@ function allButtons(data) {
           const vehicleModel = document.getElementById("vehicle-model").value;
           const year = document.getElementById("year").value;
           const vehicleType = document.getElementById("vehicle-type").value;
-
+          showBtnLoading(vehicleSubmitBtn);
           try {
             const updateResponse = await fetch(`/api/vehicles/${originalId}`, {
               method: "PUT",
@@ -292,9 +305,11 @@ function allButtons(data) {
               }),
             });
             if (updateResponse.ok) {
+              showBtnResult(vehicleSubmitBtn, true);
               alert("Vehicle updated successfully!");
               renderVehicleList();
             } else {
+              showBtnResult(vehicleSubmitBtn, false);
               alert("Failed to update vehicle. Please try again.");
             }
             modal.style.display = "none";
@@ -330,6 +345,7 @@ function allButtons(data) {
         </form>
       `;
       modal.style.display = "flex";
+      const ltoSubmitBtn = document.getElementById("lto-submit-button");
 
       document
         .getElementById("lto-upload-form")
@@ -339,15 +355,19 @@ function allButtons(data) {
           const formData = new FormData();
           formData.append("lto-file", file);
 
+          showBtnLoading(ltoSubmitBtn);
+
           try {
             const response = await fetch(`/api/vehicles/lto/${rowId}`, {
               method: "POST",
               body: formData,
             });
             if (response.ok) {
+              showBtnResult(ltoSubmitBtn, true);
               alert("LTO uploaded successfully!");
               renderVehicleList();
             } else {
+              showBtnResult(ltoSubmitBtn, false);
               alert("Failed to upload LTO. Please try again.");
             }
             modal.style.display = "none";
@@ -416,6 +436,7 @@ function allButtons(data) {
         </form>
       `;
       modal.style.display = "flex";
+      const vehicleSubmitBtn = document.getElementById("vehicle-submit-button");
 
       document
         .getElementById("vehicle-upload-form")
@@ -424,6 +445,8 @@ function allButtons(data) {
           const file = document.getElementById("vehicle-file").files[0];
           const formData = new FormData();
           formData.append("vehicle-file", file);
+
+          showBtnLoading(vehicleSubmitBtn);
 
           try {
             const response = await fetch(
@@ -434,9 +457,11 @@ function allButtons(data) {
               }
             );
             if (response.ok) {
+              showBtnResult(vehicleSubmitBtn, true);
               alert("Vehicle photo uploaded successfully!");
               renderVehicleList();
             } else {
+              showBtnResult(vehicleSubmitBtn, false);
               alert("Failed to upload vehicle photo. Please try again.");
             }
             modal.style.display = "none";
@@ -487,92 +512,136 @@ function allButtons(data) {
       `;
       modal.style.display = "flex";
 
-      document.getElementById("lto-yes").addEventListener("click", async () => {
-        try {
-          const response = await fetch(`/api/vehicles/${rowId}/YES`, {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-          });
-          if (response.ok) {
-            alert(`Successfully Changed LTO Status of ID no. ${rowId}`);
-            renderVehicleList();
-          } else {
-            alert(`Can't Change LTO Status of ID no. ${rowId}`);
+      const ltoYes = document.getElementById("lto-yes");
+      ltoYes.addEventListener(
+        "click",
+        async () => {
+          showBtnLoading(ltoYes);
+          try {
+            const response = await fetch(`/api/vehicles/${rowId}/YES`, {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+            });
+            if (response.ok) {
+              showBtnResult(ltoYes, true);
+              alert(`Successfully Changed LTO Status of ID no. ${rowId}`);
+              renderVehicleList();
+            } else {
+              showBtnResult(ltoYes, false);
+              alert(`Can't Change LTO Status of ID no. ${rowId}`);
+            }
+            modal.style.display = "none";
+          } catch (error) {
+            console.error("Error changing LTO status", error);
+            alert("An error occurred while changing the LTO status.");
+            modal.style.display = "none";
           }
-          modal.style.display = "none";
-        } catch (error) {
-          console.error("Error changing LTO status", error);
-          alert("An error occurred while changing the LTO status.");
-          modal.style.display = "none";
-        }
-      });
+        },
+        { once: true }
+      );
 
-      document.getElementById("lto-no").addEventListener("click", async () => {
-        try {
-          const response = await fetch(`/api/vehicles/${rowId}/NO`, {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-          });
-          if (response.ok) {
-            alert(`Successfully Changed LTO Status of ID no. ${rowId}`);
-            renderVehicleList();
-          } else {
-            alert(`Can't Change LTO Status of ID no. ${rowId}`);
+      const ltoNo = document.getElementById("lto-no");
+      ltoNo.addEventListener(
+        "click",
+        async () => {
+          showBtnLoading(ltoNo);
+          try {
+            const response = await fetch(`/api/vehicles/${rowId}/NO`, {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+            });
+            if (response.ok) {
+              showBtnResult(ltoNo, true);
+              alert(`Successfully Changed LTO Status of ID no. ${rowId}`);
+              renderVehicleList();
+            } else {
+              showBtnResult(ltoNo, false);
+              alert(`Can't Change LTO Status of ID no. ${rowId}`);
+            }
+            modal.style.display = "none";
+          } catch (error) {
+            console.error("Error changing LTO status", error);
+            alert("An error occurred while changing the LTO status.");
+            modal.style.display = "none";
           }
-          modal.style.display = "none";
-        } catch (error) {
-          console.error("Error changing LTO status", error);
-          alert("An error occurred while changing the LTO status.");
-          modal.style.display = "none";
-        }
-      });
+        },
+        { once: true }
+      );
     });
   });
 
   // Delete Vehicle
   document.querySelectorAll(".vehicle-delete-btn").forEach((button) => {
-    button.addEventListener("click", function () {
+    button.addEventListener("click", async function () {
       const rowId = this.getAttribute("data-id");
-      console.log(rowId);
-
       if (!rowId) {
-        console.error("ID not found");
         modalDetails.innerHTML = "<p>ID not found.</p>";
         modal.style.display = "flex";
         return;
       }
 
       modalDetails.innerHTML = `
-        <p>Are you sure you want to delete ID #${rowId}?</p>
-        <div class="justify-self-end space-x-4 mt-5">
-          <button id="delete-yes" class="bg-blue-700 hover:bg-gradient-to-t from-sky-400 to-sky-800 text-white text-lg rounded-md px-2">Yes</button>
-          <button id="delete-no" class="bg-rose-700 hover:bg-gradient-to-t from-rose-400 to-rose-800 text-white text-lg rounded-md px-2">No</button>
-        </div>
-      `;
+      <p id="delete-token-indicator" class="text-sm animate-pulse text-gray-500">fetching delete token...</p>
+      <p>Are you sure you want to delete Vehicle ID #${rowId}?</p>
+      <div class="justify-self-end space-x-4 mt-5">
+        <button id="delete-yes" class="bg-blue-700 text-white rounded-md px-2" disabled>Yes</button>
+        <button id="delete-no" class="bg-rose-700 text-white rounded-md px-2">No</button>
+      </div>
+    `;
       modal.style.display = "flex";
 
-      document
-        .getElementById("delete-yes")
-        .addEventListener("click", async () => {
-          try {
-            const response = await fetch(`/api/vehicles/${rowId}`, {
-              method: "DELETE",
-              headers: { "Content-Type": "application/json" },
-            });
-            if (response.ok) {
-              alert(`Successfully Deleted ID no. ${rowId}`);
-              renderVehicleList();
-            } else {
-              alert(`Can't Delete ID no. ${rowId}`);
-            }
-            modal.style.display = "none";
-          } catch (error) {
-            console.error("Error deleting vehicle data", error);
-            alert("An error occurred while deleting the vehicle.");
-            modal.style.display = "none";
-          }
-        });
+      const tokenIndicator = document.getElementById("delete-token-indicator");
+      const response = await fetch("/api/delete-token", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: rowId, path: `/api/vehicles/${rowId}` }),
+      });
 
+      const data = await response.json();
+      if (!response.ok) {
+        tokenIndicator.innerText =
+          data.error || "Failed to fetch delete token.";
+        tokenIndicator.classList.add("text-red-600");
+      } else {
+        tokenIndicator.innerText = "token available";
+        tokenIndicator.classList.add("text-green-600");
+
+        const deleteYes = document.getElementById("delete-yes");
+        deleteYes.disabled = false;
+        deleteYes.addEventListener(
+          "click",
+          async () => {
+            try {
+              const deleteResponse = await fetch(`/api/vehicles/${rowId}`, {
+                method: "DELETE",
+                headers: {
+                  "Content-Type": "application/json",
+                  "x-delete-token": data.deleteToken,
+                },
+              });
+              if (deleteResponse.ok) {
+                tokenIndicator.innerText = `Successfully Deleted Vehicle ID #${rowId}`;
+                renderVehicleList();
+              } else {
+                tokenIndicator.innerText = `Can't Delete Vehicle ID #${rowId}`;
+              }
+              setTimeout(() => {
+                modal.style.display = "none";
+              }, 3000);
+            } catch (error) {
+              console.error("Error deleting vehicle data", error);
+              tokenIndicator.innerText = "An error occurred while deleting.";
+              tokenIndicator.classList.add("text-red-600");
+              setTimeout(() => {
+                modal.style.display = "none";
+              }, 3000);
+            }
+          },
+          { once: true }
+        );
+      }
+
+      tokenIndicator.classList.remove("animate-pulse");
       document.getElementById("delete-no").addEventListener("click", () => {
         modal.style.display = "none";
       });

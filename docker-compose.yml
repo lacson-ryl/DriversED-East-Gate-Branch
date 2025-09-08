@@ -49,6 +49,7 @@ services:
       - app-node-modules:/app/node_modules
     working_dir: /app
     command: npm run dev
+    stop_grace_period: 10s
 
 volumes:
   redis-data:

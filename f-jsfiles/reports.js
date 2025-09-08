@@ -1,3 +1,10 @@
+import {
+  showLoadingMessage,
+  showOperationResult,
+  showBtnLoading,
+  showBtnResult,
+} from "../utils/modal-feedback.js";
+
 async function renderReportDetsTable() {
   const response = await fetch("/api/reports/list");
   const data = await response.json();
@@ -175,6 +182,7 @@ function allButtons() {
               </form>
           `;
         modal.style.display = "flex";
+        const reportStatusBtn = document.getElementById("report-status-button");
 
         document
           .getElementById("report-status-form")
@@ -182,6 +190,8 @@ function allButtons() {
             event.preventDefault();
             const status = document.getElementById("status").value;
             const reason = document.getElementById("reason").value;
+
+            showBtnLoading(reportStatusBtn);
 
             try {
               const response = await fetch("/api/report/change-status", {
@@ -191,13 +201,14 @@ function allButtons() {
               });
 
               if (response.ok) {
+                showBtnResult(reportStatusBtn, true);
                 alert("Status Change Successfully!");
                 renderReportDetsTable();
-                modal.style.display = "none";
               } else {
+                showBtnResult(reportStatusBtn, false);
                 alert("Unable to change right now!");
-                modal.style.display = "none";
               }
+              modal.style.display = "none";
             } catch (error) {
               console.error("Error fetching report details:", error);
             }

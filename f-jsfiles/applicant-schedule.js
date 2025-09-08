@@ -1,10 +1,14 @@
-//get id from the cookie
-function getCookie(name) {
-  const value = `; ${document.cookie}`;
-  const parts = value.split(`; ${name}=`);
-  if (parts.length === 2) return parts.pop().split(";").shift();
-  return null; // Return null if the cookie is not found
-}
+import {
+  showLoadingMessage,
+  showOperationResult,
+  showBtnLoading,
+  showBtnResult,
+} from "../utils/modal-feedback.js";
+
+const modal = document.getElementById("myModal");
+const span = document.getElementsByClassName("close")[0];
+const modalDetails = document.getElementById("modal-details");
+const modalTitle = document.getElementById("title-details");
 
 let instructorsList;
 let assignedProgramToInstructor;
@@ -104,55 +108,65 @@ async function renderForm() {
     });
   });
 
-  applicationForm.addEventListener("submit", async (event) => {
-    event.preventDefault();
+  applicationForm.addEventListener(
+    "submit",
+    async (event) => {
+      event.preventDefault();
 
-    const instructor = instructorSelect.value;
-    const startDate = document.getElementById("startDate").value;
-    const startDateAMPM = document.getElementById("startDateAMPM").value;
-    const continuation = document.getElementById("continuation").value;
-    const continuationAMPM = document.getElementById("continuationAMPM").value;
-    const transmissionType = transmissionSelect.value;
-    const program_id = programSelect.value;
+      const instructor = instructorSelect.value;
+      const startDate = document.getElementById("startDate").value;
+      const startDateAMPM = document.getElementById("startDateAMPM").value;
+      const continuation = document.getElementById("continuation").value;
+      const continuationAMPM =
+        document.getElementById("continuationAMPM").value;
+      const transmissionType = transmissionSelect.value;
+      const program_id = programSelect.value;
 
-    try {
-      const response = await fetch("/api/user-application/applyTDC", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          instructor,
-          startDate,
-          startDateAMPM,
-          continuation,
-          continuationAMPM,
-          transmissionType,
-          program_id,
-        }),
-      });
-      if (response.ok) {
-        alert("Application Successfully Submitted");
-        updateCalendar(instructor); // Refresh the calendar to show updated availability
-      } else {
-        const data = await response.json();
-        alert(`Error: ${data.error}`);
+      showLoadingMessage(modalDetails, "Processing your Application...");
+      modal.style.display = "flex";
+
+      try {
+        const response = await fetch("/api/user-application/applyTDC", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            instructor,
+            startDate,
+            startDateAMPM,
+            continuation,
+            continuationAMPM,
+            transmissionType,
+            program_id,
+          }),
+        });
+        if (response.ok) {
+          showOperationResult(
+            modalDetails,
+            true,
+            "Application Successfully Submitted"
+          );
+          updateCalendar(instructor); // Refresh the calendar to show updated availability
+        } else {
+          const data = await response.json();
+          showOperationResult(modalDetails, false, `Error: ${data.error}`);
+        }
+        setTimeout(() => {
+          modal.style.display = "none";
+        }, 7000);
+      } catch (error) {
+        alert("Sorry! Can’t connect to the server right now.");
+        console.error(error); // Log the error to the console for debugging
       }
-    } catch (error) {
-      alert("Sorry! Can’t connect to the server right now.");
-      console.error(error); // Log the error to the console for debugging
-    }
-  });
+    },
+    { once: true }
+  );
 
   const setTdcDateBtn = document.getElementById("setTdcDate");
-  const modal = document.getElementById("myModal");
-  const closeBtn = document.querySelector(".close");
   const tdcDateForm = document.getElementById("tdcDateForm");
   const tdcInstructorSelect = document.getElementById("tdcInstructor");
   // Modal functionality
   setTdcDateBtn.addEventListener("click", () => {
     const modalForm = `
-      <div class="relative justify-self-center bg-white rounded-lg shadow-lg min-w-96 max-w-screen-lg p-6 ">
-          <span
-              class="close absolute top-0 right-2 text-3xl font-semibold text-gray-700 hover:text-gray-900 cursor-pointer">&times;</span>
           <h2 class="text-xl font-semibold">Set TDC Date</h2>
           <form id="tdcDateForm" class="mt-4">
               <div class="mb-4">
@@ -171,13 +185,12 @@ async function renderForm() {
                   <input type="number" id="max-slot" name="max-slot" required
                       class="mt-1 block w-full outline outline-1 outline-gray-500 hover:outline-yellow-500 focus:outline-yellow-500 px-1">
               </div>
-              <button type="submit" class="bg-blue-500 text-white px-4 py-2 mt-4">Submit</button>
+              <button id="tdc-date-btn" type="submit" class="bg-blue-500 text-white px-4 py-2 mt-4">Submit</button>
 
           </form>
-      </div>
     `;
-    modal.innerHTML = "";
-    modal.innerHTML = modalForm;
+    modalDetails.innerHTML = "";
+    modalDetails.innerHTML = modalForm;
     instructorsList.forEach((instructor) => {
       // Also populate the modal's dropdown
       if (instructor.instructor_type === "TDC") {
@@ -189,12 +202,16 @@ async function renderForm() {
     });
     modal.classList.remove("hidden");
 
+    const tdcDateBtn = document.getElementById("tdc-date-btn");
+
     tdcDateForm.addEventListener("submit", async (event) => {
       event.preventDefault();
 
       const tdcInstructor = tdcInstructorSelect.value;
       const tdcDate = document.getElementById("tdcDate").value;
       const maxSlots = document.getElementById("max-slot").value;
+
+      showBtnLoading(tdcDateBtn);
 
       try {
         const response = await fetch("/api/user-application/setTdcDate", {
@@ -208,11 +225,13 @@ async function renderForm() {
         });
 
         if (response.ok) {
+          showBtnResult(tdcDateBtn, true);
           alert("TDC Date Submitted Successfully");
           modal.classList.add("hidden"); // Close the modal on successful submission
           updateCalendar(tdcInstructor); // Optionally update the calendar or other UI elements
         } else {
           const data = await response.json();
+          showBtnResult(tdcDateBtn, false);
           alert(`Error: ${data.error}`);
         }
       } catch (error) {
@@ -253,20 +272,18 @@ async function renderForm() {
                     <option value="PM">PM</option>
                 </select>
             </div>
-            <button type="submit" class="bg-blue-500 text-white px-4 py-2 mt-4">Submit</button>
+            <button id="continuation-btn" type="submit" class="bg-blue-500 text-white px-4 py-2 mt-4">Submit</button>
 
         </form>
       `;
-    modal.innerHTML = "";
-    modal.innerHTML = modalForm;
+    modalDetails.innerHTML = "";
+    modalDetails.innerHTML = modalForm;
     modal.classList.remove("hidden");
 
     const continuationInstructorOption = document.getElementById(
       "instructor-continuation"
     );
-    const transmissionType = document.getElementById(
-      "transmission-type"
-    );
+    const transmissionType = document.getElementById("transmission-type");
     instructorsList.forEach((instructor) => {
       const option = document.createElement("option");
       option.value = instructor.instructor_id;
@@ -307,9 +324,10 @@ async function renderForm() {
           option.text = "Automatic";
           transmissionType.appendChild(option);
         }
-
       });
     });
+    const continuationBtn = document.getElementById("continuation-btn");
+
     // Event listener for the form submission
     document
       .getElementById("add-continuation-form")
@@ -317,6 +335,8 @@ async function renderForm() {
         event.preventDefault();
 
         const formData = new FormData(event.target);
+
+        showBtnLoading(continuationBtn);
 
         try {
           const response = await fetch(
@@ -328,8 +348,12 @@ async function renderForm() {
           );
           const data = await response.json();
 
-          if (!response.ok) alert(data.error);
+          if (!response.ok) {
+            showBtnResult(continuationBtn, false);
+            alert(data.error);
+          }
 
+          showBtnResult(continuationBtn, true);
           alert(data.message);
         } catch (error) {
           alert("Sorry! Can’t connect to the server right now.");

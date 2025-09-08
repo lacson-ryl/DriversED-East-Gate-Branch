@@ -262,9 +262,9 @@ async function renderInstructorProfile() {
             modal.style.display = "flex";
 
             // Attach event listener for form submission
-            document
-              .getElementById("edit-instructor-form")
-              .addEventListener("submit", async (event) => {
+            document.getElementById("edit-instructor-form").addEventListener(
+              "submit",
+              async (event) => {
                 event.preventDefault();
                 const formData = new FormData(event.target);
 
@@ -288,7 +288,9 @@ async function renderInstructorProfile() {
                   alert("An error occurred while updating the instructor.");
                   modal.style.display = "none";
                 }
-              });
+              },
+              { once: true }
+            );
           } else {
             console.error("Failed to fetch instructor data");
             modalDetails.innerHTML = "<p>Failed to fetch instructor data.</p>";

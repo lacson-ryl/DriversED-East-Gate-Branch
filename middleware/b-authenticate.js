@@ -96,7 +96,7 @@ export async function verifyDeleteToken(req, res, next) {
     return res.status(403).json({ error: "Invalid or expired token" });
   }
 
-  if (payload.sub !== req.user.id) {
+  if (payload.sub !== req.user.userId) {
     return res.status(403).json({ error: "Token not for this user" });
   }
 

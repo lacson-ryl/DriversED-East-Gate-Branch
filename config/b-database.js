@@ -3107,10 +3107,11 @@ export async function getNotifications(userId, role) {
     await connection.beginTransaction();
 
     const [result] = await connection.query(
-      `SELECT notif_type, message, DATE_FORMAT(date_created, '%Y-%m-%d') AS date_created, isRead
+      `SELECT notification_id, notif_type, message, DATE_FORMAT(date_created, '%Y-%m-%d %H:%i:%s') AS date_created, isRead
        FROM notifications
        WHERE ${setters}
-       ORDER BY date_created DESC 
+       ORDER BY date_created DESC, notification_id DESC
+       LIMIT 20
       `,
       params
     );

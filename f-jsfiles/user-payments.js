@@ -1,4 +1,10 @@
 import { encryptData, decryptData } from "../utils/f-webCryptoKeys.js";
+import {
+  showLoadingMessage,
+  showOperationResult,
+  showBtnLoading,
+  showBtnResult,
+} from "../utils/modal-feedback.js";
 
 //initialize modal elements;
 const modal = document.getElementById("myModal");
@@ -52,10 +58,14 @@ async function renderUserPaymentsForm() {
   });
 
   // Add event listeners
-  document
-    .getElementById("payment-form")
-    .addEventListener("submit", async function (event) {
+  const paymentForm = document.getElementById("payment-form");
+  paymentForm.addEventListener(
+    "submit",
+    async function (event) {
       event.preventDefault();
+
+      showLoadingMessage(modalDetails, "Processing your Payment request...");
+      modal.style.display = "flex";
 
       const formData = new FormData(event.target);
       const encrypting = await encryptData(formData);
@@ -66,20 +76,26 @@ async function renderUserPaymentsForm() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ encryptedWithEncAesKey: encrypting }),
         });
-        modalDetails.innerHTML = "";
         if (!response.ok) {
           titleDetails.innerText = "Error Payment";
-          modalDetails.innerText =
-            "Sorry! Can't submit payment right now. Please try again later.";
-          modal.style.display = "flex";
-          return;
+          showOperationResult(
+            modalDetails,
+            false,
+            "Sorry! Can't submit payment right now. Please try again later."
+          );
         } else {
           titleDetails.innerText = "Success Payment";
-          modalDetails.innerText = "Payment Added Successfully!";
-          modal.style.display = "flex";
+          showOperationResult(
+            modalDetails,
+            true,
+            "Payment Added Successfully!"
+          );
+          paymentForm.reset();
           renderUserPaymentsList(); // Refresh the payment list
-          return;
         }
+        setTimeout(() => {
+          modal.style.display = "none";
+        });
       } catch (error) {
         console.error("Error submitting payment:", error);
         titleDetails.innerText = "Error Payment";
@@ -87,7 +103,9 @@ async function renderUserPaymentsForm() {
           "Sorry! Can't submit payment right now. Please try again later.";
         modal.style.display = "flex";
       }
-    });
+    },
+    { once: true }
+  );
 
   paymentMethodSelect.addEventListener("change", function (event) {
     const selectedOption = this.options[this.selectedIndex];
@@ -336,43 +354,52 @@ function allButtons(data) {
         `;
       modal.style.display = "flex";
       const uploadForm = document.getElementById("payment-receipt-upload-form");
+      const receiptSubmitbtn = document.getElementById("receipt-submit-button");
 
-      uploadForm.addEventListener("submit", async (event) => {
-        event.preventDefault();
-        const formData = new FormData(uploadForm);
+      uploadForm.addEventListener(
+        "submit",
+        async (event) => {
+          event.preventDefault();
+          const formData = new FormData(uploadForm);
 
-        try {
-          const response = await fetch(`/api/payments/receipt/${rowId}`, {
-            method: "POST",
-            body: formData,
-          });
-          const responseData = await response.json();
-          const notification = document.getElementById("notification");
-          if (response.ok) {
-            notification.innerHTML = `
+          showBtnLoading(receiptSubmitbtn);
+
+          try {
+            const response = await fetch(`/api/payments/receipt/${rowId}`, {
+              method: "POST",
+              body: formData,
+            });
+            const responseData = await response.json();
+            const notification = document.getElementById("notification");
+            if (response.ok) {
+              notification.innerHTML = `
                 <p class="text-green-700">${responseData.message}</p>
               `;
-            notification.style.display = "block"; // Show success notification
-            renderUserPaymentsList();
-          } else {
-            notification.innerHTML = `
+              notification.style.display = "block"; // Show success notification
+              showBtnResult(receiptSubmitbtn, true);
+              renderUserPaymentsList();
+            } else {
+              notification.innerHTML = `
                 <p class="text-red-700">${responseData.error}</p>
               `;
-            notification.style.display = "block";
-          }
+              notification.style.display = "block";
+              showBtnResult(receiptSubmitbtn, false);
+            }
 
-          setTimeout(() => {
-            notification.style.display = "none";
-          }, 3000);
-          modal.style.display = "none";
-        } catch (error) {
-          console.error("Error uploading Template", error);
-          showNotification(
-            "An error occurred while uploading Template.",
-            "error"
-          ); // Show error notification
-        }
-      });
+            setTimeout(() => {
+              notification.style.display = "none";
+            }, 3000);
+            modal.style.display = "none";
+          } catch (error) {
+            console.error("Error uploading Template", error);
+            showNotification(
+              "An error occurred while uploading Template.",
+              "error"
+            ); // Show error notification
+          }
+        },
+        { once: true }
+      );
     });
   });
 

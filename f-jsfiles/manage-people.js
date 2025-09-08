@@ -1,4 +1,10 @@
 import { encryptData, decryptData } from "../utils/f-webCryptoKeys.js";
+import {
+  showLoadingMessage,
+  showOperationResult,
+  showBtnLoading,
+  showBtnResult,
+} from "../utils/modal-feedback.js";
 
 // Initialize modal and its components
 const modal = document.getElementById("myModal");
@@ -160,65 +166,71 @@ function filterPayrollByYear(details) {
 function allButton(details) {
   // Modal form template for adding a instructor
   const modalForm = `
-    <form id="add-instructor-form" enctype="multipart/form-data" class="min-w-96">
+    <form id="add-instructor-form" enctype="multipart/form-data" class="min-w-    96">
       <div class="mb-4">
         <h3 class="text-xl font-semibold mb-3">Instructor Name</h3>
-        <input type="text" id="instructor-name" name="instructor-name" required
+        <input type="text" id="instructor-name" name="name" required
           class="w-full outline outline-1 outline-gray-300 rounded-md text-lg px-1" placeholder="Enter Instructor Name" />
       </div>
-      <div class="mb-4">
-        <h3 class="text-xl font-semibold mb-3">Rate per Hour</h3>
-        <input type="number" id="rate-per-hour" name="rate-per-hour"
-          class="w-full outline outline-1 outline-gray-300 rounded-md text-lg px-1" placeholder="Enter Rate per Hour" />
+      <div class="mb-4 flex flex-row gap-4 ">
+        <div class="1/2">
+          <h3 class="text-xl font-semibold mb-3">Instructor Type</h3>
+          <select id="instructor-type" name="type"
+            class="mt-1 text-lg block w-full outline outline-1 outline-gray-300 rounded-sm px-1">
+            <option value="PDC">PDC</option>
+            <option value="TDC">TDC</option>
+            <option value="(P|T)DC">(P|T)DC</option>
+          </select>
+        </div>
+        <div class="1/2">
+          <h3 class="text-xl font-semibold mb-3">Rate per Hour</h3>
+          <input type="number" id="rate-per-hour" name="rate"
+            class="w-full outline outline-1 outline-gray-300 rounded-md text-lg px-1" placeholder="Enter Rate per Hour" />
+        </div>
       </div>
-      <div class="mb-4">
-        <h3 class="text-xl font-semibold mb-3">Instructor Type</h3>
-        <select id="instructor-type" name="instructor-type"
-          class="mt-1 text-lg block w-full outline outline-1 outline-gray-300 rounded-sm px-1">
-          <option value="PDC">PDC</option>
-          <option value="TDC">TDC</option>
-          <option value="(P|T)DC">(P|T)DC</option>
-        </select>
-      </div>
-      <div class="flex flex-col md:flex-row gap-4 mb-4">
-        <div class="">
+      
+      <div class="flex flex-row gap-4 mb-4">
+        <div class="w-1/3">
           <h3 class="text-xl font-semibold mb-3">TDC Onsite</h3>
-          <select id="tdc-onsite" name="tdc-onsite" required
+          <select id="tdc-onsite" name="onsite" required
             class="mt-1 text-lg block w-full outline outline-1 outline-gray-300 rounded-sm px-1">
             <option value="0">False</option>
             <option value="1">True</option>
           </select>
         </div>
-        <div class="">
+        <div class="w-1/3">
           <h3 class="text-xl font-semibold mb-3">Manual</h3>
-          <select id="is-manual" name="is-manual" required
+          <select id="is-manual" name="manual" required
             class="mt-1 text-lg block w-full outline outline-1 outline-gray-300 rounded-sm px-1">
             <option value="0">False</option>
             <option value="1">True</option>
           </select>
         </div>
-        <div class="">
+        <div class="w-1/3">
           <h3 class="text-xl font-semibold mb-3">Automatic</h3>
-          <select id="is-automatic" name="is-automatic" required
+          <select id="is-automatic" name="automatic" required
             class="mt-1 text-lg block w-full outline outline-1 outline-gray-300 rounded-sm px-1">
             <option value="0">False</option>
             <option value="1">True</option>
           </select>
         </div>
       </div>
-      <div class="mb-4">
-        <h3 class="text-xl font-semibold mb-3">Accreditation Number</h3>
-        <input type="text" id="accreditation-number" name="accreditation-number"
-          class="w-full outline outline-1 outline-gray-300 rounded-md text-lg px-1" />
+      
+      <div class="mb-4 flex flex-row gap-4">
+        <div class="mb-4">
+          <h3 class="text-xl font-semibold mb-3">Accreditation Number</h3>
+          <input type="text" id="accreditation-number" name="accreditationNumber"
+            class="w-full outline outline-1 outline-gray-300 rounded-md text-lg px-1" />
+        </div>
+        <div class="mb-4">
+          <h3 class="text-xl font-semibold mb-3">Date Started</h3>
+          <input type="date" id="date-started" name="dateStarted"
+            class="w-full outline outline-1 outline-gray-300 rounded-md text-lg px-1" placeholder="Enter Program Name" />
+        </div>
       </div>
-      <div class="mb-4">
-        <h3 class="text-xl font-semibold mb-3">Date Started</h3>
-        <input type="date" id="date-started" name="date-started"
-          class="w-full outline outline-1 outline-gray-300 rounded-md text-lg px-1" placeholder="Enter Program Name" />
-      </div>
-      <div>
+      <div class="flex flex-row mb-4 gap-4 items-center">
         <img id="profile-picture-preview"
-          class="w-36 h-32 rounded-md border-2 content-center border-gray-300 mb-4 object-fill" src="defaultavatar.png"
+          class="w-36 h-32 rounded-md border-2 content-center border-gray-300 mb-4 object-fill" src=""
           alt="Profile Picture Preview">
         <input type="file" id="profile-picture-input" name="profile_picture" accept="image/*" class="text-sm text-gray-600">
       </div>
@@ -235,12 +247,15 @@ function allButton(details) {
       modalDetails.innerHTML = modalForm;
       modal.style.display = "flex";
 
-      document
-        .getElementById("add-instructor-form")
-        .addEventListener("submit", async function (event) {
+      const submitBtn = document.getElementById("instructor-submit-button");
+      document.getElementById("add-instructor-form").addEventListener(
+        "submit",
+        async function (event) {
           event.preventDefault();
           const formData = new FormData(event.target);
           const encrypting = await encryptData(formData);
+
+          showBtnLoading(submitBtn);
 
           try {
             const response = await fetch("/api/manage-people/instructor-add", {
@@ -249,19 +264,22 @@ function allButton(details) {
               body: JSON.stringify({ encryptedWithEncAesKey: encrypting }),
             });
             if (response.ok) {
-              alert("Instructor Added Successfully!");
-              modal.style.display = "none";
-              renderInstructorsList();
+              showBtnResult(submitBtn, true);
+              alert("Successfully add Instructor!");
             } else {
+              showBtnResult(submitBtn, false);
               alert("Can't add Instructor right now!");
-              modal.style.display = "none";
             }
+            modalDetails.innerText = "";
+            modal.style.display = "none";
           } catch (error) {
             console.error("Internal Server error", error);
             alert("Internal Server error");
             modal.style.display = "none";
           }
-        });
+        },
+        { once: true }
+      );
     });
   }
 
@@ -313,7 +331,7 @@ function allButton(details) {
             </div>
             <div class="mb-4">
               <label for="prn" class="block text-gray-700 text-sm font-bold mb-2">
-                Role
+                ID PRN
               </label>
               <input
                 class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight hover:border-blue-900 focus:outline-none focus:border-blue-900"
@@ -349,11 +367,15 @@ function allButton(details) {
                 }
               );
 
-              if (!response.ok) throw new Error("Error assigning account");
-
-              modalDetails.innerHTML = `<p>Assigning account successful.</p>`;
-              assignAccBtn.innerText = "Success";
+              if (!response.ok) {
+                showBtnResult(assignAccBtn, false);
+                alert("Error assigning account");
+              } else {
+                showBtnResult(assignAccBtn, true);
+                alert(`Assigning account successful.`);
+              }
               setTimeout(() => {
+                modalDetails.innerHTML = "";
                 modal.style.display = "none";
                 renderInstructorsList();
               }, 3000);
@@ -465,11 +487,14 @@ function allButton(details) {
       // Attach event listener for form submission
       const editForm = document.getElementById("edit-instructor-form");
       editForm.addEventListener("submit", async (event) => {
+        const instructorSubmitBtn = document.getElementById(
+          "instructor-submit-button"
+        );
         event.preventDefault();
         const formData = new FormData(editForm);
 
         const encrypting = await encryptData(formData);
-        console.log("encrypting", encrypting);
+        showBtnLoading(instructorSubmitBtn);
 
         try {
           const updateResponse = await fetch(
@@ -482,9 +507,11 @@ function allButton(details) {
           );
           const data = await updateResponse.json();
           if (updateResponse.ok) {
+            showBtnResult(instructorSubmitBtn, true);
             alert(data.message);
             renderInstructorsList();
           } else {
+            showBtnResult(instructorSubmitBtn, false);
             alert(data.error);
           }
           modal.style.display = "none";
@@ -545,49 +572,85 @@ function allButton(details) {
     instructorTable.style.display = "none";
   });
 
-  // Event listeners for delete buttons
+  // Delete Instructor
   document.querySelectorAll(".instructor-delete-btn").forEach((button) => {
-    button.addEventListener("click", function () {
+    button.addEventListener("click", async function () {
       const rowId = this.getAttribute("data-id");
-
+      console.log("rowId", rowId);
       if (!rowId) {
-        console.error("ID not found");
         modalDetails.innerHTML = "<p>ID not found.</p>";
         modal.style.display = "flex";
         return;
       }
 
       modalDetails.innerHTML = `
-        <p>Are you sure you want to delete ID #${rowId}?</p>
-        <div class="justify-self-end space-x-4 mt-5">
-          <button id="delete-yes" class="bg-blue-700 hover:bg-gradient-to-t from-sky-400 to-sky-800 text-white text-lg rounded-md px-2">Yes</button>
-          <button id="delete-no" class="bg-rose-700 hover:bg-gradient-to-t from-rose-400 to-rose-800 text-white text-lg rounded-md px-2">No</button>
-        </div>
-      `;
+      <p id="delete-token-indicator" class="text-sm animate-pulse text-gray-500">fetching delete token...</p>
+      <p>Are you sure you want to delete Instructor ID #${rowId}?</p>
+      <div class="justify-self-end space-x-4 mt-5">
+        <button id="delete-yes" class="bg-blue-700 text-white rounded-md px-2" disabled>Yes</button>
+        <button id="delete-no" class="bg-rose-700 text-white rounded-md px-2">No</button>
+      </div>
+    `;
       modal.style.display = "flex";
 
-      document
-        .getElementById("delete-yes")
-        .addEventListener("click", async () => {
-          try {
-            const response = await fetch(`/api/manage-people/${rowId}`, {
-              method: "DELETE",
-              headers: { "Content-Type": "application/json" },
-            });
-            if (response.ok) {
-              alert(`Successfully Deleted ID no. ${rowId}`);
-              renderInstructorsList();
-            } else {
-              alert(`Can't Delete ID no. ${rowId}`);
-            }
-            modal.style.display = "none";
-          } catch (error) {
-            console.error("Error deleting instructor data", error);
-            alert("An error occurred while deleting the instructor.");
-            modal.style.display = "none";
-          }
-        });
+      const tokenIndicator = document.getElementById("delete-token-indicator");
+      const response = await fetch("/api/delete-token", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: rowId,
+          path: `/api/manage-people/${rowId}`,
+        }),
+      });
 
+      const data = await response.json();
+      if (!response.ok) {
+        tokenIndicator.innerText =
+          data.error || "Failed to fetch delete token.";
+        tokenIndicator.classList.add("text-red-600");
+      } else {
+        tokenIndicator.innerText = "token available";
+        tokenIndicator.classList.add("text-green-600");
+
+        const deleteYes = document.getElementById("delete-yes");
+        deleteYes.disabled = false;
+        deleteYes.addEventListener(
+          "click",
+          async () => {
+            try {
+              const deleteResponse = await fetch(
+                `/api/manage-people/${rowId}`,
+                {
+                  method: "DELETE",
+                  headers: {
+                    "Content-Type": "application/json",
+                    "x-delete-token": data.deleteToken,
+                  },
+                }
+              );
+              if (deleteResponse.ok) {
+                tokenIndicator.innerText = `Successfully Deleted Instructor ID #${rowId}`;
+                renderInstructorsList();
+              } else {
+                tokenIndicator.innerText = `Can't Delete Instructor ID #${rowId}`;
+              }
+              setTimeout(() => {
+                modal.style.display = "none";
+              }, 3000);
+            } catch (error) {
+              console.error("Error deleting instructor data", error);
+              tokenIndicator.innerText = "An error occurred while deleting.";
+              tokenIndicator.classList.add("text-red-600");
+              setTimeout(() => {
+                modal.style.display = "none";
+              }, 3000);
+            }
+          },
+          { once: true }
+        );
+      }
+
+      tokenIndicator.classList.remove("animate-pulse");
       document.getElementById("delete-no").addEventListener("click", () => {
         modal.style.display = "none";
       });

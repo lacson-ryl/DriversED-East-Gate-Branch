@@ -1,3 +1,10 @@
+import {
+  showLoadingMessage,
+  showOperationResult,
+  showBtnLoading,
+  showBtnResult,
+} from "../utils/modal-feedback.js";
+
 async function renderCompletedCourseList() {
   const response = await fetch("/api/completed-course");
   if (!response.ok) {
@@ -182,11 +189,12 @@ function allButtons(data) {
                   <h3 class="text-xl font-semibold mb-3">Total Hours</h3>
                   <input type="number" id="total-hours" name="total-hours" value="${result.total_hours}" class="w-full outline outline-1 outline-gray-300 rounded-md text-lg px-1" placeholder="Enter Certificate Name" />
               </div>
-              <button id="certificate-submit-button" type="submit" class="bg-blue-800 text-white rounded-md px-2">Save</button>
+              <button id="edit-total-hours-btn" type="submit" class="bg-blue-800 text-white rounded-md px-2">Save</button>
               </form>
               `;
 
       modal.style.display = "flex";
+      const editHoursBtn = document.getElementById("edit-total-hours-btn");
 
       // Attach event listener for form submission
       document
@@ -194,6 +202,8 @@ function allButtons(data) {
         .addEventListener("submit", async (event) => {
           event.preventDefault();
           const totalHours = document.getElementById("total-hours").value;
+
+          showBtnLoading(editHoursBtn);
 
           try {
             const response = await fetch(
@@ -205,9 +215,11 @@ function allButtons(data) {
               }
             );
             if (response.ok) {
+              showBtnResult(editHoursBtn, true);
               alert("Hours updated successfully!");
               renderCompletedCourseList();
             } else {
+              showBtnResult(editHoursBtn, false);
               alert("Failed to update total hours. Please try again.");
             }
             modal.style.display = "none";
@@ -295,7 +307,9 @@ function allButtons(data) {
           </form>
         `;
       modal.style.display = "flex";
-
+      const completedCertBtn = document.getElementById(
+        "completion-submit-button"
+      );
       document
         .getElementById("certificate-completion-upload-form")
         .addEventListener("submit", async (event) => {
@@ -304,6 +318,8 @@ function allButtons(data) {
             .files[0];
           const formData = new FormData();
           formData.append("certificate-completion-file", file);
+
+          showBtnLoading(completedCertBtn);
 
           try {
             const response = await fetch(
@@ -314,9 +330,11 @@ function allButtons(data) {
               }
             );
             if (response.ok) {
+              showBtnResult(completedCertBtn, true);
               alert("Template uploaded successfully!");
               renderCompletedCourseList();
             } else {
+              showBtnResult(completedCertBtn, false);
               alert("Failed to upload Template. Please try again.");
             }
             modal.style.display = "none";
@@ -361,6 +379,10 @@ function allButtons(data) {
         `;
       modal.style.display = "flex";
 
+      const completedGradeBtn = document.getElementById(
+        "completion-submit-button"
+      );
+
       document
         .getElementById("grade-completion-upload-form")
         .addEventListener("submit", async (event) => {
@@ -372,6 +394,8 @@ function allButtons(data) {
           formData.append("grade-completion-file", file);
           formData.append("courseGrade", courseGrade);
 
+          showBtnLoading(completedGradeBtn);
+
           try {
             const response = await fetch(
               `/api/completed-course/grade-upload/${rowId}`,
@@ -382,9 +406,11 @@ function allButtons(data) {
             );
             const data = await response.json();
             if (response.ok) {
+              showBtnResult(completedGradeBtn, true);
               alert(data.message);
               renderCompletedCourseList();
             } else {
+              showBtnResult(completedGradeBtn, false);
               alert(data.error);
             }
             modal.style.display = "none";
@@ -421,9 +447,9 @@ function allButtons(data) {
     });
   });
 
-  // Delete Certificate
+  // Delete completed Course
   document.querySelectorAll(".trainees-info-delete-btn").forEach((button) => {
-    button.addEventListener("click", function () {
+    button.addEventListener("click", async function () {
       const userId = this.getAttribute("data-user-id");
       const dateStarted = this.getAttribute("data-date-started");
       const continuation = this.getAttribute("date-continuation");
@@ -436,37 +462,74 @@ function allButtons(data) {
       }
 
       modalDetails.innerHTML = `
-        <p>Are you sure you want to delete ID #${userId}?</p>
-        <div class="justify-self-end space-x-4 mt-5">
-          <button id="delete-yes" class="bg-blue-700 hover:bg-gradient-to-t from-sky-400 to-sky-800 text-white text-lg rounded-md px-2">Yes</button>
-          <button id="delete-no" class="bg-rose-700 hover:bg-gradient-to-t from-rose-400 to-rose-800 text-white text-lg rounded-md px-2">No</button>
-        </div>
-      `;
+      <p id="delete-token-indicator" class="font-sm animate-pulse text-gray-500">fetching delete token...</p>
+      <p>Are you sure you want to delete Course ID #${userId}?</p>
+      <div class="justify-self-end space-x-4 mt-5">
+        <button id="delete-yes" class="bg-blue-700 hover:bg-gradient-to-t from-sky-400 to-sky-800 text-white text-lg rounded-md px-2" disabled>Yes</button>
+        <button id="delete-no" class="bg-rose-700 hover:bg-gradient-to-t from-rose-400 to-rose-800 text-white text-lg rounded-md px-2">No</button>
+      </div>
+    `;
       modal.style.display = "flex";
 
-      document
-        .getElementById("delete-yes")
-        .addEventListener("click", async () => {
-          try {
-            const response = await fetch(`/api/completed-course/${userId}`, {
-              method: "DELETE",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ userId, dateStarted, continuation }),
-            });
-            if (response.ok) {
-              alert(`Successfully Deleted ID no. ${userId}`);
-              renderCompletedCourseList();
-            } else {
-              alert(`Can't Delete ID no. ${userId}`);
-            }
-            modal.style.display = "none";
-          } catch (error) {
-            console.error("Error deleting certificate data", error);
-            alert("An error occurred while deleting the certificate.");
-            modal.style.display = "none";
-          }
-        });
+      const tokenIndicator = document.getElementById("delete-token-indicator");
+      const response = await fetch("/api/delete-token", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: userId,
+          path: `/api/completed-course/${userId}`,
+        }),
+      });
 
+      const data = await response.json();
+      if (!response.ok) {
+        tokenIndicator.innerText =
+          data.error || "Failed to fetch delete token.";
+        tokenIndicator.classList.add("text-red-600");
+      } else {
+        tokenIndicator.innerText = "token available";
+        tokenIndicator.classList.add("text-green-600");
+
+        const deleteYes = document.getElementById("delete-yes");
+        deleteYes.disabled = false;
+        deleteYes.addEventListener(
+          "click",
+          async () => {
+            try {
+              const deleteResponse = await fetch(
+                `/api/completed-course/${userId}`,
+                {
+                  method: "DELETE",
+                  headers: {
+                    "Content-Type": "application/json",
+                    "x-delete-token": data.deleteToken,
+                  },
+                  body: JSON.stringify({ userId, dateStarted, continuation }),
+                }
+              );
+              if (deleteResponse.ok) {
+                tokenIndicator.innerText = `Successfully Deleted Course ID #${userId}`;
+                renderCompletedCourseList();
+              } else {
+                tokenIndicator.innerText = `Can't Delete Course ID #${userId}`;
+              }
+              setTimeout(() => {
+                modal.style.display = "none";
+              }, 3000);
+            } catch (error) {
+              console.error("Error deleting course data", error);
+              tokenIndicator.innerText = "An error occurred while deleting.";
+              tokenIndicator.classList.add("text-red-600");
+              setTimeout(() => {
+                modal.style.display = "none";
+              }, 3000);
+            }
+          },
+          { once: true }
+        );
+      }
+
+      tokenIndicator.classList.remove("animate-pulse");
       document.getElementById("delete-no").addEventListener("click", () => {
         modal.style.display = "none";
       });

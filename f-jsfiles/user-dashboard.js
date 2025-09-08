@@ -1,10 +1,3 @@
-function getCookie(name) {
-  const value = `; ${document.cookie}`;
-  const parts = value.split(`; ${name}=`);
-  if (parts.length === 2) return parts.pop().split(";").shift();
-  return null; // Return null if the cookie is not found
-}
-
 function errorBox(message) {
   return `
   <div
@@ -218,10 +211,10 @@ async function renderCourseCards() {
 
   if (programList.length === 0) {
     programCourseCard.innerHTML = `
-      <div class="program-swiper-slide p-2">
+     <div class="swiper-slide p-2">
         <div
           class="min-w-40 min-h-20 bg-white text-center text-black border-2 border-l-4 border-b-4 border-b-red-400 border-l-red-400 rounded-xl p-5 space-y-5">
-          No courses Found
+          No Programs Found
         </div>
       </div>
       `;

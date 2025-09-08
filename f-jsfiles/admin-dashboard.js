@@ -1,4 +1,10 @@
 import { encryptData, decryptData } from "../utils/f-webCryptoKeys.js";
+import {
+  showLoadingMessage,
+  showOperationResult,
+  showBtnLoading,
+  showBtnResult,
+} from "../utils/modal-feedback.js";
 
 //start clock of admin dashboard
 function updateClock() {
@@ -346,6 +352,10 @@ function paymentButtons(methodList) {
       modalDetails.innerHTML = modalform;
       modal.style.display = "flex";
 
+      const methodSubmitBtn = document.getElementById(
+        "payment-method-submit-button"
+      );
+
       // Event listener for the form submission
       document
         .getElementById("add-payment-method-form")
@@ -355,19 +365,26 @@ function paymentButtons(methodList) {
           const formData = new FormData(event.target);
           const encrypting = await encryptData(formData);
 
+          showBtnLoading(methodSubmitBtn);
+
           try {
             const response = await fetch("/api/payment-methods/add", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ encryptedWithEncAesKey: encrypting }),
             });
+
             if (response.ok) {
               showNotification("Payment Method Added Successfully!", "success");
+              showBtnResult(methodSubmitBtn, true);
               renderPaymentMethodsList(); // Refresh the payment methods list
             } else {
               showNotification("Can't add Payment Method right now!", "error");
+              showBtnResult(methodSubmitBtn, false);
             }
-            modal.style.display = "none";
+            setTimeout(() => {
+              modal.style.display = "none";
+            }, 3000);
           } catch (error) {
             console.error("Internal Server error", error);
             showNotification("Internal Server error", "error");
@@ -408,6 +425,10 @@ function paymentButtons(methodList) {
       modalDetails.innerHTML = modalForm;
       modal.style.display = "flex";
 
+      const editSumbitBtn = document.getElementById(
+        "edit-payment-method-submit-button"
+      );
+
       document
         .getElementById("edit-payment-method-form")
         .addEventListener("submit", async (event) => {
@@ -415,6 +436,8 @@ function paymentButtons(methodList) {
           const methodName = document.getElementById("method-name").value;
           const availability = document.getElementById("availability").value;
 
+          showBtnLoading(editSumbitBtn);
+          
           try {
             const response = await fetch("/api/payment-method/edit", {
               method: "PUT",
@@ -423,18 +446,23 @@ function paymentButtons(methodList) {
             });
 
             if (response.ok) {
+              showBtnResult(editSumbitBtn, true)
               showNotification(
                 "Payment Method changed successfully!",
                 "success"
               );
               renderPaymentMethodsList();
             } else {
+              showBtnResult(editSumbitBtn, false)
               showNotification(
                 "Can't change Payment Method right now!",
                 "error"
               );
             }
-          } catch (error) {}
+          } catch (error) {
+            console.error("Error editing payment method", error);
+            alert("An error occurred while editing the payment method.");
+          }
         });
     });
   });
@@ -460,6 +488,7 @@ function paymentButtons(methodList) {
         </form>
       `;
       modal.style.display = "flex";
+      const fileSubmitBtn = document.getElementById("file-submit-button");
 
       document
         .getElementById("upload-file-form")
@@ -467,27 +496,28 @@ function paymentButtons(methodList) {
           event.preventDefault();
           const methodFile = document.getElementById("method-file").files[0];
           const formData = new FormData();
-          formData.append("methodId", methodId)
+          formData.append("methodId", methodId);
           formData.append("methodFile", methodFile);
 
           const encrypting = await encryptData(formData);
-
+          showBtnLoading(fileSubmitBtn);
           try {
-            const response = await fetch(
-              `/api/payment-methods/upload`,
-              {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ encryptedWithEncAesKey: encrypting }),
-              }
-            );
+            const response = await fetch(`/api/payment-methods/upload`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ encryptedWithEncAesKey: encrypting }),
+            });
             if (response.ok) {
+              showBtnResult(fileSubmitBtn, true);
               alert("File uploaded successfully!");
               renderPaymentMethodsList();
             } else {
+              showBtnResult(fileSubmitBtn, true);
               alert("Failed to upload file. Please try again.");
             }
-            modal.style.display = "none";
+            setTimeout(() => {
+              modal.style.display = "none";
+            }, 3000);
           } catch (error) {
             console.error("Error uploading file", error);
             alert("An error occurred while uploading the file.");
@@ -496,8 +526,9 @@ function paymentButtons(methodList) {
     });
   });
 
+  //Delete payment
   document.querySelectorAll(".delete-btn").forEach((button) => {
-    button.addEventListener("click", function () {
+    button.addEventListener("click", async function () {
       const methodId = this.getAttribute("data-id");
 
       if (!methodId) {
@@ -506,38 +537,69 @@ function paymentButtons(methodList) {
         modal.style.display = "flex";
         return;
       }
-
+      modalDetails.innerHTML = "";
       modalDetails.innerHTML = `
+        <p id="delete-token-indicator" class="font-sm animate-pulse text-gray-500">fetching delete token...</p>
         <p>Are you sure you want to delete Method ID #${methodId}?</p>
         <div class="justify-self-end space-x-4 mt-5">
-          <button id="delete-yes" class="bg-blue-700 hover:bg-gradient-to-t from-sky-400 to-sky-800 text-white text-lg rounded-md px-2">Yes</button>
+          <button id="delete-yes" class="bg-blue-700 hover:bg-gradient-to-t from-sky-400 to-sky-800 text-white text-lg rounded-md px-2" disabled>Yes</button>
           <button id="delete-no" class="bg-rose-700 hover:bg-gradient-to-t from-rose-400 to-rose-800 text-white text-lg rounded-md px-2">No</button>
         </div>
       `;
       modal.style.display = "flex";
 
-      document
-        .getElementById("delete-yes")
-        .addEventListener("click", async () => {
-          try {
-            const response = await fetch(`/api/payment-methods/${methodId}`, {
-              method: "DELETE",
-              headers: { "Content-Type": "application/json" },
-            });
-            if (response.ok) {
-              alert(`Successfully Deleted Method ID no. ${methodId}`);
-              renderPaymentMethodsList();
-            } else {
-              alert(`Can't Delete Method ID no. ${methodId}`);
-            }
-            modal.style.display = "none";
-          } catch (error) {
-            console.error("Error deleting method", error);
-            alert("An error occurred while deleting the method.");
-            modal.style.display = "none";
-          }
-        });
+      const tokenIndicator = document.getElementById("delete-token-indicator");
+      const response = await fetch("/api/delete-token", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: methodId,
+          path: `/api/payment-methods/${methodId}`,
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        tokenIndicator.innerText = data.error;
+        tokenIndicator.classList.add("text-red-600");
+      } else {
+        tokenIndicator.innerText = "token available ";
+        tokenIndicator.classList.add("text-green-600");
+        const deleteYes = document.getElementById("delete-yes");
 
+        deleteYes.disabled = false;
+        deleteYes.addEventListener(
+          "click",
+          async () => {
+            try {
+              const response = await fetch(`/api/payment-methods/${methodId}`, {
+                method: "DELETE",
+                headers: {
+                  "Content-Type": "application/json",
+                  "x-delete-token": data.deleteToken,
+                },
+              });
+              if (response.ok) {
+                tokenIndicator.innerText = `Successfully Deleted Method ID no. ${methodId}`;
+                renderPaymentMethodsList();
+              } else {
+                tokenIndicator.innerText = `Can't Delete Method ID no. ${methodId}`;
+              }
+              setTimeout(() => {
+                modal.style.display = "none";
+              }, 3000);
+            } catch (error) {
+              console.error("Error deleting applicant.", error);
+              tokenIndicator.innerText = "An error occurred while deleting.";
+              tokenIndicator.classList.add("text-red-600");
+              setTimeout(() => {
+                modal.style.display = "none";
+              }, 3000);
+            }
+          },
+          { once: true }
+        );
+      }
+      tokenIndicator.classList.remove("animate-pulse");
       document.getElementById("delete-no").addEventListener("click", () => {
         modal.style.display = "none";
       });
@@ -594,12 +656,14 @@ function paymentButtons(methodList) {
 
   // When the user clicks on <span> (x), close the modal
   span.onclick = function () {
+    modalDetails.innerHTML = "";
     modal.style.display = "none";
   };
 
   // When the user clicks anywhere outside of the modal, close it
   window.onclick = function (event) {
     if (event.target == modal) {
+      modalDetails.innerHTML = "";
       modal.style.display = "none";
     }
   };

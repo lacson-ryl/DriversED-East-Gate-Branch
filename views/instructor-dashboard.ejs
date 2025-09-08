@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Attendance for Trainees</title>
+    <title>Instructor Dashboard</title>
     <link href="/f-css/output.css" rel="stylesheet">
 </head>
 
@@ -55,6 +55,7 @@
         </div>
     </div>
 
+    <script type="module" src="../utils/modal-feedback.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', async () => {
             console.log('Page loaded, checking instructor dashboard access');
@@ -68,6 +69,7 @@
                 // Load attendance table script
                 const tablesScript = document.createElement('script');
                 tablesScript.src = '/f-jsfiles/instructor-dashboard.js';
+                tablesScript.type = 'module';
                 document.body.appendChild(tablesScript);
 
             } catch (error) {

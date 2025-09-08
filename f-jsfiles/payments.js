@@ -1,4 +1,10 @@
 import { encryptData, decryptData } from "../utils/f-webCryptoKeys.js";
+import {
+  showLoadingMessage,
+  showOperationResult,
+  showBtnLoading,
+  showBtnResult,
+} from "../utils/modal-feedback.js";
 
 async function renderPaymentList() {
   const response = await fetch("/api/payments");
@@ -184,6 +190,7 @@ function allButtons(data) {
 
       modalDetails.innerHTML = modalform;
       modal.style.display = "flex";
+      const paymentSumbitBtn = document.getElementById("payment-submit-button");
 
       // Event listener for the form submission
       document
@@ -193,6 +200,7 @@ function allButtons(data) {
 
           const formData = new FormData(event.target);
           const encrypting = await encryptData(formData);
+          showBtnLoading(paymentSumbitBtn);
 
           try {
             const response = await fetch("/api/payment/add", {
@@ -201,9 +209,11 @@ function allButtons(data) {
               body: JSON.stringify({ encryptedWithEncAesKey: encrypting }),
             });
             if (response.ok) {
+              showBtnResult(paymentSumbitBtn, true);
               alert("Payment Added Successfully!");
               renderPaymentList(); // Refresh the payment list
             } else {
+              showBtnResult(paymentSumbitBtn, false);
               alert("Can't add Payment right now!");
             }
             modal.style.display = "none";
@@ -241,6 +251,8 @@ function allButtons(data) {
         `;
       modal.style.display = "flex";
 
+      const receiptSubmitBtn = document.getElementById("receipt-submit-button");
+
       document
         .getElementById("payment-receipt-upload-form")
         .addEventListener("submit", async (event) => {
@@ -248,6 +260,7 @@ function allButtons(data) {
           const file = document.getElementById("screenshot-receipt").files[0];
           const formData = new FormData();
           formData.append("screenshot-receipt", file);
+          showBtnLoading(receiptSubmitBtn);
 
           try {
             const response = await fetch(`/api/payments/receipt/${rowId}`, {
@@ -257,12 +270,14 @@ function allButtons(data) {
             const responseData = await response.json();
             const notification = document.getElementById("notification");
             if (response.ok) {
+              showBtnResult(receiptSubmitBtn, true);
               notification.innerHTML = `
-                <p class="text-green-700">${responseData.message}</p>
+              <p class="text-green-700">${responseData.message}</p>
               `;
               notification.style.display = "block"; // Show success notification
               renderPaymentList();
             } else {
+              showBtnResult(receiptSubmitBtn, false);
               notification.innerHTML = `
                 <p class="text-red-700">${responseData.error}</p>
               `;
@@ -352,30 +367,32 @@ function allButtons(data) {
       `;
       modal.style.display = "flex";
 
-      document
-        .getElementById("status-yes")
-        .addEventListener("click", async function () {
-          try {
-            const status = this.value;
-            const paymentId = rowId;
-            const response = await fetch(`/api/payments`, {
-              method: "PUT",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ paymentId, status }),
-            });
-            if (response.ok) {
-              alert(`Successfully Changed status for ID no. ${rowId}`);
-              renderPaymentList();
-            } else {
-              alert(`Can't Change status ID no. ${rowId}`);
-            }
-            modal.style.display = "none";
-          } catch (error) {
-            console.error("Error deleting payment data", error);
-            alert("An error occurred while deleting the payment.");
-            modal.style.display = "none";
+      const statusYes = document.getElementById("status-yes");
+      statusYes.addEventListener("click", async function () {
+        try {
+          const status = this.value;
+          const paymentId = rowId;
+          showBtnLoading(statusYes);
+          const response = await fetch(`/api/payments`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ paymentId, status }),
+          });
+          if (response.ok) {
+            showBtnResult(statusYes, true);
+            alert(`Successfully Changed status for ID no. ${rowId}`);
+            renderPaymentList();
+          } else {
+            showBtnResult(statusYes, false);
+            alert(`Can't Change status ID no. ${rowId}`);
           }
-        });
+          modal.style.display = "none";
+        } catch (error) {
+          console.error("Error deleting payment data", error);
+          alert("An error occurred while deleting the payment.");
+          modal.style.display = "none";
+        }
+      });
 
       document.getElementById("status-no").addEventListener("click", () => {
         modal.style.display = "none";
@@ -385,53 +402,85 @@ function allButtons(data) {
 
   // Delete Payment
   document.querySelectorAll(".payment-delete-btn").forEach((button) => {
-    button.addEventListener("click", function () {
+    button.addEventListener("click", async function () {
       const rowId = this.getAttribute("data-id");
-
       if (!rowId) {
-        console.error("ID not found");
         modalDetails.innerHTML = "<p>ID not found.</p>";
         modal.style.display = "flex";
         return;
       }
+
       const filteredList = filterPaymentList(data, rowId);
       const result = filteredList[0];
 
       modalDetails.innerHTML = `
-        <p>Are you sure you want to delete ID #${rowId}?</p>
-        <p>Account Name: ${result.account_name} </p>
-        <div class="justify-self-end space-x-4 mt-5">
-          <button id="delete-yes" class="bg-blue-700 hover:bg-gradient-to-t from-sky-400 to-sky-800 text-white text-lg rounded-md px-2">Yes</button>
-          <button id="delete-no" class="bg-rose-700 hover:bg-gradient-to-t from-rose-400 to-rose-800 text-white text-lg rounded-md px-2">No</button>
-        </div>
-      `;
+      <p id="delete-token-indicator" class="text-sm animate-pulse text-gray-500">fetching delete token...</p>
+      <p>Are you sure you want to delete Payment ID #${rowId}?</p>
+      <p>Account Name: ${result.account_name}</p>
+      <div class="justify-self-end space-x-4 mt-5">
+        <button id="delete-yes" class="bg-blue-700 text-white rounded-md px-2" disabled>Yes</button>
+        <button id="delete-no" class="bg-rose-700 text-white rounded-md px-2">No</button>
+      </div>
+    `;
       modal.style.display = "flex";
 
-      document
-        .getElementById("delete-yes")
-        .addEventListener("click", async () => {
-          const encrypted = encryptData({ rowId: rowId });
-          try {
-            const response = await fetch(`/api/payments/delete`, {
-              method: "DELETE",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ encryptedWithEncAesKey: encrypted }),
-            });
-            const data = response.json();
-            if (response.ok) {
-              alert(`Successfully Deleted ID no. ${rowId}`);
-              renderPaymentList();
-            } else {
-              alert(`Can't Delete ID no. ${rowId}`);
-            }
-            modal.style.display = "none";
-          } catch (error) {
-            console.error("Error deleting payment data", error);
-            alert("An error occurred while deleting the payment.");
-            modal.style.display = "none";
-          }
-        });
+      const tokenIndicator = document.getElementById("delete-token-indicator");
+      const response = await fetch("/api/delete-token", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: rowId,
+          path: `/api/payments/delete/${rowId}`,
+        }),
+      });
 
+      const data = await response.json();
+      if (!response.ok) {
+        tokenIndicator.innerText =
+          data.error || "Failed to fetch delete token.";
+        tokenIndicator.classList.add("text-red-600");
+      } else {
+        tokenIndicator.innerText = "token available";
+        tokenIndicator.classList.add("text-green-600");
+
+        const deleteYes = document.getElementById("delete-yes");
+        deleteYes.disabled = false;
+        deleteYes.addEventListener(
+          "click",
+          async () => {
+            try {
+              const response = await fetch(`/api/payments/delete/${rowId}`, {
+                method: "DELETE",
+                headers: {
+                  "Content-Type": "application/json",
+                  "x-delete-token": data.deleteToken,
+                },
+              });
+              const result = await response.json();
+              if (response.ok && result.success) {
+                tokenIndicator.innerText = `Successfully Deleted Payment ID #${rowId}`;
+                renderPaymentList();
+              } else {
+                tokenIndicator.innerText = `Can't Delete Payment ID #${rowId}`;
+                tokenIndicator.classList.add("text-red-600");
+              }
+              setTimeout(() => {
+                modal.style.display = "none";
+              }, 3000);
+            } catch (error) {
+              console.error("Error deleting payment data", error);
+              tokenIndicator.innerText = "An error occurred while deleting.";
+              tokenIndicator.classList.add("text-red-600");
+              setTimeout(() => {
+                modal.style.display = "none";
+              }, 3000);
+            }
+          },
+          { once: true }
+        );
+      }
+
+      tokenIndicator.classList.remove("animate-pulse");
       document.getElementById("delete-no").addEventListener("click", () => {
         modal.style.display = "none";
       });

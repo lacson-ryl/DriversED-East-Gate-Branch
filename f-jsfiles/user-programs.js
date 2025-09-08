@@ -1,3 +1,5 @@
+import { showBtnLoading, showBtnResult } from "../utils/modal-feedback.js";
+
 let instructorsInfo = [];
 let userCourseList = [];
 //form application
@@ -93,45 +95,59 @@ async function renderForm() {
     alert("Error fetching instructors. Please try again later.");
   }
 
-  applicationForm.addEventListener("submit", async (event) => {
-    event.preventDefault();
+  const applyButton = document.getElementById("apply-button");
+  applicationForm.addEventListener(
+    "submit",
+    async (event) => {
+      event.preventDefault();
 
-    const instructor = instructorSelect.value;
-    const startDate = document.getElementById("startDate").value;
-    const startDateAMPM = document.getElementById("startDateAMPM").value;
-    const continuation = document.getElementById("continuation").value;
-    const continuationAMPM = document.getElementById("continuationAMPM").value;
-    const transmissionType = transmissionSelect.value;
-    const program_id = programSelect.value;
+      const instructor = instructorSelect.value;
+      const startDate = document.getElementById("startDate").value;
+      const startDateAMPM = document.getElementById("startDateAMPM").value;
+      const continuation = document.getElementById("continuation").value;
+      const continuationAMPM =
+        document.getElementById("continuationAMPM").value;
+      const transmissionType = transmissionSelect.value;
+      const program_id = programSelect.value;
 
-    try {
-      const response = await fetch("/api/user-application/applyTDC", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          instructor,
-          startDate,
-          startDateAMPM,
-          continuation,
-          continuationAMPM,
-          transmissionType,
-          program_id,
-        }),
-      });
+      showBtnLoading(applyButton);
 
-      if (response.ok) {
-        alert("Application Successfully Submitted");
-        updateCalendar(instructor); // Refresh the calendar to show updated availability
-        renderUserApplicationsList();
-      } else {
-        const data = await response.json();
-        alert(`Error: ${data.error}`);
+      try {
+        const response = await fetch("/api/user-application/applyTDC", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            instructor,
+            startDate,
+            startDateAMPM,
+            continuation,
+            continuationAMPM,
+            transmissionType,
+            program_id,
+          }),
+        });
+
+        if (response.ok) {
+          applicationForm.reset();
+          showBtnResult(applyButton, true);
+          alert("Application Successfully Submitted");
+          updateCalendar(instructor); // Refresh the calendar to show updated availability
+          renderUserApplicationsList();
+        } else {
+          const data = await response.json();
+          showBtnResult(applyButton, false);
+          alert(`Error: ${data.error}`);
+        }
+        setTimeout(() => {
+          applyButton.innerText = "Submit";
+        }, 3000);
+      } catch (error) {
+        alert("Sorry! Can’t connect to the server right now.");
+        console.error(error); // Log the error to the console for debugging
       }
-    } catch (error) {
-      alert("Sorry! Can’t connect to the server right now.");
-      console.error(error); // Log the error to the console for debugging
-    }
-  });
+    },
+    { once: true }
+  );
   renderUserApplicationsList();
 }
 
@@ -442,16 +458,6 @@ async function renderUserApplicationsList() {
       <tbody class="">
         ${tableRows}
       </tbody>
-    </table>
-
-    <div id="myModal" class="fixed inset-0 z-50 items-center justify-center hidden bg-gray-900 bg-opacity-50">
-      <div class="relative bg-white rounded-lg shadow-lg min-w-screen-lg max-w-screen-lg p-6 ">
-        <span
-          class="close absolute top-0 right-2 text-3xl font-semibold text-gray-700 hover:text-gray-900 cursor-pointer ">&times;</span>
-        <h2 class="text-xl font-semibold">Applicant Details</h2>
-        <p id="modal-details" class="mt-4">the details</p>
-      </div>
-    </div>
     `;
   }
   addContinuationDate();
@@ -482,10 +488,49 @@ async function addContinuationDate() {
   userCourseList.forEach((course) => {
     const option = document.createElement("option");
     option.value = course.course_id;
-    option.innerText = `#${course.course_id} - ${course.program_name} (${course.program_duration - course.total_hours})`;
+    option.innerText = `#${course.course_id} - ${course.program_name} (${
+      course.program_duration - course.total_hours
+    })`;
     option.setAttribute("data-course-id", course.user_course_id);
     courseSelect.appendChild(option);
   });
+
+  addContinuationForm.addEventListener(
+    "submit",
+    async (event) => {
+      event.preventDefault();
+
+      const formData = new FormData(event.target);
+
+      showBtnLoading(addContinuationBtn);
+
+      try {
+        const response = await fetch("/api/user-application/add-continuation", {
+          method: "POST",
+          body: formData,
+        });
+        const data = await response.json();
+
+        if (!response.ok) {
+          showBtnResult(addContinuationBtn, false);
+          alert(data.error);
+        }
+
+        showBtnResult(addContinuationBtn, true);
+        alert(data.message);
+        renderForm(); // Refresh the calendar to show updated availability
+        renderUserApplicationsList();
+
+        setTimeout(() => {
+          modal.style.display = "none";
+        }, 3000);
+      } catch (error) {
+        alert("Sorry! Can’t connect to the server right now.");
+        console.error(error); // Log the error to the console for debugging
+      }
+    },
+    { once: true }
+  );
 
   // Modal functionality
   addContinuationBtn.addEventListener("click", () => {
@@ -499,29 +544,6 @@ async function addContinuationDate() {
   window.addEventListener("click", (event) => {
     if (event.target === modal) {
       modal.classList.add("hidden");
-    }
-  });
-
-  addContinuationForm.addEventListener("submit", async (event) => {
-    event.preventDefault();
-
-    const formData = new FormData(event.target);
-
-    try {
-      const response = await fetch("/api/user-application/add-continuation", {
-        method: "POST",
-        body: formData,
-      });
-      const data = await response.json();
-
-      if (!response.ok) alert(data.error);
-
-      alert(data.message);
-      renderForm(); // Refresh the calendar to show updated availability
-      renderUserApplicationsList();
-    } catch (error) {
-      alert("Sorry! Can’t connect to the server right now.");
-      console.error(error); // Log the error to the console for debugging
     }
   });
 }

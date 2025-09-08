@@ -1,3 +1,8 @@
+import {
+  showBtnLoading,
+  showBtnResult,
+} from "../utils/modal-feedback.js";
+
 async function renderCertificateList() {
   const response = await fetch("/api/certificates");
   if (!response.ok) {
@@ -127,13 +132,19 @@ function allButtons(data) {
       modalDetails.innerHTML = modalform;
       modal.style.display = "flex";
 
-      document
-        .getElementById("add-certificate-form")
-        .addEventListener("submit", async (event) => {
+      const certSubmitBtn = document.getElementById(
+        "certificate-submit-button"
+      );
+
+      document.getElementById("add-certificate-form").addEventListener(
+        "submit",
+        async (event) => {
           event.preventDefault();
           const certificateID = document.getElementById("certificate-id").value;
           const certificateName =
             document.getElementById("certificate-name").value;
+
+          showBtnLoading(certSubmitBtn);
 
           try {
             const response = await fetch("/api/certificate/add", {
@@ -142,9 +153,11 @@ function allButtons(data) {
               body: JSON.stringify({ certificateID, certificateName }),
             });
             if (response.ok) {
+              showBtnResult(certSubmitBtn, true);
               alert("Certificate Added Successful!");
               renderCertificateList();
             } else {
+              showBtnResult(certSubmitBtn, false);
               alert("Cant add Certificate right now!");
             }
             modal.style.display = "none";
@@ -152,7 +165,9 @@ function allButtons(data) {
             console.error("Internal Server error", error);
             alert("Internal Server error");
           }
-        });
+        },
+        { once: true }
+      );
     });
 
   // Edit Certificate
@@ -185,15 +200,20 @@ function allButtons(data) {
             `;
 
       modal.style.display = "flex";
+      const certSubmitBtn = document.getElementById(
+        "certificate-submit-button"
+      );
 
       // Attach event listener for form submission
-      document
-        .getElementById("edit-certificate-form")
-        .addEventListener("submit", async (event) => {
+      document.getElementById("edit-certificate-form").addEventListener(
+        "submit",
+        async (event) => {
           event.preventDefault();
           const certificateID = document.getElementById("certificate-id").value;
           const certificateName =
             document.getElementById("certificate-name").value;
+
+          showBtnLoading(certSubmitBtn);
 
           try {
             const updateResponse = await fetch(
@@ -208,9 +228,11 @@ function allButtons(data) {
               }
             );
             if (updateResponse.ok) {
+              showBtnResult(certSubmitBtn, true);
               alert("Certificate updated successfully!");
               renderCertificateList();
             } else {
+              showBtnResult(certSubmitBtn, false);
               alert("Failed to update certificate. Please try again.");
             }
             modal.style.display = "none";
@@ -218,7 +240,9 @@ function allButtons(data) {
             console.error("Error updating certificate data", error);
             alert("An error occurred while updating the certificate.");
           }
-        });
+        },
+        { once: true }
+      );
     });
   });
 
@@ -246,7 +270,9 @@ function allButtons(data) {
         </form>
       `;
       modal.style.display = "flex";
-
+      const templateSubmitBtn = document.getElementById(
+        "template-submit-button"
+      );
       document
         .getElementById("certificate-template-upload-form")
         .addEventListener("submit", async (event) => {
@@ -254,6 +280,8 @@ function allButtons(data) {
           const file = document.getElementById("template-file").files[0];
           const formData = new FormData();
           formData.append("template-file", file);
+
+          showBtnLoading(templateSubmitBtn);
 
           try {
             const response = await fetch(
@@ -264,9 +292,11 @@ function allButtons(data) {
               }
             );
             if (response.ok) {
+              showBtnResult(templateSubmitBtn, true);
               alert("Template uploaded successfully!");
               renderCertificateList();
             } else {
+              showBtnResult(templateSubmitBtn, false);
               alert("Failed to upload Template. Please try again.");
             }
             modal.style.display = "none";
@@ -305,7 +335,7 @@ function allButtons(data) {
 
   // Delete Certificate
   document.querySelectorAll(".certificate-delete-btn").forEach((button) => {
-    button.addEventListener("click", function () {
+    button.addEventListener("click", async function () {
       const rowId = this.getAttribute("data-id");
 
       if (!rowId) {
@@ -316,36 +346,70 @@ function allButtons(data) {
       }
 
       modalDetails.innerHTML = `
-      <p>Are you sure you want to delete ID #${rowId}?</p>
+      <p id="delete-token-indicator" class="font-sm animate-pulse text-gray-500">fetching delete token...</p>
+      <p>Are you sure you want to delete Certificate ID #${rowId}?</p>
       <div class="justify-self-end space-x-4 mt-5">
-        <button id="delete-yes" class="bg-blue-700 hover:bg-gradient-to-t from-sky-400 to-sky-800 text-white text-lg rounded-md px-2">Yes</button>
+        <button id="delete-yes" class="bg-blue-700 hover:bg-gradient-to-t from-sky-400 to-sky-800 text-white text-lg rounded-md px-2" disabled>Yes</button>
         <button id="delete-no" class="bg-rose-700 hover:bg-gradient-to-t from-rose-400 to-rose-800 text-white text-lg rounded-md px-2">No</button>
       </div>
     `;
       modal.style.display = "flex";
 
-      document
-        .getElementById("delete-yes")
-        .addEventListener("click", async () => {
-          try {
-            const response = await fetch(`/api/certificates/${rowId}`, {
-              method: "DELETE",
-              headers: { "Content-Type": "application/json" },
-            });
-            if (response.ok) {
-              alert(`Successfully Deleted ID no. ${rowId}`);
-              renderCertificateList();
-            } else {
-              alert(`Can't Delete ID no. ${rowId}`);
-            }
-            modal.style.display = "none";
-          } catch (error) {
-            console.error("Error deleting certificate data", error);
-            alert("An error occurred while deleting the certificate.");
-            modal.style.display = "none";
-          }
-        });
+      const tokenIndicator = document.getElementById("delete-token-indicator");
+      const response = await fetch("/api/delete-token", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: rowId,
+          path: `/api/certificates/${rowId}`,
+        }),
+      });
 
+      const data = await response.json();
+      if (!response.ok) {
+        tokenIndicator.innerText =
+          data.error || "Failed to fetch delete token.";
+        tokenIndicator.classList.add("text-red-600");
+      } else {
+        tokenIndicator.innerText = "token available";
+        tokenIndicator.classList.add("text-green-600");
+
+        const deleteYes = document.getElementById("delete-yes");
+        deleteYes.disabled = false;
+        deleteYes.addEventListener(
+          "click",
+          async () => {
+            try {
+              const deleteResponse = await fetch(`/api/certificates/${rowId}`, {
+                method: "DELETE",
+                headers: {
+                  "Content-Type": "application/json",
+                  "x-delete-token": data.deleteToken,
+                },
+              });
+              if (deleteResponse.ok) {
+                tokenIndicator.innerText = `Successfully Deleted Certificate ID #${rowId}`;
+                renderCertificateList();
+              } else {
+                tokenIndicator.innerText = `Can't Delete Certificate ID #${rowId}`;
+              }
+              setTimeout(() => {
+                modal.style.display = "none";
+              }, 3000);
+            } catch (error) {
+              console.error("Error deleting certificate data", error);
+              tokenIndicator.innerText = "An error occurred while deleting.";
+              tokenIndicator.classList.add("text-red-600");
+              setTimeout(() => {
+                modal.style.display = "none";
+              }, 3000);
+            }
+          },
+          { once: true }
+        );
+      }
+
+      tokenIndicator.classList.remove("animate-pulse");
       document.getElementById("delete-no").addEventListener("click", () => {
         modal.style.display = "none";
       });
