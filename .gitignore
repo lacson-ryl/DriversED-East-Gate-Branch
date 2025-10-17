@@ -1,5 +1,6 @@
 node_modules
 .env.production
+.vscode
 
 # Docker artifacts
 .dockerignore
