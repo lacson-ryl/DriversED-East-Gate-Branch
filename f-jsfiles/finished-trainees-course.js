@@ -5,6 +5,8 @@ import {
   showBtnResult,
 } from "../utils/modal-feedback.js";
 
+import { openFileViewer } from "../utils/file-helper.js";
+
 async function renderCompletedCourseList() {
   const response = await fetch("/api/completed-course");
   if (!response.ok) {
@@ -60,17 +62,13 @@ async function renderCompletedCourseList() {
                               ${
                                 arr.grade_sheet
                                   ? `
-                                  <a href="javascript:void(0);" class="bg-blue-700 hover:underline view-btn" data-id="${
-                                    arr.course_id
-                                  }" data-file='${JSON.stringify(
-                                      arr.grade_sheet
-                                    )}' data-file-type="image/jpeg">
+                                  <a href="javascript:void(0);" class="bg-blue-700 hover:underline view-btn" 
+                                  data-id="${arr.course_id}" 
+                                  data-file='${arr.grade_sheet}' data-file-type="image/jpeg">
                                     <img src="/f-css/solid/icons_for_buttons/view-boards.svg" class="w-6 h-6 reverse-color" />  
                                   </a>
   
-                                  <button data-id="${
-                                    arr.course_id
-                                  }" class="grade-upload-btn bg-yellow-600 rounded-md px-2 hover:underline">
+                                  <button data-id="${arr.course_id}" class="grade-upload-btn bg-yellow-600 rounded-md px-2 hover:underline">
                                     <img src="/f-css/solid/icons_for_buttons/upload.svg" class="w-6 h-6 reverse-color" />
                                   </button>
                                   `
@@ -88,28 +86,24 @@ async function renderCompletedCourseList() {
                               ${
                                 arr.certificate_file
                                   ? `
-                                  <a href="javascript:void(0);" class="bg-blue-700 hover:underline view-btn" data-id="${
-                                    arr.course_id
-                                  }" data-file='${JSON.stringify(
-                                      arr.certificate_file
-                                    )}' data-file-type="${
-                                      arr.certificate_file_type
-                                    }">
+                                  <button href="javascript:void(0);" 
+                                    class="view-btn bg-green-600 rounded-md px-2 hover:underline"
+                                    data-id="${arr.course_id}" 
+                                    data-file='${arr.certificate_file}' 
+                                    data-file-type="${arr.certificate_file_type}">
                                       <img src="/f-css/solid/icons_for_buttons/view-boards.svg" class="w-6 h-6 reverse-color" />
-                                    </a>
+                                  </button>
   
-                                  <button data-id="${
-                                    arr.course_id
-                                  }" class="certification-upload-btn bg-blue-600 rounded-md px-2 hover:underline">
+                                  <button data-id="${arr.course_id}" class="certification-upload-btn bg-yellow-600 rounded-md px-2 hover:underline">
                                     <img src="/f-css/solid/icons_for_buttons/upload.svg" class="w-6 h-6 reverse-color" />
                                   </button>
-                                  <button data-id="${
-                                    arr.course_id
-                                  }" data-user-id="${
-                                      arr.user_id
-                                    }" data-instructor-id="${
-                                      arr.instructor_id
-                                    }" class="certification-create-btn bg-yellow-600 rounded-md px-2 hover:underline">Create</button>
+                                  <button data-id="${arr.course_id}" data-user-id="${arr.user_id}" data-instructor-id="${arr.instructor_id}" 
+                                    class="certification-create-btn bg-red-600 rounded-md px-2 hover:underline">
+                                    <img src="/f-css/solid/white/plus.svg" class="w-6 h-6 reverse-color scale-150" />
+                                  </button>
+                                  
+                                  <button data-id="${arr.course_id}" data-user-id="${arr.user_id}" data-instructor-id="${arr.instructor_id}" 
+                                    Create</button>
                                   `
                                   : `
                                   <button data-id="${arr.course_id}"
@@ -425,25 +419,15 @@ function allButtons(data) {
   //View for cwertificate template pdf
   document.querySelectorAll(".view-btn").forEach((button) => {
     button.addEventListener("click", function () {
-      const fileData = JSON.parse(this.getAttribute("data-file"));
+      const courseId = this.getAttribute("data-id");
+      const fileData = this.getAttribute("data-file");
       const fileType = this.getAttribute("data-file-type");
 
-      const byteArray = new Uint8Array(fileData.data);
-      const blob = new Blob([byteArray], { type: fileType });
-      const url = URL.createObjectURL(blob);
-
-      const newWindow = window.open();
-      if (fileType === "application/pdf") {
-        newWindow.document.write(
-          `<embed src="${url}" width="100%" height="100%" type="${fileType}" />`
-        );
-      } else {
-        newWindow.document.write(`<p>Unsupported file type: ${fileType}</p>`);
-      }
-      // Revoke the object URL after the new window has loaded the content
-      newWindow.onload = function () {
-        URL.revokeObjectURL(url);
-      };
+      openFileViewer({
+        fileData: fileData,
+        fileType: fileType,
+        title: `Course Id: #${courseId}`,
+      });
     });
   });
 

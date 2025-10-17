@@ -1,4 +1,5 @@
 import { encryptData, decryptData } from "../utils/f-webCryptoKeys.js";
+import { openFileViewer, applyDownloadBtn } from "../utils/file-helper.js";
 import {
   showLoadingMessage,
   showOperationResult,
@@ -18,7 +19,7 @@ async function renderUserPaymentsForm() {
   const courseSelect = document.getElementById("course-select");
 
   const encrypted = await response.json();
-  const data = decryptData(encrypted.encrypted);
+  const data = await decryptData(encrypted.encrypted);
   const paymentMethods = data.paymentMethods;
   const paymentCourses = data.paymentCourses;
 
@@ -56,6 +57,8 @@ async function renderUserPaymentsForm() {
     courseOption.innerText = `${course.course_name} - ${course.course_price}`;
     courseSelect.appendChild(courseOption);
   });
+
+  setupImagePreview("screenshot-receipt", "payment-picture-preview");
 
   // Add event listeners
   const paymentForm = document.getElementById("payment-form");
@@ -95,7 +98,7 @@ async function renderUserPaymentsForm() {
         }
         setTimeout(() => {
           modal.style.display = "none";
-        });
+        }, 3000);
       } catch (error) {
         console.error("Error submitting payment:", error);
         titleDetails.innerText = "Error Payment";
@@ -108,17 +111,37 @@ async function renderUserPaymentsForm() {
   );
 
   paymentMethodSelect.addEventListener("change", function (event) {
+    const downloadBtn = document.getElementById("download-image");
     const selectedOption = this.options[this.selectedIndex];
     const file = selectedOption.getAttribute("data-file");
+    const name = selectedOption.value;
     if (file) {
       // If file is a base64 string or URL, set it directly
       document.getElementById("payment-method-preview").src = file;
       document.getElementById("payment-method-preview").style.display = "flex";
+      applyDownloadBtn(downloadBtn, file, "image/jpeg", name);
     } else {
       document.getElementById("payment-method-preview").src = "";
     }
   });
 }
+
+function setupImagePreview(inputId, previewId) {
+  const input = document.getElementById(inputId);
+  const preview = document.getElementById(previewId);
+  if (!input || !preview) return;
+  input.addEventListener("change", function (event) {
+    const file = event.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        preview.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+  });
+}
+
 renderUserPaymentsForm();
 
 async function renderUserPaymentsList() {
@@ -173,16 +196,13 @@ async function renderUserPaymentsList() {
                 ${
                   arr.screenshot_receipt
                     ? `
-                <a href="javascript:void(0);" class="text-blue-700 hover:underline view-btn" data-id="${
-                  arr.user_payment_id
-                }" data-file='${JSON.stringify(
-                        arr.screenshot_receipt.data
-                      )}' data-file-type="image/jpeg">
+                <button href="javascript:void(0);" class="bg-blue-700 rounded-md px-2 view-btn" 
+                data-id="${arr.user_payment_id}" data-file-type="image/jpeg">
                   <img src="/f-css/solid/icons_for_buttons/photograph.svg" class="w-6 h-6 reverse-color" />
-                </a>
+                </>
                 `
                     : `<button data-id="${arr.user_payment_id}"
-                  class="receipt-upload-btn text-yellow-600 rounded-md px-2 hover:underline">
+                  class="receipt-upload-btn bg-yellow-600 rounded-md px-2 hover:underline">
                   <img src="/f-css/solid/icons_for_buttons/upload.svg" class="w-6 h-6 reverse-color" />
                 </button>`
                 }
@@ -254,9 +274,7 @@ async function renderUserPaymentsList() {
                 arr.screenshot_receipt
                   ? `<a href="javascript:void(0);" class="text-blue-600 hover:underline view-btn" 
                         data-id="${arr.user_payment_id}" 
-                        data-file='${JSON.stringify(
-                          arr.screenshot_receipt.data
-                        )}' 
+                        data-file='${arr.screenshot_receipt.data}' 
                         data-file-type="image/jpeg">
                       <img src="/f-css/solid/icons_for_buttons/photograph.svg" class="w-5 h-5 inline-block" />
                       <span>View Receipt</span>
@@ -406,44 +424,12 @@ function allButtons(data) {
   // View receipt
   document.querySelectorAll(".view-btn").forEach((button) => {
     button.addEventListener("click", function () {
-      const fileData = JSON.parse(this.getAttribute("data-file"));
+      const payId = this.getAttribute("data-id");
+      const picture = filterPaymentList(data, payId);
+      const fileData = picture[0].screenshot_receipt;
       const fileType = this.getAttribute("data-file-type");
 
-      const byteArray = new Uint8Array(fileData);
-      const blob = new Blob([byteArray], { type: fileType });
-      const url = URL.createObjectURL(blob);
-
-      const newWindow = window.open("", "_blank", "width=800,height=600");
-      newWindow.document.write(`
-        <html>
-          <head>
-            <title>Payment Receipt</title>
-            <style>
-              body {
-                background-color: black;
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                height: 100vh;
-                margin: 0;
-              }
-              img {
-                max-width: 100%;
-                max-height: 100%;
-              }
-            </style>
-          </head>
-          <body>
-            <img src="${url}" alt="payment-receipt" />
-          </body>
-        </html>
-      `);
-      newWindow.document.close();
-
-      // Revoke the object URL after the new window has loaded the content
-      newWindow.onload = function () {
-        URL.revokeObjectURL(url);
-      };
+      openFileViewer({ fileData, fileType, title: `Payment ID #${payId}` });
     });
   });
 }

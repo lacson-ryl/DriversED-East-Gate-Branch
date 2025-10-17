@@ -15,13 +15,32 @@ export async function generateRawAESKey() {
 
 // Helper to convert ArrayBuffer <-> base64
 function ab2b64(buf) {
-  return btoa(String.fromCharCode(...new Uint8Array(buf)));
+  if (!(buf instanceof ArrayBuffer || ArrayBuffer.isView(buf))) {
+    console.error("ab2b64 received non-buffer:", buf);
+    throw new TypeError("ab2b64 expects an ArrayBuffer or TypedArray");
+  }
+
+  const uint8 = new Uint8Array(buf);
+  let binary = "";
+  const chunkSize = 0x8000; // 32KB chunks
+
+  for (let i = 0; i < uint8.length; i += chunkSize) {
+    binary += String.fromCharCode.apply(null, uint8.subarray(i, i + chunkSize));
+  }
+
+  return btoa(binary);
 }
+
 function b642ab(b64) {
   return Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
 }
 
 export async function decryptData(payload) {
+  if (!payload) {
+    console.log("No data inside");
+    return;
+  }
+
   const { encryptedData, iv, encAesKey } = payload;
   const privKey = await KeyManager.getPrivateKey();
 
@@ -62,14 +81,26 @@ export async function encryptData(data) {
   // 🔄 Normalize FormData to plain object
   if (data instanceof FormData) {
     const normalized = {};
-    data.forEach((value, key) => {
-      normalized[key] = value;
-    });
+    for (const [key, value] of data.entries()) {
+      if (value instanceof File || value instanceof Blob) {
+        if (value == null || value.size === 0) {
+          normalized[key] = null;
+        } else {
+          const buffer = await value.arrayBuffer();
+          normalized[key] = {
+            name: value.name,
+            type: value.type,
+            size: value.size,
+            file: Array.from(new Uint8Array(buffer)),
+          };
+        }
+      } else {
+        normalized[key] = value;
+      }
+    }
     data = normalized;
   }
-
   const serverPubKey = await KeyManager.getServerPublicKey();
-
   const { aesKey, rawKey } = await generateRawAESKey();
   const iv = window.crypto.getRandomValues(new Uint8Array(12));
 
@@ -86,6 +117,7 @@ export async function encryptData(data) {
     serverPubKey,
     rawKey
   );
+
   // In Web Crypto, tag is appended to ciphertext (last 16 bytes)
   return {
     encryptedData: ab2b64(encrypted),

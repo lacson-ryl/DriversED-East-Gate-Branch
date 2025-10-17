@@ -51,9 +51,6 @@
 
                     const profileScript = document.createElement('script');
                     profileScript.src = '/f-jsfiles/user-profile.js';
-                    profileScript.onload = () => {
-                        renderDetails();
-                    }
                     profileScript.type = "module";
                     document.body.appendChild(profileScript);
 

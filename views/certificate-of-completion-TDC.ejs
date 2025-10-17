@@ -2,278 +2,317 @@
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Certificate</title>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet" />
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
-    <link rel="stylesheet" href="/f-css/output.css" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Certificate</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet" />
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
+  <% if (isPDF) { %>
     <style>
-        body {
-            font-family: 'Roboto', sans-serif;
-        }
+      <%=tailwindCSS %>
+    </style>
+    <% } else { %>
+      <link rel="stylesheet" href="/f-css/output.css" />
+      <% } %>
 
-        /* Hide the button when printing or saving as PDF */
-        @media print {
+        <script type="module">
+          import Dexie from "https://cdn.jsdelivr.net/npm/dexie@3.2.4/dist/dexie.mjs";
+          window.Dexie = Dexie;
+        </script>
+
+        <style>
+          body {
+            font-family: 'Roboto', sans-serif;
+          }
+
+          /* Hide the button when printing or saving as PDF */
+          @media print {
             * {
-                color: black !important;
-                /* Ensures legibility */
+              color: black !important;
+              /* Ensures legibility */
             }
 
             .hide-on-print {
-                display: none !important;
+              display: none !important;
             }
-        }
-    </style>
+          }
+        </style>
 </head>
 
 <body class="bg-white">
-    <div class="fixed">
-        <div class="flex flex-col items-start gap-3 mx-10 pt-5 text-xs">
-            <button id="save-to-pdf" data-user-id="<%= userId %>" data-instructor-id="<%= instructorId %>"
-                data-course-id="<%= courseId %>" class="hover:underline underline-offset-1 hide-on-print ">Save to
-                PDF</button>
-            <button id="save-to-database" data-user-id="<%= userId %>" data-instructor-id="<%= instructorId %>"
-                data-course-id="<%= courseId %>" class="hover:underline underline-offset-1 hide-on-print">Save to
-                Database</button>
-        </div>
+  <div class="fixed">
+    <div class="flex flex-col items-start gap-3 mx-10 pt-5 text-xs">
+      <button id="save-to-pdf" class="hover:underline underline-offset-1 hide-on-print ">Save to
+        PDF</button>
+      <button id="save-to-database" class="hover:underline underline-offset-1 hide-on-print">Save to
+        Database</button>
     </div>
-    <div class="w-[780px] h-[932px] mx-auto py-4 text-black text-sm">
-        <!-- Header -->
-        <div class="flex flex-row justify-between items-center px-10">
-            <div class="w-28">
-                <img src="https://www.seekpng.com/png/full/923-9234404_lto-logo-vector-land-transportation-office-logo-png.png"
-                    alt="LTO Logo" />
-            </div>
-            <div class="text-center mx-auto">
-                <p class="text-xs mt-1">Republic of the Philippines</p>
-                <p class="text-xs font-semibold">DEPARTMENT OF TRANSPORTATION</p>
-                <p class="text-base font-bold text-black">LAND TRANSPORTATION OFFICE</p>
-                <p class="text-xs">East Avenue, Quezon City</p>
-                <h1 class="text-xl font-bold mt-2">CERTIFICATE OF COMPLETION</h1>
-                <h2 class="text-lg font-bold">THEORETICAL DRIVING COURSE</h2>
-            </div>
-            <div class="w-32 ">
-                <img src="<%=  certificateInputs[0].driversEdLogo %>" alt="Driver's ED Logo" />
-            </div>
-        </div>
-
-        <!-- Student Info -->
-        <div class="border-t  border-gray-400 mt-4">
-            <p class="bg-gray-200 px-2 py-1 font-semibold">
-                Student Driver's Details
-            </p>
-            <div class="flex flex-row w-full items-start px-2 pt-4 pb-3">
-                <div class="text-sm leading-6 w-4/5 flex flex-col gap-5 ">
-                    <div class="flex w-1/2 ">
-                        <p class="w-32">
-                            LTO Client ID:
-                        </p>
-                        <span class="ml-2 font-medium border-b-2 border-b-gray-300 w-full">
-                            <%= userProfile[0].ltoClientId || '&nbsp;' %>
-                        </span>
-                    </div>
-                    <div class="grid grid-cols-[auto,1fr,1fr,1fr] auto-cols-auto text-center gap-2">
-                        <div>
-                            <div class="font-light">Name:</div>
-                        </div>
-                        <div>
-                            <div class="text-left font-medium border-b-2 border-b-gray-300 text-[16px]">
-                                <%= userProfile[0].firstName.toUpperCase()%>
-                            </div>
-                            <div class="text-sm">First name</div>
-
-                        </div>
-                        <div>
-                            <div class="text-left font-medium border-b-2 border-b-gray-300 text-[16px]">
-                                <%= userProfile[0].middleName.toUpperCase() %>
-                            </div>
-                            <div class="text-sm">Middle Name</div>
-                        </div>
-                        <div>
-                            <div class="text-left font-medium border-b-2 border-b-gray-300 text-[16px]">
-                                <%= userProfile[0].lastName.toUpperCase() %>
-                            </div>
-                            <div class="text-sm">Last Name</div>
-                        </div>
-                    </div>
-                    <div class="flex">
-                        Address:
-                        <div class="border-b-2 border-b-gray-300 w-full">
-                            <p class="font-medium ml-2 ">
-                                <%= userProfile[0].address.toUpperCase() %>
-                            </p>
-                        </div>
-                    </div>
-                    <div class="flex ">
-                        <div class="flex w-1/2 ">Birthdate:
-                            <span class="ml-2 font-medium border-b-2 border-b-gray-300 w-full">
-                                <%= userProfile[0].birthday || '&nbsp;' %>
-                            </span>
-                        </div>
-                        <div class="flex w-1/2">Nationality:
-                            <span class="ml-2 font-medium border-b-2 border-b-gray-300 w-full">
-                                <%= userProfile[0].nationality ? userProfile[0].nationality.toUpperCase() || '&nbsp;'
-                                    : ' ' %>
-                            </span>
-                        </div>
-                    </div>
-                    <div class="flex flex-row justify-stretch w-full gap-1">
-                        <div class="flex flex-row w-1/5">Age:
-                            <div class="ml-2 w-full font-medium border-b-2 border-b-gray-300">
-                                <span class="">
-                                    <%= userProfile[0].age || '&nbsp;' %>
-                                </span>
-                            </div>
-                        </div>
-                        <div class="flex flex-row w-2/5">Gender:
-                            <span class="ml-2 font-medium border-b-2 border-b-gray-300 w-full">
-                                <%= userProfile[0].gender.toUpperCase() || '&nbsp;' %>
-                            </span>
-                        </div>
-                        <div class="flex flex-row w-72">
-                            <p class="w-2/5">Civil Status:</p>
-                            <span class="font-medium ml-2 border-b-2 border-b-gray-300 w-full">
-                                <%= userProfile[0].civilStatus.toUpperCase() || '&nbsp;' %>
-                            </span>
-                        </div>
-                    </div>
-                </div>
-                <div class="aspect-square w-40 my-auto">
-                    <% if (!userProfile[0].picture) { %>
-                        <img src="" alt="Photo 2x2" class="object-contain bg-white border border-black w-full h-full" />
-                        <% } else { %>
-                            <img src="<%= userProfile[0].picture %>" alt="Photo 2x2"
-                                class="object-contain bg-white border border-black w-full h-full" />
-                            <% } %>
-                </div>
-            </div>
-        </div>
-
-        <!-- Training Info -->
-        <div class="flex flex-col mt-4 border-t border-gray-400 gap-3 ">
-            <p class="bg-gray-200 px-2 py-1 font-semibold">
-                Driving Course Training Information
-            </p>
-            <div class="flex flex-row justify-stretch w-full gap-1 px-2">
-                <div class="flex flex-row w-1/3">
-                    <p class="w-32"> Date Started: </p>
-                    <span class="ml-2 w-full font-medium border-b-2 border-b-gray-300">
-                        <%= userCourse[0].date_started %>
-                    </span>
-                </div>
-                <div class="flex flex-row w-1/3">
-                    <p class="w-52">
-                        Date Completed:
-                    </p>
-                    <span class="ml-2 font-medium border-b-2 border-b-gray-300 w-full">
-                        <%= userCourse[0].date_finished %>
-                    </span>
-                </div>
-                <div class="flex flex-row w-1/3">
-                    <p class="w-96">Total Number of hours:</p>
-                    <span class="font-medium ml-2 border-b-2 border-b-gray-300 w-full">
-                        <%= userCourse[0].total_hours %>
-                    </span>
-                </div>
-            </div>
-            <div class="flex flex-row gap-5 px-2">
-                <p>Learning Modality</p>
-                <div class="flex flex-row justify-between w-72">
-                    <div class="flex flex-row items-center gap-1">
-                        <input type="checkbox" value="onsite" <%=userCourse[0].modality=="onsite" ? "checked" : "" %> >
-                        <p>Face-to-Face</p>
-                    </div>
-                    <div class="flex flex-row items-center gap-1">
-                        <input type="checkbox" value="online" <%=userCourse[0].modality=="online" ? "checked" : "" %>>
-                        <p>Online TDC</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Footer -->
-        <div class="mt-20 text-sm px-2 text-center items-center ">
-            <p class="max-w-[620px] mx-auto">
-                This Certificate With Control Number
-                <span class="font-bold">
-                    <%= !certificateInputs[0].controlNumber ? 123456789 :
-                        certificateInputs[0].controlNumber.toUpperCase() %>
-                </span>
-                has been issued <br>
-                for application to obtain a student-driver’s permit with
-                the Land Transportation Office.
-            </p>
-
-            <div class="mt-9">
-                <p>
-                    Prepared and issued by:
-                    <span class="font-bold">DRIVER'S ED EAST GATE BRANCH</span>
-                </p>
-                <p>Accreditation Number: <span>
-                        <%= certificateInputs[0].accredNumOfBranch.toUpperCase() %>
-                    </span></p>
-                <p class="mt-4">
-                    Authorized Representative:
-                    <span class="font-bold">
-                        <%= instructorProfile[0].name.toUpperCase() %>
-                    </span>
-                </p>
-                <p>Accreditation Number: <span>
-                        <%= instructorProfile[0].accredNumOfInstructor.toUpperCase() %>
-                    </span></p>
-            </div>
-        </div>
-
+  </div>
+  <div class="w-[780px] h-[932px] mx-auto py-4 text-black text-sm">
+    <!-- Header -->
+    <div class="flex flex-row justify-between items-center px-10">
+      <div class="w-28">
+        <img src="https://www.seekpng.com/png/full/923-9234404_lto-logo-vector-land-transportation-office-logo-png.png"
+          alt="LTO Logo" />
+      </div>
+      <div class="text-center mx-auto">
+        <p class="text-xs mt-1">Republic of the Philippines</p>
+        <p class="text-xs font-semibold">DEPARTMENT OF TRANSPORTATION</p>
+        <p class="text-base font-bold text-black">LAND TRANSPORTATION OFFICE</p>
+        <p class="text-xs">East Avenue, Quezon City</p>
+        <h1 class="text-xl font-bold mt-2">CERTIFICATE OF COMPLETION</h1>
+        <h2 class="text-lg font-bold">THEORETICAL DRIVING COURSE</h2>
+      </div>
+      <div class="w-32 ">
+        <img id="driversEdLogo" alt="Driver's ED Logo" />
+      </div>
     </div>
 
+    <!-- Student Info -->
+    <div class="border-t border-gray-400 mt-4">
+      <p class="bg-gray-200 px-2 py-1 font-semibold">Student Driver's Details</p>
+      <div class="flex flex-row w-full items-start px-2 pt-4 pb-3">
+        <div class="text-sm leading-6 w-4/5 flex flex-col gap-5">
+          <div class="flex w-1/2">
+            <label class="w-32">LTO Client ID:</label>
+            <input type="text" name="ltoClientId" id="ltoClientId"
+              class="ml-2 font-medium border-b-2 border-gray-300 w-full bg-transparent" />
+          </div>
+
+          <div class="grid grid-cols-[auto,1fr,1fr,1fr] auto-cols-auto text-center gap-2">
+            <div>
+              <div class="font-light">Name:</div>
+            </div>
+            <div>
+              <input type="text" name="firstName" id="firstName"
+                class="text-left font-medium border-b-2 border-gray-300 text-[16px] w-full bg-transparent" />
+              <div class="text-sm">First name</div>
+            </div>
+            <div>
+              <input type="text" name="middleName" id="middleName"
+                class="text-left font-medium border-b-2 border-gray-300 text-[16px] w-full bg-transparent" />
+              <div class="text-sm">Middle Name</div>
+            </div>
+            <div>
+              <input type="text" name="lastName" id="lastName"
+                class="text-left font-medium border-b-2 border-gray-300 text-[16px] w-full bg-transparent" />
+              <div class="text-sm">Last Name</div>
+            </div>
+          </div>
+
+          <div class="flex">
+            <label>Address:</label>
+            <textarea name="address" id="address"
+              class="ml-2 font-medium border-b-2 border-gray-300 w-full bg-transparent resize-none"></textarea>
+          </div>
+
+          <div class="flex">
+            <div class="flex w-1/2">
+              <label>Birthdate:</label>
+              <input type="date" name="birthday" id="birthday"
+                class="ml-2 font-medium border-b-2 border-gray-300 w-full bg-transparent" />
+            </div>
+            <div class="flex w-1/2">
+              <label>Nationality:</label>
+              <input type="text" name="nationality" id="nationality"
+                class="ml-2 font-medium border-b-2 border-gray-300 w-full bg-transparent" />
+            </div>
+          </div>
+
+          <div class="flex flex-row justify-stretch w-full gap-1">
+            <div class="flex flex-row w-1/5">
+              <label>Age:</label>
+              <input type="number" name="age" id="age"
+                class="ml-2 font-medium border-b-2 border-gray-300 w-full bg-transparent" />
+            </div>
+            <div class="flex flex-row w-2/5">
+              <label>Gender:</label>
+              <input type="text" name="gender" id="gender"
+                class="ml-2 font-medium border-b-2 border-gray-300 w-full bg-transparent" />
+            </div>
+            <div class="flex flex-row w-72">
+              <label class="w-2/5">Civil Status:</label>
+              <input type="text" name="civilStatus" id="civilStatus"
+                class="font-medium ml-2 border-b-2 border-gray-300 w-full bg-transparent" />
+            </div>
+          </div>
+        </div>
+
+        <div class="aspect-square w-40 my-auto">
+          <img id="profilePicture" name="profilePicture" src="" alt="Photo 2x2"
+            class="object-contain bg-white border border-black w-full h-full ml-2" />
+        </div>
+      </div>
+    </div>
+
+
+    <!-- Training Info -->
+    <div class="flex flex-col mt-4 border-t border-gray-400 gap-3">
+      <p class="bg-gray-200 px-2 py-1 font-semibold">Driving Course Training Information</p>
+      <div class="flex flex-row justify-stretch w-full gap-1 px-2">
+        <div class="flex flex-row w-1/3">
+          <label class="w-32">Date Started:</label>
+          <input type="date" name="dateStarted" id="dateStarted"
+            class="ml-2 font-medium border-b-2 border-gray-300 w-full bg-transparent" />
+        </div>
+        <div class="flex flex-row w-1/3">
+          <label class="w-52">Date Completed:</label>
+          <input type="date" name="dateFinished" id="dateFinished"
+            class="ml-2 font-medium border-b-2 border-gray-300 w-full bg-transparent" />
+        </div>
+        <div class="flex flex-row w-1/3">
+          <label class="w-96">Total Number of hours:</label>
+          <input type="number" name="totalHours" id="totalHours"
+            class="font-medium ml-2 border-b-2 border-gray-300 w-full bg-transparent" />
+        </div>
+      </div>
+
+      <div class="flex flex-row gap-5 px-2">
+        <label>Learning Modality</label>
+        <div class="flex flex-row justify-between w-72">
+          <div class="flex flex-row items-center gap-1">
+            <input type="checkbox" name="modality" value="onsite" id="modalityOnsite" />
+            <label for="modalityOnsite">Face-to-Face</label>
+          </div>
+          <div class="flex flex-row items-center gap-1">
+            <input type="checkbox" name="modality" value="online" id="modalityOnline" />
+            <label for="modalityOnline">Online TDC</label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- Footer -->
+    <div class="mt-20 text-sm px-2 text-center items-center">
+      <p class="max-w-[620px] mx-auto">
+        This Certificate With Control Number
+        <input type="text" data-autoresize class="font-bold border-b-2 border-b-black text-center"
+          oninput="this.style.width = (this.value.length + 5) + 'ch'" id="controlNumber" name="controlNumber"></input>
+        <br>has been issued
+        for application to obtain a student-driver's permit with the
+        <br>Land Transportation Office.
+      </p>
+
+      <div class="mt-9">
+        <p>
+          Prepared and issued by:
+          <span class="font-bold">DRIVER'S ED EAST GATE BRANCH</span>
+        </p>
+        <p>Accreditation Number:
+          <input type="text" data-autoresize class="font-bold border-b-2 border-b-black text-center"
+            oninput="this.style.width = (this.value.length + 5) + 'ch'" id="accredNumOfBranch"
+            name="accredNumOfBranch"></input>
+        </p>
+        <p class="mt-4">
+          Authorized Representative:
+          <input type="text" data-autoresize class="font-bold border-b-2 border-b-black text-center"
+            oninput="this.style.width = (this.value.length + 5) + 'ch'" id="instructorName"
+            name="instructorName"></input>
+        </p>
+        <p>Accreditation Number: <input type="text" data-autoresize
+            class="font-bold border-b-2 border-b-black text-center"
+            oninput="this.style.width = (this.value.length + 5) + 'ch'" id="accredNumOfInstructor"
+            name="accredNumOfInstructor"></input>
+        </p>
+      </div>
+    </div>
+
+
+  </div>
+
+  <% if (isPDF) { %>
     <script>
-        document.getElementById("save-to-pdf").addEventListener("click", handleSave);
-        document.getElementById("save-to-database").addEventListener("click", handleSave);
+      const data = <%- JSON.stringify(typeof payload !== 'undefined' ? payload : null) %>;
+      console.log("data", data);
 
-        async function handleSave() {
-            const userId = this.getAttribute("data-user-id");
-            const instructorId = this.getAttribute("data-instructor-id");
-            const courseId = this.getAttribute("data-course-id");
-            const onsite = document.querySelector('input[type="checkbox"][value="onsite"]')?.checked || false;
-            const online = document.querySelector('input[type="checkbox"][value="online"]')?.checked || false;
-            const type = this.id === "save-to-database" ? "database" : "pdf";
-            try {
-                const response = await fetch(`/certificates-completion-tdc/${type}`, {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify({
-                        userId,
-                        instructorId,
-                        courseId,
-                        onsite,
-                        online
-                    })
-                });
+      async function populateCertificate(data) {
+        const {
+          certificateInputs,
+          userProfile,
+          userCourse,
+          instructorProfile,
+          userId,
+          courseId,
+          instructorId,
+        } = data;
 
-                if (!response.ok) {
-                    alert("Failed to generate PDF.");
-                    return;
-                }
+        const flatData = {
+          ...certificateInputs[0],
+          ...userProfile[0],
+          ...userCourse[0],
+        };
 
-                const blob = await response.blob();
-                const url = window.URL.createObjectURL(blob);
+        course = userCourse[0].courseName;
 
-                const a = document.createElement("a");
-                a.href = url;
-                a.download = "certificate-tdc.pdf";
-                document.body.appendChild(a);
-                a.click();
-                a.remove();
-                window.URL.revokeObjectURL(url);
-            } catch (error) {
-                alert("An error occurred while generating the PDF.");
-                console.error(error);
-            }
+        // Populate text/date/number inputs
+        Object.entries(flatData).forEach(([key, value]) => {
+          const input = document.querySelector(`[name="${key}"]`);
+          if (input) input.value = value ?? "";
+        });
+
+        // Populate image
+        if (userProfile[0].profilePicture) {
+          const img = document.getElementById("profilePicture");
+          if (img) img.src = userProfile[0].profilePicture;
         }
+
+        // Populate modality checkboxes
+        if (userCourse[0].modality === "onsite") {
+          document.getElementById("modalityOnsite").checked = true;
+        } else if (userCourse[0].modality === "online") {
+          document.getElementById("modalityOnline").checked = true;
+        }
+
+        // Populate footer fields
+        document.getElementById("driversEdLogo").src =
+          certificateInputs[0].driversEdLogo;
+
+        document.getElementById("controlNumber").value =
+          certificateInputs[0].controlNumber?.toUpperCase() ?? "123456789";
+
+        document.getElementById("accredNumOfBranch").value =
+          certificateInputs[0].accredNumOfBranch?.toUpperCase() ?? "123456789";
+
+        document.getElementById("instructorName").value =
+          instructorProfile[0].instructorName?.toUpperCase() ?? "Juan Dela Cruz";
+
+        document.getElementById("accredNumOfInstructor").value =
+          instructorProfile[0].accredNumOfInstructor?.toUpperCase() ?? "123456789";
+
+        function autoResizeInput(input) {
+          input.style.width = input.value.length + 5 + "ch";
+        }
+        document.querySelectorAll("input[data-autoresize]").forEach(autoResizeInput);
+
+        const buttons = {
+          savePdf: "save-to-pdf",
+          saveDatabase: "save-to-database",
+        };
+
+        Object.values(buttons).forEach((buttonId) => {
+          const btn = document.getElementById(buttonId);
+          if (btn) {
+            btn.setAttribute("data-user-id", userId);
+            btn.setAttribute("data-course-id", courseId);
+            btn.setAttribute("data-instructor-id", instructorId);
+          }
+        });
+      }
+
+      (async () => {
+        if (data) {
+          window.fetchedData = data;
+          await populateCertificate(data);
+          window.scriptLoaded = true;
+        }
+      })();
     </script>
+    <% } else { %>
+      <script type="module" src="../utils/f-webCryptoKeys.js"></script>
+      <script type="module" src="../utils/f-keyManager.js"></script>
+      <script type="module" src="../f-jsfiles/certificate-completion-tdc.js"></script>
+      <% } %>
 </body>
 
 </html>

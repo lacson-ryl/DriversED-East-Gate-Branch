@@ -2,29 +2,71 @@
 FROM node:20 AS builder
 WORKDIR /app
 
-# Install app dependencies
 COPY package*.json ./
 RUN npm install
+RUN npx puppeteer browsers install chrome
 
-# Copy all source files
 COPY ./b-server.js ./f-tailcss ./f-css ./views ./f-jsfiles ./config ./utils ./middleware ./controllers ./tailwind.config.js ./
 
 # Stage 2: Runtime
-FROM node:20-alpine
+FROM node:20-slim
 WORKDIR /app
 
-# Copy everything from builder
+# Install required dependencies for Chrome and fonts (English only)
+RUN apt-get update && apt-get install -y \
+  wget \
+  curl \
+  unzip \
+  ca-certificates \
+  fonts-liberation \
+  libasound2 \
+  libatk-bridge2.0-0 \
+  libatk1.0-0 \
+  libcups2 \
+  libdbus-1-3 \
+  libgdk-pixbuf2.0-0 \
+  libnspr4 \
+  libnss3 \
+  libx11-xcb1 \
+  libxcomposite1 \
+  libxdamage1 \
+  libxrandr2 \
+  libgbm1 \
+  libpango-1.0-0 \
+  libpangocairo-1.0-0 \
+  libxss1 \
+  libgtk-3-0 \
+  libstdc++6 \
+  libxext6 \
+  --no-install-recommends && \
+  apt-get clean && \
+  rm -rf /var/lib/apt/lists/*
+
+# ✅ Install Chrome for Testing (version 117.0.5938.92)
+RUN curl -LO https://storage.googleapis.com/chrome-for-testing-public/117.0.5938.92/linux64/chrome-linux64.zip && \
+  unzip chrome-linux64.zip && \
+  mv chrome-linux64 /opt/chrome && \
+  ln -sf /opt/chrome/chrome /usr/bin/google-chrome-stable && \
+  rm chrome-linux64.zip
+
+# Copy app files and Puppeteer browser cache
+COPY --from=builder /root/.cache/puppeteer /root/.cache/puppeteer
 COPY --from=builder /app ./
 
-# Install app dependencies again (needed in final image)
-COPY package*.json ./
+# Install runtime dependencies and global tools as root
 RUN npm install
-
-# Install global dev tools
 RUN npm install -g concurrently tailwindcss nodemon
 
-# Alpine setup
-RUN apk update && apk upgrade
+# Create non-root user for Puppeteer
+RUN groupadd -r pptruser && useradd -r -g pptruser -G audio,video pptruser && \
+  mkdir -p /home/pptruser/Downloads && \
+  chown -R pptruser:pptruser /home/pptruser /app
+
+# Switch to non-root user
+USER pptruser
+
+# Skip Puppeteer download since we already installed Chrome
+ENV PUPPETEER_SKIP_DOWNLOAD=true
 
 EXPOSE 8000
 CMD ["npm", "run", "dev"]

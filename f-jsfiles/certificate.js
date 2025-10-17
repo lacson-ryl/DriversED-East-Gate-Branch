@@ -1,7 +1,5 @@
-import {
-  showBtnLoading,
-  showBtnResult,
-} from "../utils/modal-feedback.js";
+import { showBtnLoading, showBtnResult } from "../utils/modal-feedback.js";
+import { openFileViewer } from "../utils/file-helper.js";
 
 async function renderCertificateList() {
   const response = await fetch("/api/certificates");
@@ -42,19 +40,13 @@ async function renderCertificateList() {
                             ${
                               arr.certificate_template
                                 ? `
-                                <a href="javascript:void(0);" class="text-blue-700 hover:underline view-btn" data-id="${
-                                  arr.certificate_id
-                                }" data-template='${JSON.stringify(
-                                    arr.certificate_template
-                                  )}' data-file-type="${
-                                    arr.template_file_type
-                                  }">
+                                <button class="text-blue-700 rounded-md p-px hover:underline view-btn" 
+                                data-id="${arr.certificate_id}"
+                                data-file-type="${arr.template_file_type}">
                                   <img src="/f-css/solid/icons_for_buttons/document.svg" class="w-6 h-6 reverse-color" />
-                                  </a>
+                                  </button>
 
-                                <button data-id="${
-                                  arr.certificate_id
-                                }" class="template-upload-btn text-yellow-600 rounded-md p-px hover:underline">
+                                <button data-id="${arr.certificate_id}" class="template-upload-btn text-yellow-600 rounded-md p-px hover:underline">
                                   <img src="/f-css/solid/icons_for_buttons/upload.svg" class="w-6 h-6 reverse-color" />
                                 </button>
                                 `
@@ -311,25 +303,19 @@ function allButtons(data) {
   //View for cwertificate template pdf
   document.querySelectorAll(".view-btn").forEach((button) => {
     button.addEventListener("click", function () {
-      const templateData = JSON.parse(this.getAttribute("data-template"));
+      const templateId = this.getAttribute("data-id");
       const fileType = this.getAttribute("data-file-type");
+      const cert = filterCertificateList(data, templateId);
 
-      const byteArray = new Uint8Array(templateData.data);
-      const blob = new Blob([byteArray], { type: fileType });
-      const url = URL.createObjectURL(blob);
-
-      const newWindow = window.open();
       if (fileType === "application/pdf") {
-        newWindow.document.write(
-          `<embed src="${url}" width="100%" height="100%" type="${fileType}" />`
-        );
+        openFileViewer({
+          fileData: cert[0].certificate_template,
+          fileType: fileType,
+          title: `Method Id: #${templateId}`,
+        });
       } else {
-        newWindow.document.write(`<p>Unsupported file type: ${fileType}</p>`);
+        alert(`Unsupported file type: ${fileType}`);
       }
-      // Revoke the object URL after the new window has loaded the content
-      newWindow.onload = function () {
-        URL.revokeObjectURL(url);
-      };
     });
   });
 

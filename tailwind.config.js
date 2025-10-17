@@ -171,6 +171,9 @@ module.exports = {
             transform: "rotate(0deg)",
             transition: "transform 0.6s ease",
           },
+          ".card-inner.rotated": {
+            transform: "rotateY(180deg)",
+          },
         },
         ["responsive", "hover", "focus"]
       );

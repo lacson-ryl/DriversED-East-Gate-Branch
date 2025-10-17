@@ -6,9 +6,9 @@ import {
 } from "../utils/modal-feedback.js";
 
 const modal = document.getElementById("myModal");
-const span = document.getElementsByClassName("close")[0];
+const closeBtn = document.getElementsByClassName("close")[0];
 const modalDetails = document.getElementById("modal-details");
-const modalTitle = document.getElementById("title-details");
+const modalTitle = document.getElementById("modal-title");
 
 let instructorsList;
 let assignedProgramToInstructor;
@@ -151,6 +151,7 @@ async function renderForm() {
           showOperationResult(modalDetails, false, `Error: ${data.error}`);
         }
         setTimeout(() => {
+          modalDetails.innerHTML = "";
           modal.style.display = "none";
         }, 7000);
       } catch (error) {
@@ -162,12 +163,9 @@ async function renderForm() {
   );
 
   const setTdcDateBtn = document.getElementById("setTdcDate");
-  const tdcDateForm = document.getElementById("tdcDateForm");
-  const tdcInstructorSelect = document.getElementById("tdcInstructor");
   // Modal functionality
   setTdcDateBtn.addEventListener("click", () => {
     const modalForm = `
-          <h2 class="text-xl font-semibold">Set TDC Date</h2>
           <form id="tdcDateForm" class="mt-4">
               <div class="mb-4">
                   <label for="tdcInstructor" class="block text-sm font-medium text-gray-700">Instructor</label>
@@ -190,10 +188,16 @@ async function renderForm() {
           </form>
     `;
     modalDetails.innerHTML = "";
+    modalTitle.innerText = "Set TDC Date";
     modalDetails.innerHTML = modalForm;
+    modal.style.display = "flex";
+
+    const tdcDateForm = document.getElementById("tdcDateForm");
+    const tdcInstructorSelect = document.getElementById("tdcInstructor");
+    console.log("instructorsList", instructorsList);
     instructorsList.forEach((instructor) => {
       // Also populate the modal's dropdown
-      if (instructor.instructor_type === "TDC") {
+      if (instructor.instructor_type === "TDC" || instructor.isTdcOnsite == 1) {
         const tdcOption = document.createElement("option");
         tdcOption.value = instructor.instructor_id;
         tdcOption.innerText = instructor.instructor_name;
@@ -227,13 +231,15 @@ async function renderForm() {
         if (response.ok) {
           showBtnResult(tdcDateBtn, true);
           alert("TDC Date Submitted Successfully");
-          modal.classList.add("hidden"); // Close the modal on successful submission
           updateCalendar(tdcInstructor); // Optionally update the calendar or other UI elements
         } else {
           const data = await response.json();
           showBtnResult(tdcDateBtn, false);
           alert(`Error: ${data.error}`);
         }
+        setTimeout(() => {
+          modal.style.display = "none"; // Close the modal on successful submission
+        }, 2000);
       } catch (error) {
         alert("Sorry! Can’t connect to the server right now.");
         console.error(error); // Log the error to the console for debugging
@@ -278,12 +284,13 @@ async function renderForm() {
       `;
     modalDetails.innerHTML = "";
     modalDetails.innerHTML = modalForm;
-    modal.classList.remove("hidden");
+    modalTitle.innerText = "Add continuation";
+    modal.style.display = "flex";
 
     const continuationInstructorOption = document.getElementById(
       "instructor-continuation"
     );
-    const transmissionType = document.getElementById("transmission-type");
+    const transmissionType = document.getElementById("transmissionType");
     instructorsList.forEach((instructor) => {
       const option = document.createElement("option");
       option.value = instructor.instructor_id;
@@ -363,12 +370,14 @@ async function renderForm() {
   });
 
   closeBtn.addEventListener("click", () => {
-    modal.classList.add("hidden");
+    modalDetails.innerHTML = "";
+    modal.style.display = "none";
   });
 
   window.addEventListener("click", (event) => {
     if (event.target === modal) {
-      modal.classList.add("hidden");
+      modalDetails.innerHTML = "";
+      modal.style.display = "none";
     }
   });
 }

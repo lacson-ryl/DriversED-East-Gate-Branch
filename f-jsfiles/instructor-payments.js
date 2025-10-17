@@ -1,6 +1,7 @@
 // Initialize modal and its components
 const modal = document.getElementById("myModal");
 const spanX = document.getElementsByClassName("close")[0];
+const titleDetails = document.getElementById("title-details");
 const modalDetails = document.getElementById("modal-details");
 
 async function renderInstructorProfile() {
@@ -147,9 +148,9 @@ async function renderInstructorProfile() {
             <th class="border border-gray-300 px-4 py-2 w-24">Automatic</th>
             <th class="border border-gray-300 px-4 py-2 w-32">Date Started</th>
             <th class="border border-gray-300 px-4 py-2 text-sm">Benefits <hr class="border border-black"> 
-            <span class="text-blue-500">SSS<span> | 
-            <span class="text-red-500">Pagibig<span> | 
-            <span class="text-yellow-500">PhilHealth<span> 
+              <span class="text-blue-500">SSS<span> | 
+              <span class="text-red-500">Pagibig<span> | 
+              <span class="text-yellow-500">PhilHealth<span> 
             </th>
             <th class="border border-gray-300 px-4 py-2 w-24">Account</th>
             <th class="border border-gray-300 px-4 py-2 w-20">Actions</th>
@@ -169,6 +170,7 @@ async function renderInstructorProfile() {
 
         if (!originalId) {
           console.error("ID not found");
+          titleDetails.innerText = "Error";
           modalDetails.innerHTML = "<p>ID not found.</p>";
           modal.style.display = "flex";
           return;
@@ -178,6 +180,7 @@ async function renderInstructorProfile() {
           const data = details;
 
           if (response.ok) {
+            titleDetails.innerText = "Edit";
             modalDetails.innerHTML = `
             <form id="edit-instructor-form" enctype="multipart/form-data" class="w-96">
               <div class="mb-4">
@@ -293,11 +296,13 @@ async function renderInstructorProfile() {
             );
           } else {
             console.error("Failed to fetch instructor data");
+            titleDetails.innerText = "Error";
             modalDetails.innerHTML = "<p>Failed to fetch instructor data.</p>";
             modal.style.display = "flex";
           }
         } catch (error) {
           console.error("Error fetching instructor data", error);
+          titleDetails.innerText = "Error";
           modalDetails.innerHTML = "<p>Error fetching instructor data.</p>";
           modal.style.display = "flex";
         }
@@ -338,13 +343,6 @@ async function fetchWeeklyPayments() {
 }
 
 function renderWeeklyPayments(data) {
-  if (
-    !data ||
-    data.weeklyHistoryData.length === 0 ||
-    data.weeklyHistoryData.length === 0
-  ) {
-    return "<p>No payroll data available.</p>";
-  }
   const details = data;
 
   const weeklyHistoryData = details.weeklyHistoryData;
@@ -663,12 +661,14 @@ backBtn.addEventListener("click", () => {
 
 // When the user clicks on <span> (x), close the modal
 spanX.onclick = function () {
+  modalDetails.innerHTML = "";
   modal.style.display = "none";
 };
 
 // When the user clicks anywhere outside of the modal, close it
 window.onclick = function (event) {
   if (event.target == modal) {
+    modalDetails.innerHTML = "";
     modal.style.display = "none";
   }
 };

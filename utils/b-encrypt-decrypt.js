@@ -71,7 +71,7 @@ export async function decryptData(payload, userId, role) {
   // 1. Decrypt AES key using your private RSA key
   const aesKey = crypto.privateDecrypt(
     {
-      key: privateKey, // PEM or key object
+      key: privateKey,
       padding: crypto.constants.RSA_PKCS1_OAEP_PADDING,
       oaepHash: "sha256",
     },
@@ -92,8 +92,30 @@ export async function decryptData(payload, userId, role) {
     decipher.final(),
   ]);
 
-  return JSON.parse(decrypted.toString("utf8"));
+  const parsed = JSON.parse(decrypted.toString("utf8"));
+
+  // 🔁 Reconstruct any normalized file entries
+  for (const key in parsed) {
+    const value = parsed[key];
+    if (
+      value &&
+      typeof value === "object" &&
+      Array.isArray(value.file) &&
+      value.name &&
+      value.type
+    ) {
+      parsed[key] = {
+        name: value.name,
+        type: value.type,
+        size: value.size,
+        buffer: Buffer.from(value.file), // ✅ usable for upload
+      };
+    }
+  }
+
+  return parsed;
 }
+
 
 export function handlePrivateKey(
   action,

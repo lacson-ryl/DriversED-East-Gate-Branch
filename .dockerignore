@@ -1,0 +1,22 @@
+# Node modules (reinstalled during build)
+node_modules
+npm-debug.log
+
+# Logs and temp files
+*.log
+*.tmp
+
+# OS-specific
+.DS_Store
+Thumbs.db
+
+# Git and editor configs
+.git
+.gitignore
+.vscode
+.idea
+
+# Docker artifacts
+.dockerignore
+Dockerfile
+docker-compose.yml

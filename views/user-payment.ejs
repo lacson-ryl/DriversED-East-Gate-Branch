@@ -89,9 +89,15 @@
                     </form>
                 </div>
                 <div id="method-preview" class=" my-2 ">
-                    <p class="text-left ">Payment Method</p>
+                    <div class="flex flex-row gap-5 mb-3">
+                        <p class="text-left ">Payment Method</p>
+                        <button id="download-image"
+                            class="hidden bg-gray-100 text-blue-700 hover:text-blue-900 hover:bg-blue-200 px-2 rounded shadow-md focus:text-red-600">
+                            Download
+                        </button>
+                    </div>
                     <img id="payment-method-preview"
-                        class="w-80 min-h-40 max-h-96 hidden rounded-md border-2 content-center border-gray-300 mb-4 object-fill"
+                        class="w-80 min-h-40 max-h-[400px] hidden rounded-md border-2 content-center border-gray-300 mb-4 object-fill"
                         alt="Payment Picture Preview">
                 </div>
             </div>

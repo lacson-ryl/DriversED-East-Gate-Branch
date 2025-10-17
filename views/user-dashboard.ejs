@@ -115,6 +115,7 @@
             <div class="swiper-button-prev swiper-button-prev2"></div>
         </div>
     </div>
+    <script type="module" src="../utils/file-helper.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', async () => {
             try {
@@ -125,6 +126,7 @@
 
                 const userDashboardScript = document.createElement('script');
                 userDashboardScript.src = '/f-jsfiles/user-dashboard.js';
+                userDashboardScript.type = 'module';
                 document.body.appendChild(userDashboardScript);
             } catch (error) {
                 console.error('Authorization error:', error);

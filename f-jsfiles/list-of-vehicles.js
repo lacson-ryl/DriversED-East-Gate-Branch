@@ -4,6 +4,7 @@ import {
   showBtnLoading,
   showBtnResult,
 } from "../utils/modal-feedback.js";
+import { openFileViewer, applyDownloadBtn } from "../utils/file-helper.js";
 
 async function renderVehicleList() {
   const response = await fetch("/api/vehicles");
@@ -72,15 +73,12 @@ async function renderVehicleList() {
                                 ? `
                                   <a href="javascript:void(0);" class="bg-blue-600 rounded-md px-2 view-btn" 
                                   data-id="${arr.vehicle_id}" 
-                                  data-lto='${JSON.stringify(
-                                    arr.lto_document.data
-                                  )}' data-file-type="${arr.lto_document_type}">
+                                  data-lto='${arr.lto_document.data}' 
+                                  data-file-type="${arr.lto_document_type}">
                                     <img src="/f-css/solid/icons_for_buttons/view-boards.svg" class="w-6 h-6 reverse-color" />
                                   </a>
                                     
-                                <button data-id="${
-                                  arr.vehicle_id
-                                }" class="lto-upload-btn  bg-red-600 rounded-md px-2">
+                                <button data-id="${arr.vehicle_id}" class="lto-upload-btn  bg-red-600 rounded-md px-2">
                                   <img src="/f-css/solid/icons_for_buttons/upload.svg" class="w-6 h-6 reverse-color" />
                                 </button>
                                 `
@@ -95,16 +93,11 @@ async function renderVehicleList() {
                             <div>${
                               arr.car_picture
                                 ? `
-                                  <a href="javascript:void(0);" class="bg-blue-700 px-2 view-car-btn" data-id="${
-                                    arr.vehicle_id
-                                  }" data-car='${JSON.stringify(
-                                    arr.car_picture.data
-                                  )}' data-file-type="image/jpeg">
+                                  <button class="rounded-md hover:underline bg-blue-700 px-2 view-car-btn" 
+                                  data-id="${arr.vehicle_id}" data-file-type="image/jpeg">
                                     <img src="/f-css/solid/icons_for_buttons/view-boards.svg" class="w-6 h-6 reverse-color" />
-                                  </a>
-                                  <button data-id="${
-                                    arr.vehicle_id
-                                  }" class="vehicle-upload-btn bg-red-700 rounded-md px-2 hover:underline">
+                                  </button>
+                                  <button data-id="${arr.vehicle_id}" class="vehicle-upload-btn bg-red-700 rounded-md px-2 hover:underline">
                                     <img src="/f-css/solid/icons_for_buttons/upload.svg" class="w-6 h-6 reverse-color" />
                                   </button>
                                 `
@@ -115,11 +108,11 @@ async function renderVehicleList() {
                             </div>
                         </td>
                         <td class="border border-gray-300 px-4 py-2">
-                            <button data-id=" ${arr.vehicle_id}  "
+                            <button data-id="${arr.vehicle_id}"
                                 class="vehicle-edit-btn bg-blue-700 hover:bg-gradient-to-t from-sky-400 to-sky-800 text-white rounded-md px-2">
                                 <img src="/f-css/solid/icons_for_buttons/pencil.svg" class="w-6 h-6 reverse-color" />  
                               </button>
-                            <button data-id=" ${arr.vehicle_id}  "
+                            <button data-id="${arr.vehicle_id}"
                                 class="vehicle-delete-btn bg-rose-700 hover:bg-gradient-to-t from-rose-400 to-rose-800 text-white rounded-md px-2">
                                 <img src="/f-css/solid/icons_for_buttons/trash.svg" class="w-6 h-6 reverse-color" />  
                               </button>
@@ -382,7 +375,7 @@ function allButtons(data) {
   //View for Lto doc or image
   document.querySelectorAll(".view-btn").forEach((button) => {
     button.addEventListener("click", function () {
-      const ltoData = JSON.parse(this.getAttribute("data-lto"));
+      const ltoData = this.getAttribute("data-lto");
       const fileType = this.getAttribute("data-file-type");
 
       const byteArray = new Uint8Array(ltoData);
@@ -476,17 +469,16 @@ function allButtons(data) {
   // View Car photo Upload
   document.querySelectorAll(".view-car-btn").forEach((button) => {
     button.addEventListener("click", function () {
-      const carData = JSON.parse(this.getAttribute("data-car"));
+      const carId = this.getAttribute("data-id");
       const fileType = this.getAttribute("data-file-type");
 
-      const byteArray = new Uint8Array(carData);
-      const blob = new Blob([byteArray], { type: fileType });
-      const url = URL.createObjectURL(blob);
+      const vehicle = filterVehicleList(data, carId);
 
-      const newWindow = window.open();
-      newWindow.document.write(
-        `<img src="${url}" alt="Car Picture" style="width: 100%; height: auto;" />`
-      );
+      openFileViewer({
+        fileData: vehicle[0].car_picture,
+        fileType,
+        title: `Car ID #${carId}`,
+      });
     });
   });
 
@@ -494,7 +486,6 @@ function allButtons(data) {
   document.querySelectorAll(".lto-status-btn").forEach((button) => {
     button.addEventListener("click", function () {
       const rowId = this.getAttribute("data-id");
-      console.log(rowId);
 
       if (!rowId) {
         console.error("ID not found");
@@ -619,10 +610,12 @@ function allButtons(data) {
                   "x-delete-token": data.deleteToken,
                 },
               });
+              const reply = await deleteResponse.json();
               if (deleteResponse.ok) {
                 tokenIndicator.innerText = `Successfully Deleted Vehicle ID #${rowId}`;
                 renderVehicleList();
               } else {
+                console.error(reply.err);
                 tokenIndicator.innerText = `Can't Delete Vehicle ID #${rowId}`;
               }
               setTimeout(() => {
