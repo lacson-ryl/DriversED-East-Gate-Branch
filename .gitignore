@@ -4,5 +4,3 @@ node_modules
 
 # Docker artifacts
 .dockerignore
-Dockerfile
-docker-compose.yml
