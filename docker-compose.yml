@@ -18,7 +18,7 @@ services:
       timeout: 10s
       retries: 5
     env_file:
-      - .env
+      - .env.production
     networks:
       - app-net
 
@@ -35,7 +35,7 @@ services:
       timeout: 10s
       retries: 3
     env_file:
-      - .env
+      - .env.production
     networks:
       - app-net
 
