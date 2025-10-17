@@ -1,7 +1,6 @@
 node_modules
-.env
+.env.production
+.vscode
 
 # Docker artifacts
 .dockerignore
-Dockerfile
-docker-compose.yml
