@@ -37,33 +37,34 @@ const secretKey = process.env.secret_key;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-//Serve static files from the root directory
 const app = express();
-app.use(express.json());
-app.use(express.static(__dirname));
-app.use(express.static("f-jsfiles"));
+
+// Body parsing
+app.use(express.json({ limit: "50mb" }));
+app.use(express.urlencoded({ extended: true, limit: "50mb" }));
+
+// Static assets
+app.use(express.static(__dirname)); // serves root-level files
+app.use("/f-css", express.static(path.join(__dirname, "f-css")));
+app.use("/f-jsfiles", express.static(path.join(__dirname, "f-jsfiles"))); // ✅ this is key
+
+// View engine
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
-app.use("/f-css", express.static("f-css"));
-app.use(cors());
-app.use(cookieParser());
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
-app.use((req, res, next) => {
-  res.header("Access-Control-Allow-Origin", "*"); // Update '*' to specific domain for better security
-  res.header(
-    "Access-Control-Allow-Headers",
-    "Origin, X-Requested-With, Content-Type, Accept, Authorization"
-  );
-  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-  next();
-});
+
+// CORS setup
 const corsOptions = {
-  origin: process.env.HOST,
+  origin: process.env.HOST || "*", // fallback for local dev
   credentials: true,
 };
 app.use(cors(corsOptions));
 
+// Cookie + body parsing
+app.use(cookieParser());
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
+
+// Logging
 app.use((req, res, next) => {
   console.log("Request received:", req.method, req.url);
   next();
@@ -368,6 +369,8 @@ import {
   addNotification,
   getNotifications,
   saveCertificateToDatabase,
+  setTdcDate,
+  deleteTraineeAttendance,
 } from "./config/b-database.js";
 
 import {
@@ -378,9 +381,13 @@ import {
   verifyDeleteToken,
 } from "./middleware/b-authenticate.js";
 
+import { renderBase64File } from "./utils/file-converter.js";
+
 import { sendEmail } from "./config/b-email-config.js";
 import { v4 as uuidv4 } from "uuid";
 import redis from "./config/b-redis.js";
+import { fileTypeFromBuffer } from "file-type";
+import { generateCertificatePDF } from "./utils/generateCertPDF.js";
 
 app.post(
   "/api/delete-token",
@@ -446,7 +453,7 @@ app.get("/user-profile-form", (req, res) => {
 app.post(
   "/api/user-profile-submit",
   authenticateToken,
-  upload.single("profile_picture"),
+  authorizeRole("user"),
   async (req, res) => {
     try {
       const { userId, role } = req.user;
@@ -463,10 +470,18 @@ app.post(
         address,
         birthDate,
         ltoClientId,
-        trainingPurpose,
+        identification_card,
+        identification_card_picture,
+        prn,
+        profile_picture,
       } = await decryptData(encryptedWithEncAesKey, userId, role);
 
-      const profilePicture = req.file ? req.file.buffer : null;
+      const profilePicture =
+        profile_picture !== null ? profile_picture.buffer : null;
+      const idCard =
+        identification_card_picture !== null
+          ? identification_card_picture.buffer
+          : null;
 
       await uploadProfile(
         firstName,
@@ -480,7 +495,9 @@ app.post(
         civilStatus,
         address,
         ltoClientId,
-        trainingPurpose,
+        identification_card,
+        idCard,
+        prn,
         profilePicture,
         userId
       );
@@ -502,7 +519,7 @@ app.post(
 app.put(
   "/api/user-profile-edit",
   authenticateToken,
-  upload.single("profile_picture"),
+  authorizeRole("user"),
   async (req, res) => {
     try {
       const { userId, role } = req.user;
@@ -520,45 +537,72 @@ app.put(
         address,
         birthDate,
         ltoClientId,
-        trainingPurpose,
+        identification_card,
+        identification_card_picture,
+        prn,
+        profile_picture,
       } = await decryptData(encryptedWithEncAesKey, userId, role);
+      const profilePicture = profile_picture !== null ? profile_picture : null;
+      const idCard =
+        identification_card_picture !== null
+          ? identification_card_picture
+          : null;
 
-      const profilePicture = req.file ? req.file.buffer : null;
+      console.log("profilePicture", profilePicture);
       // Fetch existing user profile from the database
       const existingProfile = await getProfilewithUserId(userId);
 
       // Create an object with only the changed fields
       const updatedProfile = {};
 
-      if (firstName && firstName !== existingProfile.first_name)
+      if (firstName != null && firstName !== existingProfile.first_name)
         updatedProfile.first_name = firstName;
-      if (middleName && middleName !== existingProfile.middle_name)
-        updatedProfile.middle_name = middleName;
-      if (lastName && lastName !== existingProfile.last_name)
-        updatedProfile.last_name = lastName;
-      if (phoneNumber && phoneNumber !== existingProfile.phone_number)
-        updatedProfile.phone_number = phoneNumber;
-      if (email && email !== existingProfile.email)
-        updatedProfile.email = email;
-      if (birthDate && birthDate !== existingProfile.birth_date)
-        updatedProfile.birth_date = birthDate;
-      if (nationality && nationality !== existingProfile.nationality)
-        updatedProfile.nationality = nationality;
-      if (gender && gender !== existingProfile.gender)
-        updatedProfile.gender = gender;
-      if (address && address !== existingProfile.address)
-        updatedProfile.address = address;
-      if (
-        trainingPurpose &&
-        trainingPurpose !== existingProfile.training_purpose
-      )
-        updatedProfile.training_purpose = trainingPurpose;
-      if (civilStatus && civilStatus !== existingProfile.civil_status)
-        updatedProfile.civil_status = civilStatus;
-      if (ltoClientId && ltoClientId !== existingProfile.lto_client_id)
-        updatedProfile.lto_client_id = ltoClientId;
-      if (profilePicture) updatedProfile.profile_picture = profilePicture;
 
+      if (middleName != null && middleName !== existingProfile.middle_name)
+        updatedProfile.middle_name = middleName;
+
+      if (lastName != null && lastName !== existingProfile.last_name)
+        updatedProfile.last_name = lastName;
+
+      if (phoneNumber != null && phoneNumber !== existingProfile.phone_number)
+        updatedProfile.phone_number = phoneNumber;
+
+      if (email != null && email !== existingProfile.email)
+        updatedProfile.email = email;
+
+      if (
+        birthDate &&
+        new Date(birthDate).getTime() !==
+          new Date(existingProfile.birth_date).getTime()
+      )
+        updatedProfile.birth_date = birthDate;
+
+      if (nationality != null && nationality !== existingProfile.nationality)
+        updatedProfile.nationality = nationality;
+
+      if (gender != null && gender !== existingProfile.gender)
+        updatedProfile.gender = gender;
+
+      if (address != null && address !== existingProfile.address)
+        updatedProfile.address = address;
+
+      if (civilStatus != null && civilStatus !== existingProfile.civil_status)
+        updatedProfile.civil_status = civilStatus;
+
+      if (ltoClientId != null && ltoClientId !== existingProfile.lto_client_id)
+        updatedProfile.lto_client_id = ltoClientId;
+
+      if (prn != null && prn !== existingProfile.prn) updatedProfile.prn = prn;
+
+      if (profilePicture && profilePicture.buffer)
+        updatedProfile.profile_picture = profilePicture.buffer;
+
+      if (idCard && idCard.buffer) {
+        updatedProfile.identification_card = identification_card;
+        updatedProfile.identification_card_picture = idCard.buffer;
+      }
+
+      console.log(updatedProfile);
       // Check if there are any fields to update
       if (Object.keys(updatedProfile).length === 0) {
         return res.status(200).json({ message: "No changes detected." });
@@ -596,33 +640,50 @@ app.get(
   async (req, res) => {
     try {
       const { userId, role } = req.user;
-      const userProfileDetails = await getProfilewithUserId(userId);
-      const profilePicture = userProfileDetails
-        ? `data:image/png;base64,${userProfileDetails.profile_picture.toString(
-            "base64"
-          )}`
-        : null;
-      if (profilePicture) userProfileDetails.profile_picture = profilePicture;
-
+      let userProfileDetails = await getProfilewithUserId(userId);
       const courseList = await getTraineeCourseList(userId);
-      const userCourseInfoList = courseList.map((course) => ({
-        program_name: course.program_name,
-        date_started: course.date_started,
-        date_completed: course.data_completed,
-        total_hours: course.total_hours,
-        program_duration: course.program_duration,
-      }));
+
+      if (userProfileDetails) {
+        if (userProfileDetails.profile_picture) {
+          userProfileDetails.profile_picture = await renderBase64File(
+            userProfileDetails.profile_picture
+          );
+        }
+        if (userProfileDetails.identification_card) {
+          userProfileDetails.identification_card_picture =
+            await renderBase64File(
+              userProfileDetails.identification_card_picture
+            );
+        }
+
+        userProfileDetails.age = userProfileDetails.birth_date
+          ? Math.floor(
+              (new Date() - new Date(userProfileDetails.birth_date)) /
+                (1000 * 60 * 60 * 24 * 365.25)
+            )
+          : null;
+      }
+
+      const userCourseInfoList = courseList
+        ? courseList.map((course) => ({
+            program_name: course.program_name,
+            date_started: course.date_started,
+            date_completed: course.date_completed,
+            total_hours: course.total_hours,
+            program_duration: course.program_duration,
+          }))
+        : null;
 
       const data = {
-        userProfileDetails: userProfileDetails,
-        userCourseInfoList: userCourseInfoList,
+        userProfileDetails: userProfileDetails || null,
+        userCourseInfoList,
       };
-      const encrypted = encryptData(data, userId, role);
-      return res.status(200).json({
-        encrypted: encrypted,
-      });
+
+      const encrypted = await encryptData(data, userId, role);
+      return res.status(200).json({ encrypted });
     } catch (error) {
-      return res.status(500).json({ error: "Cant fetch data right now!" });
+      console.error("User Profile error:", error);
+      return res.status(500).json({ error: "Can't fetch data right now!" });
     }
   }
 );
@@ -656,13 +717,6 @@ app.post("/api/user-registration", async (req, res) => {
     const userId = await saveUser(newUser);
     const token = userId;
 
-    await sendEmail("new-account", email, {
-      name: name,
-      email: email,
-      generatedPassword: password,
-      dateCreated: new Date().toLocaleDateString(),
-    });
-
     await addNotification(
       userId,
       "user",
@@ -670,6 +724,14 @@ app.post("/api/user-registration", async (req, res) => {
       `Greetings to you, ${name}!!
       Thank you for choosing our driving school.`
     );
+
+    await sendEmail("new-account", email, {
+      name: name,
+      email: email,
+      generatedPassword: password,
+      dateCreated: new Date().toLocaleDateString(),
+    });
+
     // Send a successful response with the token
     return res
       .status(201)
@@ -776,24 +838,31 @@ app.get("/api/user-dashboard/program-list", async (req, res) => {
   try {
     const programs = await getProgramsWithInstructors();
 
-    // Group programs by program_id
-    const programList = programs.reduce((acc, row) => {
-      const program = acc.find((p) => p.program_id === row.program_id);
-      if (program) {
-        // Add instructor to the existing program
-        program.instructors.push({
-          instructor_id: row.instructor_id,
-          instructor_name: row.instructor_name,
-        });
+    const programMap = new Map();
+
+    for (const row of programs) {
+      const existing = programMap.get(row.program_id);
+
+      if (existing) {
+        if (row.instructor_id) {
+          existing.instructors.push({
+            instructor_id: row.instructor_id,
+            instructor_name: row.instructor_name,
+          });
+        }
       } else {
-        // Add a new program
-        acc.push({
+        const cover = await renderBase64File(
+          row.program_cover,
+          row.program_cover_file_type
+        );
+
+        programMap.set(row.program_id, {
           program_id: row.program_id,
           program_name: row.program_name,
           program_description: row.program_description,
           program_duration: row.program_duration,
           program_fee: row.program_fee,
-          program_cover: row.program_cover,
+          program_cover: cover,
           program_cover_file_type: row.program_cover_file_type,
           availability: row.availability,
           instructors: row.instructor_id
@@ -806,8 +875,9 @@ app.get("/api/user-dashboard/program-list", async (req, res) => {
             : [],
         });
       }
-      return acc;
-    }, []);
+    }
+
+    const programList = Array.from(programMap.values());
     res.status(200).json({ programList });
   } catch (error) {
     console.error("Error fetching programs:", error);
@@ -878,6 +948,7 @@ app.post(
   authenticateToken,
   async (req, res) => {
     try {
+      const { userId, role } = req.user;
       const { tdcInstructor, tdcDate, maxSlots } = req.body;
       const parsedMaxSlots = parseInt(maxSlots, 10);
 
@@ -885,13 +956,7 @@ app.post(
         return res.status(400).json({ error: "Invalid maxSlots value" });
       }
       // Update availability for the TDC date
-      await updateAvailability(
-        tdcInstructor,
-        tdcDate,
-        undefined,
-        undefined,
-        maxSlots
-      );
+      await setTdcDate(tdcInstructor, tdcDate, undefined, undefined, maxSlots);
 
       await addNotification(
         userId,
@@ -912,6 +977,7 @@ app.post(
 app.post(
   "/api/user-application/add-continuation",
   authenticateToken,
+  upload.none(),
   authorizeRole(["admin", "user"]),
   async (req, res) => {
     const { instructor, courseOption, continuationDate, dateAMPM, clientId } =
@@ -1148,6 +1214,12 @@ app.post("/api/submit-request", authenticateToken, async (req, res) => {
       "Request submit",
       "Request Form successfully submitted!"
     );
+    await addNotification(
+      0,
+      "admin",
+      "Request submit",
+      `User ${userId} submitted a request!`
+    );
     res.status(200).json({ message: "Request added successfully" });
   } catch (error) {
     console.error("Internal server error:", error);
@@ -1210,6 +1282,12 @@ app.post("/api/submit-report", authenticateToken, async (req, res) => {
       role,
       "Report submit",
       "Report Form successfully submitted!"
+    );
+    await addNotification(
+      0,
+      "admin",
+      "Request submit",
+      `User ${userId} submitted a report!`
     );
     res.status(201).json({ message: "Report added successfully" });
   } catch (error) {
@@ -1279,20 +1357,21 @@ app.get(
         course_price: payment.program_fee,
         isPaid: payment.isPaid,
       }));
-      const paymentMethods = methodList.map((method) => ({
-        ...method,
-        method_file: method.method_file
-          ? `data:${
-              method.method_file_type
-            };base64,${method.method_file.toString("base64")}`
-          : "",
-      }));
+      const paymentMethods = await Promise.all(
+        methodList.map(async (method) => ({
+          ...method,
+          method_file: await renderBase64File(
+            method.method_file,
+            method.method_file_type
+          ),
+        }))
+      );
 
       const data = {
         paymentMethods: paymentMethods,
         paymentCourses: paymentCourses,
       };
-      const encrypted = encryptData(data, userId, role);
+      const encrypted = await encryptData(data, userId, role);
 
       res.status(200).json({ encrypted: encrypted });
     } catch (error) {
@@ -1458,7 +1537,6 @@ app.get("/api/admin-dashboard-time/:month/:year", async (req, res) => {
     const month = req.params.month;
     const year = parseInt(req.params.year, 10);
     const data = await getDayplusTP(month, year);
-    console.log("data", data);
     res.status(200).json(data);
   } catch (err) {
     console.log("Error fetching data: ", err);
@@ -1471,7 +1549,16 @@ app.get(
   authenticateToken,
   async (req, res) => {
     try {
-      const methodList = await getAllPaymentMethods();
+      const paymentMethod = await getAllPaymentMethods();
+      const methodList = await Promise.all(
+        paymentMethod.map(async (row) => ({
+          ...row,
+          method_file: await renderBase64File(
+            row.method_file,
+            row.method_file_type
+          ),
+        }))
+      );
       const scheduleList = await getInstructorScheduleForToday();
       res.status(200).json({ methodList, scheduleList });
     } catch (err) {
@@ -1485,26 +1572,17 @@ app.post(
   "/api/payment-methods/add",
   authenticateToken,
   authorizeRole("admin"),
-  upload.single("methodFile"),
   async (req, res) => {
     try {
       const { userId, role } = req.user;
 
       const { encryptedWithEncAesKey } = req.body;
-      const { methodName, availability } = await decryptData(
-        encryptedWithEncAesKey,
-        userId,
-        role
-      );
-      const methodFile = req.file ? req.file.buffer : null;
-      const methodFileType = req.file ? req.file.mimetype : null;
+      const data = await decryptData(encryptedWithEncAesKey, userId, role);
+      const { methodName, availability, methodFile } = data;
+      const file = methodFile !== null ? methodFile.buffer : null;
+      const fileType = methodFile !== null ? methodFile.type : null;
 
-      await addPaymentMethod(
-        methodName,
-        availability,
-        methodFile,
-        methodFileType
-      );
+      await addPaymentMethod(methodName, availability, file, fileType);
       await addNotification(
         userId,
         role,
@@ -1540,7 +1618,6 @@ app.post(
   "/api/payment-methods/upload",
   authenticateToken,
   authorizeRole("admin"),
-  upload.single("methodFile"),
   async (req, res) => {
     try {
       const { userId, role } = req.user;
@@ -1559,8 +1636,10 @@ app.post(
       }
 
       // File handling
-      const methodFile = req.file ? req.file.buffer : null;
-      const methodFileType = req.file ? req.file.mimetype : null;
+      const methodFile =
+        decrypted.methodFile !== null ? decrypted.methodFile.buffer : null;
+      const methodFileType =
+        decrypted.methodFile !== null ? decrypted.methodFile.type : null;
       if (!methodFile) {
         return res.status(400).json({ error: "No file uploaded" });
       }
@@ -1604,19 +1683,31 @@ app.delete(
 );
 
 app.get(
-  "/api/instructor/attendance-list",
+  "/api/instructor/attendance-list/:type",
   authenticateToken,
   authorizeRole("instructor"),
   async (req, res) => {
     try {
       // const id = req.params.instructorId;
-      const { userId } = req.user;
+      const { userId, role } = req.user;
+      const type = req.params.type;
       const instructor = await getInstructorWithAccountId(userId);
       const instructorId = instructor.instructor_id;
-      const data = await getAttendanceByInstructorId(instructorId);
-      res.status(200).json(data);
+      const { data, userProfilePictures } = await getAttendanceByInstructorId(
+        instructorId,
+        type
+      );
+      const encrypted = await encryptData(
+        {
+          list: data,
+          pictures: userProfilePictures,
+        },
+        userId,
+        role
+      );
+      res.status(200).json({ encrypted });
     } catch (err) {
-      console.log("Error fetching data: ", err);
+      console.error("Error fetching data: ", err);
       res.status(500).json({ error: "Internal Server Error" });
     }
   }
@@ -1628,24 +1719,25 @@ app.get(
     try {
       const id = req.params.courseID;
       const data = await getTraineeCourseInfo(id);
-      res.status(200).json(data);
-    } catch (err) {
-      console.log("Error fetching data: ", err);
-      res.status(500).json({ error: "Internal Server Error" });
-    }
-  }
-);
+      const convertFile = data.grade_sheet
+        ? await fileTypeFromBuffer(data.grade_sheet)
+        : null;
+      const mimeType = data.grade_sheet
+        ? convertFile?.mime || "application/octet-stream"
+        : null;
 
-app.get(
-  "/api/instructor-dashboard/grades-upload",
-  authenticateToken,
-  authorizeRole(["admin", "instructor"]),
-  async (req, res) => {
-    try {
-      const { encryptedWithEncAesKey } = req.body;
-      const decrypted = await decryptData(encryptedWithEncAesKey);
-      const data = await getTraineeCourseInfo(id);
-      res.status(200).json(data);
+      const userCourse = await Promise.all(
+        data.map(async (arr) => ({
+          ...arr,
+          certificate_file: await renderBase64File(
+            arr.certificate_file,
+            arr.certificate_file_type
+          ),
+          grade_sheet: await renderBase64File(arr.grade_sheet, mimeType),
+          grade_sheet_type: mimeType,
+        }))
+      );
+      res.status(200).json(userCourse);
     } catch (err) {
       console.log("Error fetching data: ", err);
       res.status(500).json({ error: "Internal Server Error" });
@@ -1693,7 +1785,7 @@ app.put(
       const id = req.params.id;
       const { status, hoursAttended } = req.body;
       console.log("id, status, hoursAttended", id, status, hoursAttended);
-      const { userid } = await changeUserAttendanceStatus(
+      const { clientId } = await changeUserAttendanceStatus(
         id,
         status,
         hoursAttended
@@ -1708,7 +1800,7 @@ app.put(
         }`
       );
       await addNotification(
-        userId,
+        clientId,
         "user",
         "Attendance",
         `Attendance id#${id} Status has been change into "${status}" ${
@@ -1716,10 +1808,50 @@ app.put(
         }`
       );
 
-      return res.status(200).json(changeStatus);
+      return res.status(200).json({ message: "Success" });
     } catch (error) {
       console.error("Error fetching data:", error);
       res.status(500).json({ error: "Internal Server Error" });
+    }
+  }
+);
+
+app.delete(
+  "/api/delete-attendance",
+  authenticateToken,
+  verifyDeleteToken,
+  authorizeRole("admin"),
+  async (req, res) => {
+    try {
+      const { userId, role } = req.user;
+      const { id, creatorId, createdBy, courseId } = req.body;
+      const deleted = await deleteTraineeAttendance(
+        creatorId,
+        createdBy,
+        courseId
+      );
+      console.log("deleted", deleted);
+      if (createdBy == "user") {
+        await addNotification(
+          creatorId,
+          "user",
+          "Application",
+          `User course id#${courseId} successfully deleted!`
+        );
+      }
+      await addNotification(
+        userId,
+        role,
+        "Application",
+        `Application id#${id} successfully deleted!`
+      );
+
+      return res.status(200).json({
+        message: `User course id#${courseId} successfully deleted!`,
+      });
+    } catch (err) {
+      console.error("Error deleting application:", err);
+      res.status(500).json({ error: err });
     }
   }
 );
@@ -1777,7 +1909,7 @@ app.delete(
   async (req, res) => {
     const { userId, role } = req.user;
 
-    const { clientId, instructorName, dateStarted } = req.body;
+    const { clientId, instructorName, dateStarted, courseId } = req.body;
 
     try {
       await deleteUserCourse(clientId, instructorName, dateStarted);
@@ -1785,13 +1917,13 @@ app.delete(
         userId,
         role,
         "User Course",
-        `User course id#${decrypted.courseId} successfully deleted!`
+        `User course id#${courseId} successfully deleted!`
       );
       await addNotification(
         clientId,
         "user",
         "User Course",
-        `User course id#${decrypted.courseId} successfully deleted!`
+        `User course id#${courseId} successfully deleted!`
       );
 
       res.status(200).json({ success: true });
@@ -1812,6 +1944,7 @@ app.delete(
       const id = req.params.id;
       const { userId, role } = req.user;
       const deleted = await deleteApplication(id);
+      console.log("deleted", deleted);
       await addNotification(
         userId,
         role,
@@ -1822,14 +1955,14 @@ app.delete(
         deleted.clientId,
         "user",
         "Application",
-        `User course id#${decrypted.courseId} successfully deleted!`
+        `User course id#${deleted.courseId} successfully deleted!`
       );
       return res.status(200).json({
-        message: `User course id#${decrypted.courseId} successfully deleted!`,
+        message: `User course id#${deleted.courseId} successfully deleted!`,
       });
-    } catch (error) {
-      console.error("Error deleting application:", error);
-      res.status(500).json({ error: "Internal Server Error" });
+    } catch (err) {
+      console.error("Error deleting application:", err);
+      res.status(500).json({ error: err });
     }
   }
 );
@@ -1872,7 +2005,6 @@ app.get(
 app.post(
   "/api/manage-people/instructor-add",
   authenticateToken,
-  upload.single("profile_picture"),
   async (req, res) => {
     try {
       const { userId, role } = req.user;
@@ -1884,10 +2016,15 @@ app.post(
         onsite,
         manual,
         automatic,
+        SSS,
+        Pagibig,
+        Philhealth,
         accreditationNumber,
         dateStarted,
+        profile_picture,
       } = await decryptData(encryptedWithEncAesKey, userId, role);
-      const profilePicture = req.file ? req.file.buffer : null;
+      const profilePicture =
+        profile_picture !== null ? profile_picture.buffer : null;
 
       await addInstructor(
         name,
@@ -1896,6 +2033,9 @@ app.post(
         onsite,
         manual,
         automatic,
+        SSS,
+        Pagibig,
+        Philhealth,
         accreditationNumber,
         dateStarted,
         profilePicture
@@ -1924,11 +2064,8 @@ app.post(
     try {
       const { userId, role } = req.user;
       const { encryptedWithEncAesKey } = req.body;
-      const { id, userName, userEmail, accountRole, prn } = await decryptData(
-        encryptedWithEncAesKey,
-        userId,
-        role
-      );
+      const data = await decryptData(encryptedWithEncAesKey, userId, role);
+      const { id, userName, userEmail, accountRole, prn } = data;
 
       if (!validator.isEmail(userEmail)) {
         return res.status(400).json({ error: "Invalid email format." });
@@ -1952,7 +2089,7 @@ app.post(
         email: userEmail,
         password: hashedPassword,
         account_role: accountRole,
-        isVerify: "false",
+        isVerify: false,
       };
 
       const accountId = await saveAdminAccount(newUser);
@@ -1997,6 +2134,9 @@ app.put(
       const { userId, role } = req.user;
       const instructorId = req.params.id;
       const { encryptedWithEncAesKey } = req.body;
+      const data = await decryptData(encryptedWithEncAesKey, userId, role);
+      console.log("data", data);
+
       const {
         name,
         rate,
@@ -2004,49 +2144,82 @@ app.put(
         onsite,
         manual,
         automatic,
+        SSS,
+        Pagibig,
+        Philhealth,
         accreditationNumber,
         dateStarted,
-      } = await decryptData(encryptedWithEncAesKey, userId, role);
+        profile_picture,
+      } = data;
 
       // Fetch existing user profile from the database
       const existingInstructor = await getInstructorwithId(instructorId);
 
-      // Log the existing profile
-      console.log(
-        "name,rate,type,onsite,manual,automatic,accreditationNumber,dateStarted,:",
-        name,
-        rate,
-        type,
-        onsite,
-        manual,
-        automatic,
-        accreditationNumber,
-        dateStarted
-      );
-      console.log("Existing Profile:", existingInstructor);
+      const profilePicture = profile_picture !== null ? profile_picture : null;
 
       // Create an object with only the changed fields
       const updatedProfile = {};
 
       if (name && name !== existingInstructor.instructor_name)
         updatedProfile.instructor_name = name;
-      if (+rate && +rate !== existingInstructor.rate_per_hour)
+
+      if (
+        rate != null &&
+        parseFloat(rate) !== parseFloat(existingInstructor.rate_per_hour)
+      )
         updatedProfile.rate_per_hour = rate;
+
       if (type && type !== existingInstructor.instructor_type)
         updatedProfile.instructor_type = type;
-      if (+onsite && +onsite !== existingInstructor.isTdcOnsite)
+
+      if (
+        onsite != null &&
+        parseInt(onsite) !== parseInt(existingInstructor.isTdcOnsite)
+      )
         updatedProfile.isTdcOnsite = onsite;
-      if (+manual && +manual !== existingInstructor.isManual)
+
+      if (
+        manual != null &&
+        parseInt(manual) !== parseInt(existingInstructor.isManual)
+      )
         updatedProfile.isManual = manual;
-      if (+automatic && +automatic !== existingInstructor.isAutomatic)
+
+      if (
+        automatic != null &&
+        parseInt(automatic) !== parseInt(existingInstructor.isAutomatic)
+      )
         updatedProfile.isAutomatic = automatic;
+
+      if (SSS != null && parseFloat(SSS) !== parseFloat(existingInstructor.SSS))
+        updatedProfile.SSS = SSS;
+
+      if (
+        Pagibig != null &&
+        parseFloat(Pagibig) !== parseFloat(existingInstructor.Pag_ibig)
+      )
+        updatedProfile.Pag_ibig = Pagibig;
+
+      if (
+        Philhealth != null &&
+        parseFloat(Philhealth) !== parseFloat(existingInstructor.Philhealth)
+      )
+        updatedProfile.Philhealth = Philhealth;
+
       if (
         accreditationNumber &&
         accreditationNumber !== existingInstructor.accreditation_number
       )
         updatedProfile.accreditation_number = accreditationNumber;
-      if (+dateStarted && +dateStarted !== existingInstructor.date_started)
+
+      if (
+        dateStarted &&
+        new Date(dateStarted).getTime() !==
+          new Date(existingInstructor.date_started).getTime()
+      )
         updatedProfile.date_started = dateStarted;
+
+      if (profilePicture && profilePicture.buffer)
+        updatedProfile.instructor_profile_picture = profilePicture.buffer;
       console.log("updatedProfile", updatedProfile);
       // Check if there are any fields to update
       if (Object.keys(updatedProfile).length === 0) {
@@ -2164,12 +2337,15 @@ app.delete(
   async (req, res) => {
     try {
       const { userId, role } = req.user;
-      const id = req.params.rowID;
-      const deleted = await deleteInstructor(id);
-      const message = `Instructor profile id#${id} successfully deleted!`;
+      const rowId = req.params.rowID;
+      const { id } = req.body;
+      await deleteInstructor(rowId);
+      const message = `Instructor profile id#${rowId} successfully deleted!`;
 
       await addNotification(userId, role, "Instructor", message);
-      await addNotification(id, "instructor", "Instructor", message);
+      if (+id) {
+        await addNotification(id, "instructor", "Instructor", message);
+      }
       return res.status(200).json({ message: message });
     } catch (error) {
       return res.status(500).json({ error: "Internal Server Error" });
@@ -2289,6 +2465,7 @@ app.get("/api/programs/name-list", authenticateToken, async (req, res) => {
     const instructorsNameList = instructorList.map((instructor) => ({
       instructor_id: instructor.instructor_id,
       instructor_name: instructor.instructor_name,
+      instructor_type: instructor.instructor_type,
     }));
     return res.status(200).json({ instructorsNameList });
   } catch (error) {
@@ -2297,29 +2474,10 @@ app.get("/api/programs/name-list", authenticateToken, async (req, res) => {
   }
 });
 
-//Assigning programs to instructors
-app.post("/api/assign-programs", async (req, res) => {
+app.post("/api/assign-programs", authenticateToken, async (req, res) => {
+  const { userId, role } = req.user;
   const { instructor_id, program_ids } = req.body;
-
-  if (
-    !instructor_id ||
-    !Array.isArray(program_ids) ||
-    program_ids.length === 0
-  ) {
-    return res.status(400).json({ error: "Invalid input" });
-  }
-
-  try {
-    await assignPrograms(instructor_id, program_ids);
-    res.status(200).json({ message: "Programs assigned successfully" });
-  } catch (error) {
-    console.error("Error assigning programs:", error);
-    res.status(500).json({ error: "Failed to assign programs" });
-  }
-});
-
-app.post("/api/assign-programs", async (req, res) => {
-  const { instructor_id, program_ids, userId, role } = req.body;
+  console.log("program_ids", program_ids);
 
   if (
     !instructor_id ||
@@ -2501,7 +2659,16 @@ app.get(
 
 app.get("/api/certificates", authenticateToken, async (req, res) => {
   try {
-    const certList = await getAllCert();
+    const allCert = await getAllCert();
+    const certList = await Promise.all(
+      allCert.map(async (cert) => ({
+        ...cert,
+        certificate_template: await renderBase64File(
+          cert.certificate_template,
+          cert.template_file_type
+        ),
+      }))
+    );
     return res.json({ certList });
   } catch (error) {
     res.status(500).json({ error: "Internal Server Error" });
@@ -2510,6 +2677,7 @@ app.get("/api/certificates", authenticateToken, async (req, res) => {
 
 app.post("/api/certificate/add", authenticateToken, async (req, res) => {
   try {
+    const { userId, role } = req.user;
     const { certificateID, certificateName } = req.body;
     if ((!certificateID, !certificateName)) {
       return res.status(400).json({ error: "Please Provide all fields!" });
@@ -2633,6 +2801,7 @@ app.put(
   authorizeRole("admin"),
   async (req, res) => {
     try {
+      const { userId, role } = req.user;
       const { status, reason, rowId } = req.body;
       const { clientId, title, repStatus } = await editUserReport(
         status,
@@ -2698,33 +2867,29 @@ app.post(
   "/api/payment/add",
   authenticateToken,
   authorizeRole(["admin", "user"]),
-  upload.single("screenshotReceipt"),
   async (req, res) => {
     try {
       const { userId, role } = req.user;
       const { encryptedWithEncAesKey } = req.body;
       // Destructure fields from req.body
-      const { accountName, id, amount, paymentMethod, courseSelect } =
-        await decryptData(encryptedWithEncAesKey, userId, role);
-      // For admin, id is sent; for user, use req.user.userId
-      const clientId = role === "admin" ? (id !== undefined ? id : 0) : userId;
-
-      console.log(
-        "accountName, id, amount, paymentMethod, courseSelect",
+      const {
         accountName,
         id,
         amount,
         paymentMethod,
-        courseSelect
-      );
+        courseSelect,
+        screenshotReceipt,
+      } = await decryptData(encryptedWithEncAesKey, userId, role);
+      // For admin, id is sent; for user, use req.user.userId
+      const clientId = role === "admin" ? (id !== undefined ? id : 0) : userId;
 
       if (!accountName || !amount || !paymentMethod || !courseSelect) {
         return res.status(400).json({ error: "Please Provide all fields!" });
       }
 
       let compressedReceipt = null;
-      if (req.file) {
-        compressedReceipt = await sharp(req.file.buffer)
+      if (screenshotReceipt !== null) {
+        compressedReceipt = await sharp(screenshotReceipt.buffer)
           .jpeg({ quality: 85 })
           .toBuffer();
       }
@@ -2889,6 +3054,10 @@ app.get(
   async (req, res) => {
     try {
       const completedCourseList = await getCompletedCourseList();
+      console.log(
+        "completedCourseList",
+        Object.keys(completedCourseList).length
+      );
       return res.status(200).json(completedCourseList);
     } catch (error) {
       res.status(500).json({ error: "Internal Server Error" });
@@ -2944,9 +3113,12 @@ app.post(
   async (req, res) => {
     try {
       const id = req.params.id;
-      const file = req.file;
+      console.log("id", id);
+      const gradeSheet = req.file ? req.file.buffer : null;
+      console.log("gradeSheet", gradeSheet);
       const { courseGrade } = req.body;
-      await uploadTraineeGradeSheet(id, file.buffer, courseGrade);
+      console.log("courseGrade", courseGrade);
+      await uploadTraineeGradeSheet(id, gradeSheet, courseGrade);
       if (req.user.role == "instructor") {
         const userCourse = await getTraineeCourseInfo(id);
         return res.status(200).json(userCourse);
@@ -3113,7 +3285,7 @@ app.post(
     compressedPhoto = await sharp(req.file.buffer)
       .jpeg({ quality: 85 })
       .toBuffer();
-
+    console.log(req.file);
     try {
       // Call the database function to store the file
       await uploadVehiclePhoto(vehicleId, compressedPhoto, req.file.mimetype);
@@ -3152,7 +3324,7 @@ app.delete(
     try {
       const { userId, role } = req.user;
       const id = req.params.rowID;
-      const deleted = await deleteVehicle(id);
+      await deleteVehicle(id);
       await addNotification(
         userId,
         role,
@@ -3162,8 +3334,9 @@ app.delete(
       return res
         .status(200)
         .json({ message: `Vehicle id#${id} Successfully deleted! ` });
-    } catch (error) {
-      return res.status(500).json({ error: "Internal Server Error" });
+    } catch (err) {
+      console.error("Error deleting vehicle:", err);
+      return res.status(500).json({ error: "Internal Server Error", err });
     }
   }
 );
@@ -3506,190 +3679,108 @@ app.get(
   }
 );
 
-let browserInstance; // Singleton browser instance
-
-async function getBrowser() {
-  if (!browserInstance) {
-    browserInstance = await puppeteer.launch();
+app.get(
+  "/certificates-completion-pdc",
+  authenticateToken,
+  authorizeRole("admin"),
+  async (req, res) => {
+    res.render("certificate-of-completion-PDC", {
+      isPDF: false,
+    });
   }
-  return browserInstance;
-}
+);
 
-app.get("/certificates-completion-pdc", async (req, res) => {
-  const { userId, courseId, instructorId } = req.query;
+app.post(
+  "/api/certificates-completion-pdc",
+  authenticateToken,
+  authorizeRole("admin"),
+  async (req, res) => {
+    try {
+      const { userId, role } = req.user;
+      const { clientId, courseId, instructorId } = req.body;
+      console.log('pdc', clientId, courseId, instructorId)
 
-  const logoPath = path.join(
-    __dirname,
-    "/f-css/solid/drivers_ed_logo-no-bg.png"
-  );
-  const driversEdLogo = `data:image/png;base64,${fs.readFileSync(
-    logoPath,
-    "base64"
-  )}`;
+      const logoPath = path.join(
+        __dirname,
+        "./f-css/solid/drivers_ed_logo-no-bg.png"
+      );
+      const driversEdLogo = `data:image/png;base64,${fs.readFileSync(
+        logoPath,
+        "base64"
+      )}`;
 
-  // Example data to pass to the EJS template
-  const dlCodesLeft = [
-    { code: "A (L1,L2,L3)", mt: false, at: false },
-    { code: "A1 (L4,L5,L6,L7)", mt: false, at: false },
-    { code: "B (M1)", mt: false, at: false },
-    { code: "B1 (M2)", mt: false, at: false },
-    { code: "B2 (N1)", mt: false, at: false },
-  ];
+      // Example data to pass to the EJS template
+      const dlCodesLeft = [
+        { code: "A (L1,L2,L3)", mt: false, at: false },
+        { code: "A1 (L4,L5,L6,L7)", mt: false, at: false },
+        { code: "B (M1)", mt: false, at: false },
+        { code: "B1 (M2)", mt: false, at: false },
+        { code: "B2 (N1)", mt: false, at: false },
+      ];
 
-  const dlCodesRight = [
-    { code: "BE (01, 02)", mt: false, at: false },
-    { code: "C (N2, N3)", mt: false, at: false },
-    { code: "CE (03, 04)", mt: false, at: false },
-    { code: "D (M3)", mt: false, at: false },
-  ];
-  const instructor = await getInstructorwithId(instructorId);
-  const user = await getProfilewithUserId(userId);
-  const trainee_course = await getTraineeCourseInfo(courseId);
+      const dlCodesRight = [
+        { code: "BE (01, 02)", mt: false, at: false },
+        { code: "C (N2, N3)", mt: false, at: false },
+        { code: "CE (03, 04)", mt: false, at: false },
+        { code: "D (M3)", mt: false, at: false },
+      ];
+      const instructor = await getInstructorwithId(instructorId);
+      const user = await getProfilewithUserId(clientId);
+      const trainee_course = await getTraineeCourseInfo(courseId);
 
-  const genControlNumber = generateTemporaryPassword(32); //re-use a randomize genenerator
-  const genCertificateNumber = generateTemporaryPassword(14);
+      const genControlNumber = generateTemporaryPassword(32); //re-use a randomize genenerator
+      const genCertificateNumber = generateTemporaryPassword(14);
 
-  const certificateInputs = [
-    {
-      controlNumber: genControlNumber,
-      certificateNumber: genCertificateNumber,
-      accredNumOfBranch: "123456789",
-      driversEdLogo: driversEdLogo,
-    },
-  ];
+      const certificateInputs = [
+        {
+          controlNumber: genControlNumber,
+          certificateNumber: genCertificateNumber,
+          accredNumOfBranch: "123456789",
+          driversEdLogo: driversEdLogo,
+        },
+      ];
+      const fullName = `${user.last_name.toUpperCase()} ${user.first_name.toUpperCase()} ${user.middle_name.toUpperCase()}`;
+      const userProfile = [
+        {
+          fullName: fullName || null,
+          address: user.address,
+          ltoClientId: user.lto_client_id,
+          birthday: user.birth_date,
+          gender: user.gender,
+          civilStatus: user.civil_status,
+          nationality: user.nationality,
+        },
+      ];
 
-  const userProfile = [
-    {
-      firstName: user.first_name,
-      lastName: user.last_name,
-      middleName: user.middle_name,
-      address: user.address,
-      ltoClientId: user.lto_client_id,
-      birthday: user.birth_date,
-      gender: user.gender,
-      civilStatus: user.civil_status,
-      nationality: user.nationality,
-    },
-  ];
+      // Calculate the age after defining the userProfile
+      userProfile[0].age = user.birth_date
+        ? Math.floor(
+            (new Date() - new Date(user.birth_date)) /
+              (1000 * 60 * 60 * 24 * 365.25)
+          )
+        : null;
 
-  // Calculate the age after defining the userProfile
-  userProfile[0].age = user.birth_date
-    ? Math.floor(
-        (new Date() - new Date(user.birth_date)) /
-          (1000 * 60 * 60 * 24 * 365.25)
-      )
-    : null;
+      userProfile[0].profilePicture = await renderBase64File(
+        user.profile_picture
+      );
 
-  const profilePicture = user.profile_picture
-    ? `data:image/jpeg;base64,${user.profile_picture.toString("base64")}`
-    : null;
-  userProfile[0].picture = profilePicture;
+      const userCourse = [
+        {
+          courseName: trainee_course[0].program_name,
+          dateStarted: trainee_course[0].date_started,
+          dateFinished: trainee_course[0].date_completed,
+          totalHours: trainee_course[0].total_hours,
+        },
+      ];
 
-  const userCourse = [
-    {
-      courseName: trainee_course[0].program_name,
-      date_started: trainee_course[0].date_started,
-      date_finished: trainee_course[0].date_completed,
-      total_hours: trainee_course[0].total_hours,
-    },
-  ];
+      const instructorProfile = [
+        {
+          instructorName: instructor.instructor_name,
+          accredNumOfInstructor: instructor.accreditation_number,
+        },
+      ];
 
-  const instructorProfile = [
-    {
-      name: instructor.instructor_name,
-      accredNumOfInstructor: instructor.accreditation_number,
-    },
-  ];
-
-  res.render("certificate-of-completion-PDC", {
-    dlCodesLeft,
-    dlCodesRight,
-    certificateInputs,
-    userProfile,
-    userCourse,
-    instructorProfile,
-    userId,
-    courseId,
-    instructorId,
-  });
-});
-
-app.post("/certificates-completion-pdc/:type", async (req, res) => {
-  try {
-    const { userId, instructorId, courseId, dlCodesLeft, dlCodesRight } =
-      req.body;
-
-    const logoPath = path.join(
-      __dirname,
-      "/f-css/solid/drivers_ed_logo-no-bg.png"
-    );
-    const driversEdLogo = `data:image/png;base64,${fs.readFileSync(
-      logoPath,
-      "base64"
-    )}`;
-
-    const instructor = await getInstructorwithId(instructorId);
-    const user = await getProfilewithUserId(userId);
-    const trainee_course = await getTraineeCourseInfo(courseId);
-
-    const genControlNumber = generateTemporaryPassword(32); //re-use a randomize genenerator
-    const genCertificateNumber = generateTemporaryPassword(14);
-
-    const certificateInputs = [
-      {
-        controlNumber: genControlNumber,
-        certificateNumber: genCertificateNumber,
-        accredNumOfBranch: "123456789",
-        driversEdLogo: driversEdLogo,
-      },
-    ];
-
-    const userProfile = [
-      {
-        firstName: user.first_name,
-        lastName: user.last_name,
-        middleName: user.middle_name,
-        address: user.address,
-        ltoClientId: user.lto_client_id,
-        birthday: user.birth_date,
-        gender: user.gender,
-        civilStatus: user.civil_status,
-        nationality: user.nationality,
-      },
-    ];
-
-    // Calculate the age after defining the userProfile
-    userProfile[0].age = user.birth_date
-      ? Math.floor(
-          (new Date() - new Date(user.birth_date)) /
-            (1000 * 60 * 60 * 24 * 365.25)
-        )
-      : null;
-
-    const profilePicture = user.profile_picture
-      ? `data:image/jpeg;base64,${user.profile_picture.toString("base64")}`
-      : null;
-    userProfile[0].picture = profilePicture;
-
-    const userCourse = [
-      {
-        courseName: trainee_course[0].program_name,
-        date_started: trainee_course[0].date_started,
-        date_finished: trainee_course[0].date_completed,
-        total_hours: trainee_course[0].total_hours,
-      },
-    ];
-
-    const instructorProfile = [
-      {
-        name: instructor.instructor_name,
-        accredNumOfInstructor: instructor.accreditation_number,
-      },
-    ];
-
-    const html = await new Promise((resolve, reject) => {
-      req.app.render(
-        "certificate-of-completion-PDC",
+      const encrypted = await encryptData(
         {
           dlCodesLeft,
           dlCodesRight,
@@ -3697,318 +3788,409 @@ app.post("/certificates-completion-pdc/:type", async (req, res) => {
           userProfile,
           userCourse,
           instructorProfile,
-          userId,
+          clientId,
           courseId,
           instructorId,
         },
-        (err, renderedHtml) => {
-          if (err) reject(err);
-          else resolve(renderedHtml);
-        }
-      );
-    });
-
-    const tailwindCSS = fs.readFileSync(
-      path.join(__dirname, "/f-css/output.css"),
-      "utf8"
-    );
-    const compiled = html.replace(
-      "</head>",
-      `<style>${tailwindCSS}</style></head>`
-    );
-
-    const browser = await getBrowser();
-    const page = await browser.newPage();
-
-    await page.setContent(compiled, {
-      waitUntil: "networkidle0",
-    });
-
-    await page.evaluate(() => {
-      document.querySelectorAll(".hide-on-print").forEach((el) => el.remove());
-    });
-
-    const pdfBuffer = await page.pdf({
-      format: "A4", // Change A4 to Letter
-      printBackground: true,
-    });
-
-    await page.close(); // Closing the page instead of browser
-
-    if (type == "database") {
-      await saveCertificateToDatabase(courseId, pdfBuffer, "application/pdf");
-      await sendEmail("completion-certificate", user.email, {
-        name: user.first_name,
-        certificate: pdfBuffer,
-      });
-      await addNotification(
         userId,
-        "user",
-        "Certificate of Completion",
-        `${user.first_name + " " + user.last_name} - ${
-          trainee_course.program_name
-        } Course Certificate `
+        role
       );
-      await addNotification(
-        0,
-        "admin",
-        "Certificate of Completion",
-        `${user.first_name + " " + user.last_name} - ${
-          trainee_course.program_name
-        } Course Certificate `
-      );
+      res.status(200).json(encrypted);
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: "Internal Server Error" });
     }
-
-    res.setHeader(
-      "Content-Disposition",
-      'attachment; filename="certificate-pdc.pdf"'
-    );
-    res.setHeader("Content-Type", "application/pdf");
-    res.status(200).end(Buffer.from(pdfBuffer));
-  } catch (error) {
-    console.error("Error generating PDF:", error);
-    res
-      .status(500)
-      .json({ error: "An error occurred while generating the PDF." });
   }
-});
+);
 
-app.get("/certificates-completion-tdc", async (req, res) => {
-  try {
-    const { userId, courseId, instructorId } = req.query;
+app.post(
+  "/api/certificates-completion-pdc/:type",
+  authenticateToken,
+  authorizeRole("admin"),
+  async (req, res) => {
+    try {
+      const adminId = req.user.userId;
+      const role = req.user.role;
+      const type = req.params.type;
+      const { encryptedWithEncAesKey } = req.body;
 
-    const instructor = await getInstructorwithId(instructorId);
-    const user = await getProfilewithUserId(userId);
-    const trainee_course = await getTraineeCourseInfo(courseId);
+      const decrypted = await decryptData(
+        encryptedWithEncAesKey,
+        adminId,
+        role
+      );
+      const {
+        userId,
+        courseId,
+        instructorId,
+        dlCodesLeft,
+        dlCodesRight,
+        profileInputs,
+      } = decrypted;
 
-    const logoPath = path.join(
-      __dirname,
-      "/f-css/solid/drivers_ed_logo-no-bg.png"
-    );
-    const driversEdLogo = `data:image/png;base64,${fs.readFileSync(
-      logoPath,
-      "base64"
-    )}`;
-    const genControlNumber = generateTemporaryPassword(32); // Re-use a random generator
-    const genCertificateNumber = generateTemporaryPassword(14);
+      const logoPath = path.join(
+        __dirname,
+        "/f-css/solid/drivers_ed_logo-no-bg.png"
+      );
+      const driversEdLogo = `data:image/png;base64,${fs.readFileSync(
+        logoPath,
+        "base64"
+      )}`;
 
-    const certificateInputs = [
-      {
-        controlNumber: genControlNumber,
-        certificateNumber: genCertificateNumber,
-        accredNumOfBranch: "123456789",
-        driversEdLogo: driversEdLogo,
-      },
-    ];
-    const userProfile = [
-      {
-        firstName: user.first_name,
-        lastName: user.last_name,
-        middleName: user.middle_name,
-        address: user.address,
-        ltoClientId: user.lto_client_id,
-        birthday: user.birth_date,
-        gender: user.gender,
-        civilStatus: user.civil_status,
-        nationality: user.nationality,
-      },
-    ];
+      const certificateInputs = [
+        {
+          controlNumber: profileInputs.controlNumber,
+          certificateNumber: profileInputs.certificateNumber,
+          accredNumOfBranch: profileInputs.accredNumOfBranch,
+          driversEdLogo: driversEdLogo,
+        },
+      ];
 
-    // Calculate the age after defining the userProfile
-    userProfile[0].age = user.birth_date
-      ? Math.floor(
-          (new Date() - new Date(user.birth_date)) /
-            (1000 * 60 * 60 * 24 * 365.25)
-        )
-      : null;
+      const userProfile = [
+        {
+          fullName: profileInputs.fullName,
+          address: profileInputs.address,
+          ltoClientId: profileInputs.ltoClientId,
+          birthday: profileInputs.birthday,
+          gender: profileInputs.gender,
+          civilStatus: profileInputs.civilStatus,
+          nationality: profileInputs.nationality,
+          age: Math.floor(
+            (new Date() - new Date(profileInputs.birthday)) /
+              (1000 * 60 * 60 * 24 * 365.25)
+          ),
+          profilePicture: profileInputs.profilePicture,
+          spNumber: profileInputs.spNumber,
+        },
+      ];
 
-    const profilePicture = user.profile_picture
-      ? `data:image/jpeg;base64,${user.profile_picture.toString("base64")}`
-      : null;
-    userProfile[0].picture = profilePicture;
+      const userCourse = [
+        {
+          dateStarted: profileInputs.dateStarted,
+          dateFinished: profileInputs.dateFinished,
+          totalHours: profileInputs.totalHours,
+        },
+      ];
 
-    const userCourse = [
-      {
-        courseName: trainee_course[0].program_name,
-        date_started: trainee_course[0].date_started,
-        date_finished: trainee_course[0].date_completed,
-        total_hours: trainee_course[0].total_hours,
-      },
-    ];
+      const instructorProfile = [
+        {
+          instructorName: profileInputs.instructorName,
+          accredNumOfInstructor: profileInputs.accredNumOfInstructor,
+        },
+      ];
 
-    const instructorProfile = [
-      {
-        name: instructor.instructor_name,
-        accredNumOfInstructor: instructor.accreditation_number,
-      },
-    ];
+      const payload = {
+        dlCodesLeft,
+        dlCodesRight,
+        certificateInputs,
+        userProfile,
+        userCourse,
+        instructorProfile,
+        userId,
+        courseId,
+        instructorId,
+      };
 
-    res.render("certificate-of-completion-TDC", {
-      certificateInputs,
-      userProfile,
-      userCourse,
-      instructorProfile,
-      userId,
-      courseId,
-      instructorId,
-    });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Internal Server Error" });
+      const pdfBuffer = await generateCertificatePDF({
+        type: "PDC",
+        payload,
+      });
+
+      const convertedPdfBuff = Buffer.isBuffer(pdfBuffer) ? pdfBuffer : Buffer.from(pdfBuffer);
+
+      console.log("pdfBuffer size:", convertedPdfBuff.length);
+
+
+      if (type == "database") {
+        try {
+          await saveCertificateToDatabase(
+            courseId,
+            convertedPdfBuff,
+            "application/pdf"
+          );
+        } catch (error) {
+          throw new Error("Cant upload certificate to the database.");
+        } 
+        /*
+        await sendEmail("completion-certificate", user.email, {
+          name: user.first_name,
+          certificate: Buffer.from(pdfBuffer),
+        });
+        */
+        await addNotification(
+          userId,
+          "user",
+          "PDC Certificate of Completion",
+          `${profileInputs.fullName} PDC Course Certificate `
+        );
+        await addNotification(
+          0,
+          "admin",
+          "PDC Certificate of Completion",
+          `${profileInputs.fullName} PDC Course Certificate `
+        );
+      }
+      const name = profileInputs.courseName;
+      console.log("name", name);
+      const sanitized = name.replace(/[^a-zA-Z0-9 ]/g, "");
+      const fileSafe = sanitized.trim().toLowerCase().replace(/ +/g, "-");
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename="${fileSafe}-certificate-pdc.pdf"`
+      );
+      res.setHeader("Content-Type", "application/pdf");
+      res.status(200).end(Buffer.from(pdfBuffer));
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      res
+        .status(500)
+        .json({ error: "An error occurred while generating the PDF." });
+    }
   }
-});
+);
 
-app.post("/certificates-completion-tdc/:type", async (req, res) => {
-  try {
-    const type = req.params.type;
-    const { userId, courseId, instructorId, onsite, online } = req.body;
+app.get(
+  "/certificates-completion-tdc",
+  authenticateToken,
+  authorizeRole("admin"),
+  async (req, res) => {
+    try {
+      res.render("certificate-of-completion-TDC", {
+        isPDF: false,
+      });
+    } catch (error) {
+      res.render("error-500", {
+        error,
+      });
+    }
+  }
+);
 
-    const instructor = await getInstructorwithId(instructorId);
-    const user = await getProfilewithUserId(userId);
-    const trainee_course = await getTraineeCourseInfo(courseId);
+app.post(
+  "/api/certificates-completion-tdc",
+  authenticateToken,
+  authorizeRole("admin"),
+  async (req, res) => {
+    try {
+      const { userId, role } = req.user;
+      const { clientId, courseId, instructorId } = req.body;
+      console.log('tdc', clientId, courseId, instructorId);
 
-    const logoPath = path.join(
-      __dirname,
-      "/f-css/solid/drivers_ed_logo-no-bg.png"
-    );
-    const driversEdLogo = `data:image/png;base64,${fs.readFileSync(
-      logoPath,
-      "base64"
-    )}`;
+      const instructor = await getInstructorwithId(instructorId);
+      const user = await getProfilewithUserId(clientId);
+      const trainee_course = await getTraineeCourseInfo(courseId);
 
-    const genControlNumber = generateTemporaryPassword(32);
-    const genCertificateNumber = generateTemporaryPassword(14);
+      const logoPath = path.join(
+        __dirname,
+        "./f-css/solid/drivers_ed_logo-no-bg.png"
+      );
+      const driversEdLogo = `data:image/png;base64,${fs.readFileSync(
+        logoPath,
+        "base64"
+      )}`;
+      const genControlNumber = generateTemporaryPassword(32); // Re-use a random generator
+      const genCertificateNumber = generateTemporaryPassword(14);
 
-    const certificateInputs = [
-      {
-        controlNumber: genControlNumber,
-        certificateNumber: genCertificateNumber,
-        accredNumOfBranch: "123456789",
-        driversEdLogo: driversEdLogo,
-      },
-    ];
-    const userProfile = [
-      {
-        firstName: user.first_name,
-        lastName: user.last_name,
-        middleName: user.middle_name,
-        address: user.address,
-        ltoClientId: user.lto_client_id,
-        birthday: user.birth_date,
-        gender: user.gender,
-        civilStatus: user.civil_status,
-        nationality: user.nationality,
-      },
-    ];
+      const certificateInputs = [
+        {
+          controlNumber: genControlNumber,
+          certificateNumber: genCertificateNumber,
+          accredNumOfBranch: "123456789",
+          driversEdLogo: driversEdLogo,
+        },
+      ];
+      const userProfile = [
+        {
+          firstName: user.first_name.toUpperCase(),
+          lastName: user.last_name.toUpperCase(),
+          middleName: user.middle_name.toUpperCase(),
+          address: user.address,
+          ltoClientId: user.lto_client_id,
+          birthday: user.birth_date,
+          gender: user.gender,
+          civilStatus: user.civil_status,
+          nationality: user.nationality,
+        },
+      ];
 
-    // Calculate the age after defining the userProfile
-    userProfile[0].age = Math.floor(
-      (new Date() - new Date(userProfile[0].birthday)) /
-        (1000 * 60 * 60 * 24 * 365.25)
-    );
-    const profilePicture = `data:image/jpeg;base64,${user.profile_picture.toString(
-      "base64"
-    )}`;
-    userProfile[0].picture = profilePicture;
+      // Calculate the age after defining the userProfile
+      userProfile[0].age = user.birth_date
+        ? Math.floor(
+            (new Date() - new Date(user.birth_date)) /
+              (1000 * 60 * 60 * 24 * 365.25)
+          )
+        : null;
 
-    const userCourse = [
-      {
-        courseName: trainee_course[0].program_name,
-        date_started: trainee_course[0].date_started,
-        date_finished: trainee_course[0].date_completed,
-        total_hours: trainee_course[0].total_hours,
-        modality: onsite ? "onsite" : online ? "online" : "",
-      },
-    ];
+      userProfile[0].profilePicture = await renderBase64File(
+        user.profile_picture
+      );
 
-    const instructorProfile = [
-      {
-        name: instructor.instructor_name,
-        accredNumOfInstructor: instructor.accreditation_number,
-      },
-    ];
+      const userCourse = [
+        {
+          courseName: trainee_course[0].program_name,
+          dateStarted: trainee_course[0].date_started,
+          dateFinished: trainee_course[0].date_completed,
+          totalHours: trainee_course[0].total_hours,
+        },
+      ];
 
-    const html = await new Promise((resolve, reject) => {
-      req.app.render(
-        "certificate-of-completion-TDC",
+      const instructorProfile = [
+        {
+          name: instructor.instructor_name,
+          accredNumOfInstructor: instructor.accreditation_number,
+        },
+      ];
+
+      const encrypted = await encryptData(
         {
           certificateInputs,
           userProfile,
           userCourse,
           instructorProfile,
-          userId,
+          userId: clientId,
           courseId,
           instructorId,
         },
-        (err, renderedHtml) => {
-          if (err) reject(err);
-          else resolve(renderedHtml);
-        }
-      );
-    });
-
-    const tailwindCSS = fs.readFileSync(
-      path.join(__dirname, "/f-css/output.css"),
-      "utf8"
-    );
-    const compiled = html.replace(
-      "</head>",
-      `<style>${tailwindCSS}</style></head>`
-    );
-
-    const browser = await getBrowser();
-    const page = await browser.newPage();
-
-    await page.setContent(compiled, {
-      waitUntil: "networkidle0",
-    });
-
-    await page.evaluate(() => {
-      document.querySelectorAll(".hide-on-print").forEach((el) => el.remove());
-    });
-
-    const pdfBuffer = await page.pdf({
-      format: "A4", // Change A4 to Letter
-      printBackground: true,
-    });
-
-    await page.close(); // Closing the page instead of browser
-
-    if (type === "database") {
-      await saveCertificateToDatabase(courseId, pdfBuffer, "application/pdf");
-      await sendEmail("completion-certificate", user.email, {
-        name: user.first_name,
-        certificate: pdfBuffer,
-      });
-      await addNotification(
         userId,
-        "user",
-        "Certificate of Completion",
-        `${user.first_name + " " + user.last_name} - ${
-          trainee_course.program_name
-        } Course Certificate `
+        role
       );
-      await addNotification(
-        0,
-        "admin",
-        "Certificate of Completion",
-        `${user.first_name + " " + user.last_name} - ${
-          trainee_course.program_name
-        } Course Certificate `
-      );
-    }
 
-    res.setHeader(
-      "Content-Disposition",
-      'attachment; filename="certificate-tdc.pdf"'
-    );
-    res.setHeader("Content-Type", "application/pdf");
-    res.status(200).end(Buffer.from(pdfBuffer));
-  } catch (error) {
-    console.error("Error generating PDF:", error);
-    res.status(500)({ error: "An error occurred while generating the PDF." });
+      res.status(200).json(encrypted);
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: "Internal Server Error" });
+    }
   }
-});
+);
+
+app.post(
+  "/certificates-completion-tdc/:type",
+  authenticateToken,
+  authorizeRole("admin"),
+  async (req, res) => {
+    try {
+      const adminId = req.user.userId;
+      const role = req.user.role;
+      const type = req.params.type;
+      const { encryptedWithEncAesKey } = req.body;
+      const decrypted = await decryptData(
+        encryptedWithEncAesKey,
+        adminId,
+        role
+      );
+
+      const { userId, courseId, instructorId, profileInputs } = decrypted;
+
+      const logoPath = path.join(
+        __dirname,
+        "/f-css/solid/drivers_ed_logo-no-bg.png"
+      );
+      const driversEdLogo = `data:image/png;base64,${fs.readFileSync(
+        logoPath,
+        "base64"
+      )}`;
+
+      const certificateInputs = [
+        {
+          controlNumber: profileInputs.controlNumber,
+          certificateNumber: profileInputs.certificateNumber,
+          accredNumOfBranch: profileInputs.accredNumOfBranch,
+          driversEdLogo: driversEdLogo,
+        },
+      ];
+      const userProfile = [
+        {
+          firstName: profileInputs.firstName,
+          lastName: profileInputs.lastName,
+          middleName: profileInputs.middleName,
+          address: profileInputs.address,
+          ltoClientId: profileInputs.ltoClientId,
+          birthday: profileInputs.birthday,
+          gender: profileInputs.gender,
+          civilStatus: profileInputs.civilStatus,
+          nationality: profileInputs.nationality,
+          age: Math.floor(
+            (new Date() - new Date(profileInputs.birthday)) /
+              (1000 * 60 * 60 * 24 * 365.25)
+          ),
+          profilePicture: profileInputs.profilePicture,
+        },
+      ];
+
+      const userCourse = [
+        {
+          dateStarted: profileInputs.dateStarted,
+          dateFinished: profileInputs.dateFinished,
+          totalHours: profileInputs.totalHours,
+          modality: profileInputs.modality,
+        },
+      ];
+
+      const instructorProfile = [
+        {
+          instructorName: profileInputs.instructorName,
+          accredNumOfInstructor: profileInputs.accredNumOfInstructor,
+        },
+      ];
+
+      const payload = {
+        certificateInputs,
+        userProfile,
+        userCourse,
+        instructorProfile,
+        userId,
+        courseId,
+        instructorId,
+      };
+
+      const pdfBuffer = await generateCertificatePDF({
+        type: "TDC",
+        payload,
+      });
+
+      const name = `${profileInputs.lastName.toUpperCase()} ${profileInputs.firstName.toUpperCase()} ${profileInputs.middleName.toUpperCase()}`;
+      
+      if (type === "database") {
+        await saveCertificateToDatabase(
+          courseId,
+          Buffer.from(pdfBuffer),
+          "application/pdf"
+        );
+        /*
+        await sendEmail("completion-certificate", user.email, {
+          name: user.first_name,
+          certificate: Buffer.from(pdfBuffer),
+        });
+        */
+        await addNotification(
+          userId,
+          "user",
+          "TDC Certificate of Completion",
+          `${name} TDC Course Certificate `
+        );
+        await addNotification(
+          0,
+          "admin",
+          "TDC Certificate of Completion",
+          `${name} TDC Course Certificate `
+        );
+      }
+
+      const sanitized = name.replace(/[^a-zA-Z0-9 ]/g, " ");
+      const fileSafe = sanitized.trim().toLowerCase().replace(/ +/g, "_");
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename="${fileSafe}-certificate-tdc.pdf"`
+      );
+
+      res.setHeader("Content-Type", "application/pdf");
+      res.status(200).end(Buffer.from(pdfBuffer));
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      res.status(500)({ error: "An error occurred while generating the PDF." });
+    }
+  }
+);
 
 app.get(
   "/sample",
@@ -4024,28 +4206,31 @@ app.get(
   }
 );
 
-process.on("SIGINT", async () => {
-  console.log("🛑 Shutting down...");
+async function shutdown(signal) {
+  console.log(`🛑 ${signal} received. Shutting down...`);
+
   try {
     await redis.quit();
     console.log("✅ Redis disconnected");
   } catch (err) {
     console.error("❌ Error disconnecting Redis:", err);
   }
-  process.exit(0);
-});
 
-process.on("SIGTERM", async () => {
-  console.log("🛑 SIGTERM received. Cleaning up...");
   try {
-    await redis.quit();
-    console.log("✅ Redis disconnected");
+    if (browserInstance) {
+      await browserInstance.close();
+      console.log("✅ Puppeteer browser closed");
+    }
   } catch (err) {
-    console.error("❌ Error disconnecting Redis:", err);
+    console.error("❌ Error closing Puppeteer:", err);
   }
-  process.exit(0);
-});
 
-app.listen(PORT, () => {
+  process.exit(0);
+}
+
+process.on("SIGINT", () => shutdown("SIGINT"));
+process.on("SIGTERM", () => shutdown("SIGTERM"));
+
+app.listen(PORT, "0.0.0.0", () => {
   console.log(`Server is running at ${PORT}`);
 });

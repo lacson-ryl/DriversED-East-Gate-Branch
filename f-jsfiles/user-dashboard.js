@@ -1,3 +1,5 @@
+import { openFileViewer } from "../utils/file-helper.js";
+
 function errorBox(message) {
   return `
   <div
@@ -5,6 +7,8 @@ function errorBox(message) {
     ${message}
   </div>`;
 }
+
+let courseList, programList;
 
 async function renderUserCourseCards() {
   const clientCourseCard = document.querySelector(".swiper1 .swiper-wrapper");
@@ -31,7 +35,7 @@ async function renderUserCourseCards() {
       <div class="swiper-slide p-2">
         <div
           class="min-w-40 min-h-20 bg-white text-center text-black border-2 border-l-4 border-b-4 border-b-red-400 border-l-red-400 rounded-xl p-5 space-y-5">
-          No courses Found
+          No enrolled courses Found
         </div>
       </div>
       `;
@@ -40,6 +44,7 @@ async function renderUserCourseCards() {
     document.querySelector(".swiper-button-prev").style.display = "none";
     return;
   } else {
+    courseList = traineesCourseList;
     clientCourseCard.innerHTML = traineesCourseList
       .map((arr) => {
         const progress =
@@ -51,7 +56,11 @@ async function renderUserCourseCards() {
         return `
           <div class="swiper-slide p-2">
             <div class="card flex flex-col scale-75 md:scale-100 max-w-full max-h-screen gap-y-5 items-center">
-              <div class="min-w-96 w-1/2 min-h-44 bg-white text-center text-black border-2 border-l-4 border-b-4 border-b-yellow-400 border-l-yellow-400 rounded-xl p-5 space-y-2 shadow-lg transform transition duration-500 hover:scale-105">
+              <div class="relative min-w-96 w-1/2 min-h-44 bg-white text-center text-black border-2 border-l-4 border-b-4 border-b-yellow-400 border-l-yellow-400 rounded-xl p-5 space-y-2 shadow-lg transform transition duration-500 hover:scale-105">
+                <div class="absolute top-2 left-2 rounded-full w-6 h-6 text-sm md:w-8 md:h-8 md:text-base bg-yellow-400 text-red-600 flex items-center justify-center font-medium">
+                  ${courseId}
+                </div>
+
                 <h1 class="text-2xl mb-2 font-bold text-gray-800">${
                   arr.program_name
                 }</h1>
@@ -65,8 +74,8 @@ async function renderUserCourseCards() {
                         role="progressbar" aria-label="default progress bar" aria-valuenow="${progress}" aria-valuemin="0"
                         aria-valuemax="100">
                       <div class="h-full rounded-md bg-blue-500 p-0.5 text-center  text-sm font-semibold leading-none text-black"
-                          style="width: ${progress}%">
-                        <span>${progress}%</span>
+                          style="width: ${progress >= 100 ? 100 : progress}%">
+                        <span>${progress >= 100 ? 100 : progress}%</span>
                       </div>
                     </div>
                     <div>
@@ -78,7 +87,7 @@ async function renderUserCourseCards() {
                   <div class="w-1/3 text-left">
                     <p class="text-sm">Start: ${arr.date_started}</p>
                     <p class="text-sm">End: ${
-                      !arr.date_ended ? "--/--/----" : arr.date_ended
+                      !arr.date_completed ? "--/--/----" : arr.date_completed
                     }</p>
                   </div>
                 </div>
@@ -91,12 +100,29 @@ async function renderUserCourseCards() {
                       <p class="text-sm">${schedule.date} - ${schedule.slot} - ${schedule.status}</p>`
                     )
                     .join("")}
-                  <h5 class="text-base font-semibold">Grade: ${
-                    arr.grade == null ? 0 : arr.grade
-                  } <span>Status: ${arr.grading_status}</span></h5>
-                  <button class="grading-sheet-view-button bg-blue-500 text-white px-2 py-1 rounded-md hover:bg-blue-700 mt-1" data-file='${JSON.stringify(
-                    !arr.grading_sheet ? null : arr.grading_sheet.data
-                  )}' data-file-type="image/jpeg">View Grading Sheet</button>
+                  <div class="flex flex-row items-center justify-around mt-2">
+                    <div class="text-base font-semibold">Grade:
+                       ${arr.grade || ""}
+                       ${
+                         arr.grade == 0
+                           ? arr.grading_status
+                           : `
+                          <button class="grading-sheet-view-button bg-yellow-500 text-white px-2 py-1 rounded-md hover:outline outline-1 outline-offset-2 outline-red-500  mt-1" 
+                            data-id="${courseId}">View</button>
+                          `
+                       }
+                    </div>
+                    <div class="text-base font-semibold">Certificate:
+                      ${
+                        !arr.certificate_file
+                          ? "Pending"
+                          : `<button class="certificate-view-button bg-yellow-500 text-white px-2 py-1 rounded-md hover:outline outline-1 outline-offset-2 outline-red-500 mt-1" 
+                              data-id="${courseId}">
+                              View
+                            </button>`
+                      }
+                    </div>
+                  </div>
                   <h6 class="text-base font-semibold mt-2">Payment: ${
                     arr.isPaid === 0
                       ? `<span class="text-black font-semibold">${arr.program_fee} <a href="/user-payments" class="text-blue-500 underline">Click here to Pay</a></span>`
@@ -144,48 +170,35 @@ async function renderUserCourseCards() {
 // Call the function to render course cards
 renderUserCourseCards();
 
+function filterData(data, filter, id) {
+  return data.filter((arr) => arr[filter] == id);
+}
+
 function allButtons() {
   // Add event listeners for "View Grading Sheet" buttons
   document.querySelectorAll(".grading-sheet-view-button").forEach((button) => {
     button.addEventListener("click", function () {
-      const fileData = JSON.parse(this.getAttribute("data-file"));
-      const fileType = this.getAttribute("data-file-type");
+      const courseId = this.getAttribute("data-id");
+      const filtered = filterData(courseList, "course_id", courseId);
+      openFileViewer({
+        fileData: filtered[0].grade_sheet,
+        fileType: filtered[0].grade_sheet_type.mime,
+        title: `User course #${courseId} grading sheet`,
+      });
+    });
+  });
 
-      const byteArray = new Uint8Array(fileData);
-      const blob = new Blob([byteArray], { type: fileType });
-      const url = URL.createObjectURL(blob);
+  document.querySelectorAll(".certificate-view-button").forEach((button) => {
+    button.addEventListener("click", function () {
+      const courseId = this.getAttribute("data-id");
+      const filtered = filterData(courseList, "course_id", courseId);
+      console.log('filtered', filtered);
 
-      const newWindow = window.open("", "_blank", "width=800,height=600");
-      newWindow.document.write(`
-      <html>
-        <head>
-          <title>Grading Sheet</title>
-          <style>
-            body {
-              background-color: black;
-              display: flex;
-              justify-content: center;
-              align-items: center;
-              height: 100vh;
-              margin: 0;
-            }
-            img {
-              max-width: 100%;
-              max-height: 100%;
-            }
-          </style>
-        </head>
-        <body>
-          <img src="${url}" alt="grading-sheet" />
-        </body>
-      </html>
-    `);
-      newWindow.document.close();
-
-      // Revoke the object URL after the new window has loaded the content
-      newWindow.onload = function () {
-        URL.revokeObjectURL(url);
-      };
+      openFileViewer({
+        fileData: filtered[0].certificate_file,
+        fileType: filtered[0].certificate_file_type,
+        title: `User course #${courseId} certificate`,
+      });
     });
   });
 }
@@ -232,11 +245,7 @@ async function renderCourseCards() {
           .join("");
 
         const programCover = program.program_cover
-          ? URL.createObjectURL(
-              new Blob([new Uint8Array(program.program_cover.data)], {
-                type: program.program_cover_file_type,
-              })
-            )
+          ? program.program_cover
           : "/f-css/solid/user-bg.jpg";
 
         return `
@@ -244,7 +253,7 @@ async function renderCourseCards() {
             <div class="card flex flex-col scale-75 md:scale-100 max-w-full max-h-screen gap-y-5 items-center">
               <div class="rounded-md overflow-hidden relative h-96 w-96 group [perspective:1000px]">
                 <div
-                  class="relative h-full w-full rounded-md transition-all duration-500 [transform-style:preserve-3d] group-hover:[transform:rotateY(180deg)]">
+                  class="card-inner relative h-full w-full rounded-md transition-all duration-500 [transform-style:preserve-3d]  md:group-hover:[transform:rotateY(180deg)]">
                   
                   <!-- Front Side -->
                   <div class="absolute inset-0 bg-white text-center text-black border-2 border-l-4 border-b-4 border-b-yellow-400 border-l-yellow-400 rounded-xl p-5 space-y-2 shadow-lg [backface-visibility:visible]">
@@ -260,8 +269,15 @@ async function renderCourseCards() {
                     <p class="mt-2">${program.program_duration} Hours | 
                     ${program.program_fee} pesos</p>
                     <div class="w-full text-left text-lg mt-2">
-                      <h5 class="font-semibold">Instructor(s):</h5>
-                      <p>${instructors || "No instructors assigned</p>"}
+                      <div>
+                        <h5 class="font-semibold">Instructor(s):</h5>
+                        <p>${instructors || "No instructors assigned</p>"}
+                      </div>
+                      <div class='relative w-full md:hidden'>
+                        <div class="absolute bottom-2 right-2 rounded-full text-xs md:text-base text-gray-400 flex items-center justify-center font-medium">
+                          view details
+                        </div>
+                      </div>
                     </div>
                   </div>
         
@@ -269,6 +285,9 @@ async function renderCourseCards() {
                   <div
                     class="absolute inset-0 h-full w-full rounded-md bg-black/80 backdrop-blur-sm p-5 text-center text-blue-100 [transform:rotateY(180deg)] [backface-visibility:hidden]">
                     <div class="flex h-full flex-col items-center justify-center gap-5">
+                        <div class="undo-rotate absolute top-4 left-4 rounded-full text-xs md:text-base text-gray-400 flex items-center justify-center font-medium">
+                          <img src="/f-css/solid/icons_for_buttons/minus-circle.svg" class="opacity-70 scale-150 hover:opacity-100 md:hidden" />
+                        </div>
                       <h2 class="text-xl font-bold">${program.program_name}</h2>
                       <p class="font-Montserrat max-w-full text-clip overflow-y-auto custom-scrollbar">${
                         program.program_description
@@ -282,6 +301,23 @@ async function renderCourseCards() {
         `;
       })
       .join("");
+
+    document.querySelectorAll(".card-inner").forEach((cardInner) => {
+      const viewDetails = cardInner.querySelector(".text-gray-400.text-xs"); // your "view details" button
+      const undoRotate = cardInner.querySelector(".undo-rotate");
+
+      if (viewDetails) {
+        viewDetails.addEventListener("click", () => {
+          cardInner.classList.add("rotated");
+        });
+      }
+
+      if (undoRotate) {
+        undoRotate.addEventListener("click", () => {
+          cardInner.classList.remove("rotated");
+        });
+      }
+    });
   }
   // Initialize Swiper
   const programSwiper = new Swiper(".swiper2", {

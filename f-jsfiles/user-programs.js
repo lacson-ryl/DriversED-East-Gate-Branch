@@ -96,58 +96,53 @@ async function renderForm() {
   }
 
   const applyButton = document.getElementById("apply-button");
-  applicationForm.addEventListener(
-    "submit",
-    async (event) => {
-      event.preventDefault();
+  applicationForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
 
-      const instructor = instructorSelect.value;
-      const startDate = document.getElementById("startDate").value;
-      const startDateAMPM = document.getElementById("startDateAMPM").value;
-      const continuation = document.getElementById("continuation").value;
-      const continuationAMPM =
-        document.getElementById("continuationAMPM").value;
-      const transmissionType = transmissionSelect.value;
-      const program_id = programSelect.value;
+    const instructor = instructorSelect.value;
+    const startDate = document.getElementById("startDate").value;
+    const startDateAMPM = document.getElementById("startDateAMPM").value;
+    const continuation = document.getElementById("continuation").value;
+    const continuationAMPM = document.getElementById("continuationAMPM").value;
+    const transmissionType = transmissionSelect.value;
+    const program_id = programSelect.value;
 
-      showBtnLoading(applyButton);
+    showBtnLoading(applyButton);
 
-      try {
-        const response = await fetch("/api/user-application/applyTDC", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            instructor,
-            startDate,
-            startDateAMPM,
-            continuation,
-            continuationAMPM,
-            transmissionType,
-            program_id,
-          }),
-        });
+    try {
+      const response = await fetch("/api/user-application/applyTDC", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          instructor,
+          startDate,
+          startDateAMPM,
+          continuation,
+          continuationAMPM,
+          transmissionType,
+          program_id,
+        }),
+      });
 
-        if (response.ok) {
-          applicationForm.reset();
-          showBtnResult(applyButton, true);
-          alert("Application Successfully Submitted");
-          updateCalendar(instructor); // Refresh the calendar to show updated availability
-          renderUserApplicationsList();
-        } else {
-          const data = await response.json();
-          showBtnResult(applyButton, false);
-          alert(`Error: ${data.error}`);
-        }
-        setTimeout(() => {
-          applyButton.innerText = "Submit";
-        }, 3000);
-      } catch (error) {
-        alert("Sorry! Can’t connect to the server right now.");
-        console.error(error); // Log the error to the console for debugging
+      if (response.ok) {
+        applicationForm.reset();
+        showBtnResult(applyButton, true);
+        alert("Application Successfully Submitted");
+        updateCalendar(instructor); // Refresh the calendar to show updated availability
+        renderUserApplicationsList();
+      } else {
+        const data = await response.json();
+        showBtnResult(applyButton, false);
+        alert(`Error: ${data.error}`);
       }
-    },
-    { once: true }
-  );
+      setTimeout(() => {
+        applyButton.innerText = "Submit";
+      }, 3000);
+    } catch (error) {
+      alert("Sorry! Can’t connect to the server right now.");
+      console.error(error); // Log the error to the console for debugging
+    }
+  });
   renderUserApplicationsList();
 }
 
@@ -495,42 +490,38 @@ async function addContinuationDate() {
     courseSelect.appendChild(option);
   });
 
-  addContinuationForm.addEventListener(
-    "submit",
-    async (event) => {
-      event.preventDefault();
+  addContinuationForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
 
-      const formData = new FormData(event.target);
+    const formData = new FormData(event.target);
+    const continuationSubmitBtn = document.getElementById("continuation-btn");
+    showBtnLoading(continuationSubmitBtn);
 
-      showBtnLoading(addContinuationBtn);
+    try {
+      const response = await fetch("/api/user-application/add-continuation", {
+        method: "POST",
+        body: formData,
+      });
+      const data = await response.json();
 
-      try {
-        const response = await fetch("/api/user-application/add-continuation", {
-          method: "POST",
-          body: formData,
-        });
-        const data = await response.json();
-
-        if (!response.ok) {
-          showBtnResult(addContinuationBtn, false);
-          alert(data.error);
-        }
-
-        showBtnResult(addContinuationBtn, true);
-        alert(data.message);
-        renderForm(); // Refresh the calendar to show updated availability
-        renderUserApplicationsList();
-
-        setTimeout(() => {
-          modal.style.display = "none";
-        }, 3000);
-      } catch (error) {
-        alert("Sorry! Can’t connect to the server right now.");
-        console.error(error); // Log the error to the console for debugging
+      if (!response.ok) {
+        showBtnResult(continuationSubmitBtn, false);
+        alert(data.error);
       }
-    },
-    { once: true }
-  );
+
+      showBtnResult(continuationSubmitBtn, true);
+      alert(data.message);
+      renderForm(); // Refresh the calendar to show updated availability
+      renderUserApplicationsList();
+
+      setTimeout(() => {
+        modal.style.display = "none";
+      }, 3000);
+    } catch (error) {
+      alert("Sorry! Can’t connect to the server right now.");
+      console.error(error); // Log the error to the console for debugging
+    }
+  });
 
   // Modal functionality
   addContinuationBtn.addEventListener("click", () => {

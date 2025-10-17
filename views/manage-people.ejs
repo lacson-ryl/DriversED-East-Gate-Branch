@@ -36,11 +36,6 @@
         <div id="content" class="flex flex-col w-full">
             <div class="flex justify-between items-center mr-4 my-2">
                 <h2 class="text-lg ml-4"> Manage Instructors</h2>
-
-                <button id="back-button"
-                    class="bg-blue-700 hidden items-center hover:bg-gradient-to-t from-blue-400 to-blue-800 text-white rounded-lg px-2 py-1">
-                    Back
-                </button>
                 <button id="add-instructor-button"
                     class="bg-blue-700 flex items-center hover:bg-gradient-to-t from-blue-400 to-blue-800 text-white rounded-lg px-2 py-1">
                     <IMG src="/f-css/solid/white/plus.svg" class="w-7 h-7" />
@@ -50,45 +45,52 @@
             <div id="instructors-payroll-history-table" class="max-h-96 mt-3 mb-5 mx-3 overflow-auto shadow-md">
 
             </div>
-            <div id="year-filter" class="hidden justify-between items-center mr-4">
-                <h2 class="text-lg ml-2">Payroll History</h2>
-                <div id="year-month-payroll-filter-form" class="gap-4">
-                    <form id="year-month-payroll-filter-form">
-                        <select id="month" name="month" class="border-b-2 border-l-2 p-1 border-gray-500 shadow-md">
-                            <option value="" selected>Select month</option>
-                            <option value="January">January</option>
-                            <option value="February">February</option>
-                            <option value="March">March</option>
-                            <option value="April">April</option>
-                            <option value="May">May</option>
-                            <option value="June">June</option>
-                            <option value="July">July</option>
-                            <option value="August">August</option>
-                            <option value="September">September</option>
-                            <option value="October">October</option>
-                            <option value="November">November</option>
-                            <option value="December">December</option>
-                        </select>
-                        <input type="number" id="year" name="year" placeholder="Input year"
-                            class="border-2 border-gray-300 bg-white h-8 pl-4 rounded-lg text-sm focus:outline-none">
-                        <button type="submit"
-                            class=" bg-blue-700 hover:bg-gradient-to-t from-blue-400 to-blue-800 text-white rounded-lg px-2 py-1">
-                            Filter
-                        </button>
-                    </form>
+            <div class="flex flex-row justify-end gap-4 px-4 w-full">
+                <button id="back-button"
+                    class="bg-blue-700 hidden hover:bg-gradient-to-t from-blue-400 to-blue-800 text-white rounded-lg px-2 py-1">
+                    Back
+                </button>
+                <div id="year-filter" class="justify-between hidden gap-5 mr-4">
+                    <h2 class="text-lg">Payroll History</h2>
+                    <div id="year-month-payroll-filter-form" class="gap-5">
+                        <form id="year-month-payroll-filter-form">
+                            <select id="month" name="month" class="border-b-2 border-l-2 p-1 border-gray-500 shadow-md">
+                                <option value="" selected>Select month</option>
+                                <option value="January">January</option>
+                                <option value="February">February</option>
+                                <option value="March">March</option>
+                                <option value="April">April</option>
+                                <option value="May">May</option>
+                                <option value="June">June</option>
+                                <option value="July">July</option>
+                                <option value="August">August</option>
+                                <option value="September">September</option>
+                                <option value="October">October</option>
+                                <option value="November">November</option>
+                                <option value="December">December</option>
+                            </select>
+                            <input type="number" id="year" name="year" placeholder="Input year"
+                                class="border-2 border-gray-300 bg-white h-8 pl-4 rounded-lg text-sm focus:outline-none">
+                            <button type="submit"
+                                class=" bg-blue-700 hover:bg-gradient-to-t from-blue-400 to-blue-800 text-white rounded-lg px-2 py-1">
+                                Filter
+                            </button>
+                        </form>
+                    </div>
                 </div>
             </div>
-            <div id="instructors-current-payroll-table" style="display: none;"
-                class="flex flex-col max-h-data-table mt-3 mb-5 mx-3 overflow-auto">
-
-            </div>
-
+        </div>
+        <div id="instructors-current-payroll-table" style="display: none;"
+            class="flex flex-col max-h-data-table mt-3 mb-5 mx-3 overflow-auto">
 
         </div>
+
+
+    </div>
     </div>
 
     <div id="myModal" class="fixed inset-0 z-50 items-center justify-center hidden bg-gray-900 bg-opacity-50">
-        <div class="relative bg-white rounded-lg shadow-lg min-w-96 max-w-screen-md p-6">
+        <div class="relative bg-white rounded-lg shadow-lg min-w-96 max-w-xl p-6">
             <span
                 class="close absolute top-0 right-2 text-3xl font-semibold text-gray-700 hover:text-gray-900 cursor-pointer ">&times;</span>
             <h2 class="text-xl font-semibold">Instructor Details</h2>

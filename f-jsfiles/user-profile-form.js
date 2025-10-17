@@ -4,9 +4,8 @@ import { showBtnLoading, showBtnResult } from "../utils/modal-feedback.js";
 async function renderDetails() {
   const response = await fetch(`/api/user-profile`);
   const encrypted = await response.json();
-  const data = decryptData(encrypted.encrypted);
+  const data = await decryptData(encrypted.encrypted);
   const profileDisplay = document.getElementById("profile-display");
-  console.log(data);
 
   if (!data.userProfileDetails) {
     profileDisplay.innerHTML = `
@@ -16,24 +15,24 @@ async function renderDetails() {
             <div class="flex flex-col md:flex-row mb-4 gap-3">
                 <div class="w-full md:w-1/3">
                     <label>First Name</label>
-                    <input id="first-name" name="first-name" type="text"
+                    <input id="first-name" name="firstName" type="text"
                         class="shadow-md bg-white appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight hover:border-blue-900 focus:outline-none focus:border-blue-900" />
                 </div>
                 <div class="w-full md:w-1/3">
                     <label>Middle Name</label>
-                    <input id="middle-name" name="middle-name" type="text"
+                    <input id="middle-name" name="middleName" type="text"
                         class="shadow-md bg-white appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight hover:border-blue-900 focus:outline-none focus:border-blue-900" />
                 </div>
                 <div class="w-full md:w-1/3">
                     <label>Last Name</label>
-                    <input id="last-name" name="last-name" type="text"
+                    <input id="last-name" name="lastName" type="text"
                         class="shadow-md bg-white appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight hover:border-blue-900 focus:outline-none focus:border-blue-900" />
                 </div>
             </div>
             <div class="flex flex-col md:flex-row mb-4 gap-3">
                 <div class="">
                     <label>Phone Number</label>
-                    <input id="phone-number" name="phone-number" type="number"
+                    <input id="phone-number" name="phoneNumber" type="number"
                         class="shadow-md bg-white appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight hover:border-blue-900 focus:outline-none focus:border-blue-900" />
                 </div>
                 <div class="">
@@ -51,8 +50,8 @@ async function renderDetails() {
                     </p>
                 </div>
                 <div class="w-full md:w-2/5">
-                    <label>Birth Date</label>
-                    <input id="birth-date" name="birth-date" type="date" 
+                    <label>Birth Date <span class="text-xs font-light">dd/mm/yyyy</span></label>
+                    <input id="birth-date" name="birthDate" type="date" 
                         class="shadow-md bg-white appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight hover:border-blue-900 focus:outline-none focus:border-blue-900" />
                 </div>
                 <div class="w-full md:w-2/5">
@@ -73,7 +72,7 @@ async function renderDetails() {
                 </div>
                 <div>
                     <label>Civil Status</label>
-                    <input id="civil-status" name="civil-status" type="text"
+                    <input id="civil-status" name="civilStatus" type="text"
                         class="shadow-md bg-white appearance-none border rounded w-full py-2 px-3 text-black leading-tight hover:border-blue-900 focus:outline-none focus:border-blue-900" />
                 </div>
             </div>
@@ -84,30 +83,35 @@ async function renderDetails() {
             </div>
             <div class="mb-4">
                 <label>LTO Client ID</label>
-                <input id="lto-client-id" name="lto-client-id" type="text"
+                <input id="lto-client-id" name="ltoClientId" type="text"
                     class="shadow-md bg-white appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight hover:border-blue-900 focus:outline-none focus:border-blue-900"></textarea>
             </div>
-            <div class="flex flex-col mb-4">
-                <label for="training-purpose" class="mb-2">Training Purpose</label>
-                <select id="training-purpose" name="training-purpose"
-                    class="shadow-md bg-white border rounded w-full py-2 px-3 text-gray-700 leading-tight hover:border-blue-900 focus:outline-none focus:border-blue-900">
-                    <option value="New Driver's License (Non-Pro)">New Driver's License (Non-Pro)</option>
-                    <option value="New Driver's License (Pro)">New Driver's License (Pro)</option>
-                    <option value="Driver's License Renewal">Driver's License Renewal</option>
-                    <option value="Defensive Driving Course">Defensive Driving Course</option>
-                    <option value="Advanced Driving Course">Advanced Driving Course</option>
-                    <option value="Commercial Driver's License (CDL)">Commercial Driver's License (CDL)</option>
-                    <option value="Motorcycle License">Motorcycle License</option>
-                    <option value="Forklift Operator Certification">Forklift Operator Certification</option>
-                    <option value="Heavy Vehicle Operation">Heavy Vehicle Operation</option>
-                    <option value="Emergency Vehicle Operation">Emergency Vehicle Operation</option>
-                </select>
+
+            <div class="flex flex-col md:flex-row gap-2 mb-4">
+              <div class="w-1/3">
+                <img id="government-id-preview"
+                  class="w-48 h-32 inline-block rounded-md border-2 content-center border-gray-300 object-fill"
+                  src="../f-css/solid/black/identification.svg" alt="Government ID Preview">
+              </div>
+              <div class="flex flex-col w-2/3 gap-5">
+                  <input id="id-type" name="identification_card" style="min-height: 2.5rem;" type="text"
+                  placeholder="Ex.  National ID"
+                    class="shadow-md bg-white appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight hover:border-blue-900 focus:outline-none focus:border-blue-900" />
+                  <input type="file" id="government-id-input" name="identification_card_picture" accept="image/*"
+                  class="text-sm text-gray-600">
+                  <div class="flex flex-col md:flex-row items-center gap-3">
+                      <label for="id-prn" class="">PRN</label>
+                      <input id="lto-client-id" name="ltoClientId" placeholder="exclude the spaces and dashes"
+                        style="min-height: 2.5rem;" type="number"
+                          class="shadow-md bg-white appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight hover:border-blue-900 focus:outline-none focus:border-blue-900" />
+                  </div>
+              </div>
             </div>
             
-            <div>
+            <div class="flex flex-col md:flex-row gap-4 items-center mb-4">
                 <img id="profile-picture-preview"
-                    class="w-36 h-32 rounded-md border-2 content-center border-gray-300 mb-4 object-fill"
-                    src="defaultavatar.png" alt="Profile Picture Preview">
+                    class="w-48 h-32 rounded-md border-2 content-center border-gray-300 mb-4 object-fill"
+                    src="" alt="Profile Picture Preview">
                 <input type="file" id="profile-picture-input" name="profile_picture" accept="image/*"
                     class="text-sm text-gray-600">
             </div>
@@ -137,12 +141,12 @@ async function renderDetails() {
 
     const profileSubmitBtn = document.getElementById("submit-request-btn");
 
-    document.getElementById("profile-form").addEventListener(
+    const form = document.getElementById("profile-form");
+    form.addEventListener(
       "submit",
       async function (event) {
         event.preventDefault(); // Prevent the default form submission
 
-        const form = document.getElementById("profile-form");
         const formData = new FormData(form);
         const encrypted = await encryptData(formData);
 
@@ -181,20 +185,20 @@ async function renderDetails() {
         <div class="flex flex-col md:flex-row mb-4 gap-3">
             <div class="w-full md:w-1/3">
                 <label>First Name</label>
-                <input id="first-name" name="first-name" type="text" value="${
+                <input id="first-name" name="firstName" type="text" value="${
                   profile.first_name ? profile.first_name : ""
                 }"
                     class="shadow-md bg-white appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight hover:border-blue-900 focus:outline-none focus:border-blue-900" />
             </div>
             <div class="w-full md:w-1/3">
                 <label>Middle Name</label>
-                <input id="middle-name" name="middle-name" style="min-height: 2.5rem;"
+                <input id="middle-name" name="middleName" style="min-height: 2.5rem;"
                     value="${profile.middle_name}"
                 class="shadow-md bg-white appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight hover:border-blue-900 focus:outline-none focus:border-blue-900" />
             </div>
             <div class="w-full md:w-1/3">
                 <label>Last Name</label>
-                <input id="last-name" name="last-name" type="text"  value="${
+                <input id="last-name" name="lastName" type="text"  value="${
                   profile.last_name ? profile.last_name : ""
                 }"
                     class="shadow-md bg-white appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight hover:border-blue-900 focus:outline-none focus:border-blue-900" />
@@ -203,7 +207,7 @@ async function renderDetails() {
         <div class="flex flex-col md:flex-row mb-4 gap-3">
             <div class="">
                 <label>Phone Number</label>
-                <input id="phone-number" name="phone-number" type="number" value="${
+                <input id="phone-number" name="phoneNumber" type="number" value="${
                   profile.phone_number ? profile.phone_number : ""
                 }"
                     class="shadow-md bg-white appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight hover:border-blue-900 focus:outline-none focus:border-blue-900" />
@@ -225,8 +229,8 @@ async function renderDetails() {
               </p>
             </div>
             <div class="w-full md:w-1/3">
-                <label>Birth Date</label>
-                <input id="birth-date" name="birth-date" type="date" value="${
+                <label>Birth Date <span class="text-xs font-light">dd/mm/yyyy</span></label>
+                <input id="birth-date" name="birthDate" type="date" value="${
                   profile.birth_date ? profile.birth_date : ""
                 }"
                     class="shadow-md bg-white appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight hover:border-blue-900 focus:outline-none focus:border-blue-900" />
@@ -257,7 +261,7 @@ async function renderDetails() {
           </div>
           <div class="w-full md:w-1/2">
               <label>Civil Status</label>
-              <input id="civil-status" name="civil-status" style="min-height: 2.5rem;" type="text"
+              <input id="civil-status" name="civilStatus" style="min-height: 2.5rem;" type="text"
                     value="${profile.civil_status}"
                   class="shadow-md bg-white appearance-none border rounded w-full py-2 px-3 text-black leading-tight hover:border-blue-900 focus:outline-none focus:border-blue-900" />
           </div>
@@ -270,72 +274,42 @@ async function renderDetails() {
                 }</textarea>
         </div>
         
-        <div class=" mb-4">
+        <div class="mb-5">
             <label>LTO Client ID</label>
-            <input id="lto-client-id" name="lto-client-id" style="min-height: 2.5rem;"
+            <input id="lto-client-id" name="ltoClientId" style="min-height: 2.5rem;" type="text"
                 value="${profile.lto_client_id}"
             class="shadow-md bg-white appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight hover:border-blue-900 focus:outline-none focus:border-blue-900" />
         </div>
-        <div class="flex flex-col mb-4">
-            <label for="training-purpose" class="mb-2 text-gray-700">Training Purpose</label>
-            <select id="training-purpose" name="training-purpose"
-                class="shadow-md bg-white border rounded w-full py-2 px-3 text-gray-700 leading-tight hover:border-blue-900 focus:outline-none focus:border-blue-900">
-                <option value="New Driver's License (Non-Pro)" ${
-                  profile.training_purpose === "New Driver's License (Non-Pro)"
-                    ? "selected"
-                    : ""
-                }>New Driver's License (Non-Pro)</option>
-                <option value="New Driver's License (Pro)" ${
-                  profile.training_purpose === "New Driver's License (Pro)"
-                    ? "selected"
-                    : ""
-                }>New Driver's License (Pro)</option>
-                <option value="Driver's License Renewal" ${
-                  profile.training_purpose === "Driver's License Renewal"
-                    ? "selected"
-                    : ""
-                }>Driver's License Renewal</option>
-                <option value="Defensive Driving Course" ${
-                  profile.training_purpose === "Defensive Driving Course"
-                    ? "selected"
-                    : ""
-                }>Defensive Driving Course</option>
-                <option value="Advanced Driving Course" ${
-                  profile.training_purpose === "Advanced Driving Course"
-                    ? "selected"
-                    : ""
-                }>Advanced Driving Course</option>
-                <option value="Commercial Driver's License (CDL)" ${
-                  profile.training_purpose ===
-                  "Commercial Driver's License (CDL)"
-                    ? "selected"
-                    : ""
-                }>Commercial Driver's License (CDL)</option>
-                <option value="Motorcycle License" ${
-                  profile.training_purpose === "Motorcycle License"
-                    ? "selected"
-                    : ""
-                }>Motorcycle License</option>
-                <option value="Forklift Operator Certification" ${
-                  profile.training_purpose === "Forklift Operator Certification"
-                    ? "selected"
-                    : ""
-                }>Forklift Operator Certification</option>
-                <option value="Heavy Vehicle Operation" ${
-                  profile.training_purpose === "Heavy Vehicle Operation"
-                    ? "selected"
-                    : ""
-                }>Heavy Vehicle Operation</option>
-                <option value="Emergency Vehicle Operation" ${
-                  profile.training_purpose === "Emergency Vehicle Operation"
-                    ? "selected"
-                    : ""
-                }>Emergency Vehicle Operation</option>
-            </select>
-
+        
+        <div class="flex flex-col md:flex-row gap-2 mb-4">
+            <div class="w-1/3">
+              <img id="government-id-preview"
+                  class="w-48 h-32 rounded-md border-2 content-center border-gray-300 object-fill"
+                  src="${
+                    profile.indentification_card_picture ||
+                    "../f-css/solid/black/identification.svg"
+                  }" alt="Government ID Preview">
+            </div>
+            <div class="flex flex-col w-2/3 gap-5">
+                <input id="id-type" name="identification_card" style="min-height: 2.5rem;" type="text"
+                  value="${
+                    profile.indentification_card || ""
+                  }" placeholder="Ex.  National ID"
+                  class="shadow-md bg-white appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight hover:border-blue-900 focus:outline-none focus:border-blue-900" />
+                <input type="file" id="government-id-input" name="identification_card_picture" accept="image/*"
+                class="text-sm text-gray-600">
+                <div class="flex flex-col gap-4 items-center md:flex-row">
+                    <label for="id-prn" class="mb-2">PRN</label>
+                    <input id="lto-client-id" name="ltoClientId" style="min-height: 2.5rem;" type="number"
+                        value="${
+                          profile.prn || ""
+                        }" placeholder="exclude the spaces and dashes"
+                    class="shadow-md bg-white appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight hover:border-blue-900 focus:outline-none focus:border-blue-900" />
+                </div>
+            </div>
         </div>
 
-        <div>
+        <div class="flex flex-col md:flex-row gap-4 items-center mb-4">
             <img id="profile-picture-preview"
                 class="w-36 h-32 rounded-md border-2 content-center border-gray-300 mb-4 object-fill"
                 src="${
@@ -343,7 +317,7 @@ async function renderDetails() {
                 }" alt="Profile Picture Preview">
             <input type="file" id="profile-picture-input" name="profile_picture" accept="image/*"
                 class="text-sm text-gray-600">
-            </div>
+        </div>
 
         <button id="edit-request-btn"
             class="bg-sky-900 hover:bg-red-600 m-auto text-white font-bold mt-5 py-2 px-4 rounded-lg focus:outline-none focus:shadow-outline"
@@ -357,12 +331,12 @@ async function renderDetails() {
 
     `;
     const editProfileBtn = document.getElementById("edit-request-btn");
-    document.getElementById("edit-profile-form").addEventListener(
+    const form = document.getElementById("edit-profile-form");
+    form.addEventListener(
       "submit",
       async function (event) {
         event.preventDefault(); // Prevent the default form submission
 
-        const form = document.getElementById("edit-profile-form");
         const formData = new FormData(form);
         const encrypted = await encryptData(formData);
 
@@ -406,4 +380,20 @@ async function renderDetails() {
         reader.readAsDataURL(file);
       }
     });
+
+  document
+    .getElementById("government-id-input")
+    .addEventListener("change", function (event) {
+      const file = event.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function (e) {
+          document.getElementById("government-id-preview").src =
+            e.target.result;
+        };
+        reader.readAsDataURL(file);
+      }
+    });
 }
+
+renderDetails();

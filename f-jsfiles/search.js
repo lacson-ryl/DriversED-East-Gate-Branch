@@ -12,36 +12,42 @@ const spanX = document.getElementsByClassName("close")[0];
 const modalDetails = document.getElementById("modal-details");
 const modalTitle = document.getElementById("title-details");
 
-document
-  .getElementById("search-form")
-  .addEventListener("submit", async (event) => {
-    event.preventDefault();
+const searchForm = document.getElementById("search-form");
+searchForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
 
-    const formData = new FormData(event.target);
-    const encrypting = await encryptData(formData);
-    showLoadingMessage(modalDetails, "Checking account records for a match");
-    modal.style.display = "flex";
+  const formData = new FormData(event.target);
+  const encrypting = await encryptData(formData);
+  showLoadingMessage(modalDetails, "Checking account records for a match");
+  modal.style.display = "flex";
 
-    const response = await fetch("/api/user-search", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ encryptedWithEncAesKey: encrypting }),
-    });
+  const response = await fetch("/api/user-search", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ encryptedWithEncAesKey: encrypting }),
+  });
 
-    const data = await response.json();
-    if (!response.ok || !data.encryptedProfile) {
-      return showOperationResult(modalDetails, false, data.error);
-    }
-    showLoadingMessage(modalDetails, "Decrypting data...");
-    const decrypted = await decryptData(data.encryptedProfile);
+  const data = await response.json();
+  if (!response.ok || !data.encryptedProfile) {
+    searchForm.reset();
+    return showOperationResult(modalDetails, false, data.error);
+  }
+  showLoadingMessage(modalDetails, "Decrypting data...");
+  const decrypted = await decryptData(data.encryptedProfile);
+  console.log("decrypted", decrypted);
 
-    if (!decrypted) {
-      return showOperationResult(modalDetails, false, "No match Found!");
-    }
-    setTimeout(() => {
-      modalDetails.innerHTML = "";
-      modal.style.display = "none";
-    }, 4000);
+  if (Object.keys(decrypted).length === 0) {
+    searchForm.reset();
+    return showOperationResult(modalDetails, false, "No match Found!");
+  }
+  setTimeout(() => {
+    modalDetails.innerHTML = "";
+    modal.style.display = "none";
+    searchForm.reset();
+    renderUserCards();
+  }, 4000);
+
+  function renderUserCards() {
     const userInfoCards = document.getElementById("user-infos");
     userInfoCards.innerHTML = decrypted
       .map((profile) => {
@@ -76,7 +82,7 @@ document
         event.preventDefault();
         const userId = button.getAttribute("data-id");
 
-        modalDetails.innerText = `generating the user info for you`;
+        showLoadingMessage(modalDetails, `generating the user info for you`);
         modal.style.display = "flex";
         userInfoCards.style.display = "none";
         setTimeout(() => {
@@ -85,7 +91,8 @@ document
         }, 4000);
       });
     });
-  });
+  }
+});
 
 async function renderUserInfo(userId) {
   const response = await fetch(`/api/user-search/${userId}`);
@@ -246,7 +253,7 @@ async function renderUserInfo(userId) {
             <button class="add-continuation-date text-xs px-2 py-1 rounded-full bg-yellow-100 text-yellow-800"
               data-user-id="${course.user_id}" 
               data-course-id="${course.course_id}">
-              Add payment
+              Add Continuation
             </button>
           </div>
           <div class="attendance-list mt-2 hidden" 
@@ -418,10 +425,13 @@ async function renderUserInfo(userId) {
                         hours)</span></label>
                 <select id="course" name="courseOption" required>
                     <option value="${courseId}">
-                    #${userCourse.course_id} - 
-                    ${userCourse.program_name} 
+                    #${userCourse[0].course_id} - 
+                    ${userCourse[0].program_name} 
                     (${
-                      userCourse.program_duration - userCourse.total_hours
+                      userCourse[0].total_hours !== 0
+                        ? userCourse[0].program_duration -
+                          userCourse.total_hours
+                        : 0
                     })</option>
                 </select>
             </div>

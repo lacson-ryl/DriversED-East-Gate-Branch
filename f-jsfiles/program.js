@@ -1,3 +1,11 @@
+import { openFileViewer } from "../utils/file-helper.js";
+import {
+  showLoadingMessage,
+  showOperationResult,
+  showBtnLoading,
+  showBtnResult,
+} from "../utils/modal-feedback.js";
+
 async function renderProgramList() {
   const response = await fetch("/api/programs/list");
   const data = await response.json();
@@ -19,8 +27,9 @@ async function renderProgramList() {
   const details = data.programList;
   let tableRows = details
     .map(
-      (arr) => `
-      <tr class="text-left hover:outline outline-1 outline-black">
+      (arr) =>
+        `
+      <tr class="text-center hover:outline outline-1 outline-black">
         <td class="border border-gray-300 px-4 py-2">${arr.program_id}</td>
         <td class="border border-gray-300 px-4 py-2">${arr.program_name}</td>
         <td class="border border-gray-300 px-4 py-2">${
@@ -30,23 +39,26 @@ async function renderProgramList() {
           arr.program_description
         }</td>
         <td class="border border-gray-300 px-4 py-2">
-          <div>
             ${
               arr.program_cover
-                ? `<a href="javascript:void(0);" class="text-blue-700 hover:underline view-btn" data-id="${
-                    arr.program_id
-                  }" data-image="${JSON.stringify(
-                    arr.program_cover
-                  )}" data-file-type="${arr.program_cover_file_type}">View</a>
-              <button data-id="${
-                arr.program_id
-              }"class="cover-upload-btn text-yellow-600 rounded-md px-2 hover:underline">Re-upload</button>
+                ? `<button 
+                  class="view-btn bg-blue-700 hover:bg-gradient-to-t from-sky-400 to-sky-800 text-white rounded-md px-2" 
+                  data-id="${arr.program_id}" 
+                  data-file-type="${arr.program_cover_file_type}">
+                  <img src="/f-css/solid/icons_for_buttons/view-boards.svg" class="w-6 h-6 reverse-colorII" />
+                  </button>
+                  <button data-id="${arr.program_id}"
+                    class="cover-upload-btn bg-rose-700 hover:bg-gradient-to-t from-rose-400 to-rose-800 text-white rounded-md px-2">
+                    <img src="/f-css/solid/icons_for_buttons/upload.svg" class="w-6 h-6 reverse-color" />
+                  </button>
               `
                 : `
-              <button data-id="${arr.program_id}"class="cover-upload-btn text-yellow-600 rounded-md px-2 hover:underline">Upload</button>
+                  <button data-id="${arr.program_id}"
+                    class="cover-upload-btn bg-rose-700 hover:bg-gradient-to-t from-rose-400 to-rose-800 text-white rounded-md px-2">
+                    <img src="/f-css/solid/icons_for_buttons/upload.svg" class="w-6 h-6 reverse-color" />
+                  </button>
               `
             }
-          </div>
         </td>
         <td class="border border-gray-300 px-4 py-2">
           ${
@@ -57,13 +69,19 @@ async function renderProgramList() {
         </td>
         <td class="border border-gray-300 px-4 py-2">
           <button data-id="${arr.program_id}"
-            class="view-unassign-button bg-rose-700 hover:bg-gradient-to-t from-rose-400 to-rose-800 text-white rounded-md px-2">Unassign</button>
+            class="view-unassign-button bg-rose-700 hover:bg-gradient-to-t from-rose-400 to-rose-800 text-white rounded-md px-2">
+            <img src="/f-css/solid/icons_for_buttons/minus-circle.svg" class="w-6 h-6 reverse-color" />  
+          </button>
         </td>
         <td class="border border-gray-300 px-4 py-2">
           <button data-id="${arr.program_id}"
-            class="program-edit-btn bg-blue-700 hover:bg-gradient-to-t from-sky-400 to-sky-800 text-white rounded-md px-2">Edit</button>
+            class="program-edit-btn bg-blue-700 hover:bg-gradient-to-t from-sky-400 to-sky-800 text-white rounded-md px-2">
+            <img src="/f-css/solid/icons_for_buttons/pencil.svg" class="w-6 h-6 reverse-color" />
+          </button>
           <button data-id="${arr.program_id}"
-            class="program-delete-btn bg-rose-700 hover:bg-gradient-to-t from-rose-400 to-rose-800 text-white rounded-md px-2">Delete</button>
+            class="program-delete-btn bg-rose-700 hover:bg-gradient-to-t from-rose-400 to-rose-800 text-white rounded-md px-2">
+            <img src="/f-css/solid/icons_for_buttons/trash.svg" class="w-6 h-6 reverse-color" />  
+          </button>
         </td>
       </tr>
     `
@@ -78,23 +96,14 @@ async function renderProgramList() {
             <th class="border border-gray-300 px-4 py-2">Program Name</th>
             <th class="border border-gray-300 px-4 py-2 w-36">Duration $ Fee</th>
             <th class="border border-gray-300 px-4 py-2">Description</th>
-            <th class="border border-gray-300 px-4 py-2 w-24">Cover</th>
+            <th class="border border-gray-300 px-4 py-2 w-32">Cover</th>
             <th class="border border-gray-300 px-4 py-2 w-32">Availability</th>
-            <th class="border border-gray-300 px-4 py-2 w-36">Instructors</th>
-            <th class="border border-gray-300 px-4 py-2 w-36">Action</th>
+            <th class="border border-gray-300 px-4 py-2 w-28">Instructors</th>
+            <th class="border border-gray-300 px-4 py-2 w-32">Action</th>
           </tr>
         </thead>
         <tbody>${tableRows}</tbody>
       </table>
-
-      <div id="myModal" class="fixed inset-0 z-50 items-center justify-center hidden bg-gray-900 bg-opacity-50">
-        <div class="relative bg-white rounded-lg shadow-lg min-w-96 max-w-screen-md p-6">
-          <span
-            class="close absolute top-0 right-2 text-3xl font-semibold text-gray-700 hover:text-gray-900 cursor-pointer ">&times;</span>
-          <h2 class="text-xl font-semibold">Program Details</h2>
-          <p id="modal-details" class="mt-4">the details</p>
-        </div>
-      </div>
     `;
   allButtons(details);
 }
@@ -165,6 +174,7 @@ function allButtons(details) {
       event.preventDefault();
       modalDetails.innerHTML = modalForm;
       modal.style.display = "flex";
+      const programSubmitBtn = document.getElementById("program-submit-button");
 
       document
         .getElementById("add-program-form")
@@ -178,7 +188,7 @@ function allButtons(details) {
           const programDescription = document.getElementById(
             "program-description"
           ).value;
-
+          showBtnLoading(programSubmitBtn);
           try {
             const response = await fetch("/api/program/add", {
               method: "POST",
@@ -191,15 +201,16 @@ function allButtons(details) {
                 programDescription,
               }),
             });
-            console.log("response", response);
             if (response.ok) {
+              showBtnResult(programSubmitBtn, true);
               alert("Program Added Successfully!");
-              modal.style.display = "none";
               renderProgramList();
             } else {
+              showBtnResult(programSubmitBtn, false);
               alert("Can't add Program right now!");
-              modal.style.display = "none";
             }
+            modalDetails.innerHTML = "";
+            modal.style.display = "none";
           } catch (error) {
             console.error("Internal Server error", error);
             alert("Internal Server error");
@@ -207,11 +218,6 @@ function allButtons(details) {
           }
         });
     });
-  }
-
-  // Assign programs to instructor
-  function renderInstructorsdropdown(details, instructorsName) {
-    return assignProgramsForm;
   }
 
   document
@@ -238,7 +244,7 @@ function allButtons(details) {
           ${instructorsName
             .map(
               (instructor) => `
-          <option value="${instructor.instructor_id}">${instructor.instructor_name}</option>
+          <option value="${instructor.instructor_id}">${instructor.instructor_name} - ${instructor.instructor_type} </option>
             `
             )
             .join("")}
@@ -259,11 +265,11 @@ function allButtons(details) {
             .join("")}
         </div>
       </div>
-          <button type="submit" class="bg-blue-800 text-white rounded-md px-2">Assign Programs</button>
+          <button id="assign-programs-btn" type="submit" class="bg-blue-800 text-white rounded-md px-2">Assign Programs</button>
     </form>
   `;
       modal.style.display = "flex";
-
+      const assignProgbtn = document.getElementById("assign-programs-btn");
       document
         .getElementById("assign-programs-form")
         .addEventListener("submit", async (event) => {
@@ -272,6 +278,8 @@ function allButtons(details) {
           const programIds = Array.from(
             document.querySelectorAll("input[name='program_ids']:checked")
           ).map((input) => input.value);
+
+          showBtnLoading(assignProgbtn);
 
           const response = await fetch("/api/assign-programs", {
             method: "POST",
@@ -285,11 +293,14 @@ function allButtons(details) {
           });
 
           if (response.ok) {
+            showBtnResult(assignProgbtn, true);
             alert("Programs assigned successfully!");
-            modal.style.display = "none";
           } else {
+            showBtnResult(assignProgbtn, false);
             alert("Failed to assign programs.");
           }
+          modalDetails.innerHTML = "";
+          modal.style.display = "none";
         });
     });
 
@@ -340,11 +351,12 @@ function allButtons(details) {
                   .join("")}
               </div>
             </div>
-            <button type="submit" class="bg-red-800 text-white rounded-md px-2">Unassign Instructors</button>
+            <button id="unassign-program-btn" type="submit" class="bg-red-800 text-white rounded-md px-2">Unassign Instructors</button>
           </form>
         `;
 
         modal.style.display = "flex";
+        const unassignProgBtn = document.getElementById("unassign-program-btn");
 
         document
           .getElementById("unassign-program-form")
@@ -353,6 +365,7 @@ function allButtons(details) {
             const instructorIds = Array.from(
               document.querySelectorAll("input[name='instructor_ids']:checked")
             ).map((input) => input.value);
+            showBtnLoading(unassignProgBtn);
 
             const response = await fetch("/api/unassign-programs", {
               method: "POST",
@@ -366,11 +379,14 @@ function allButtons(details) {
             });
 
             if (response.ok) {
+              showBtnResult(unassignProgBtn, true);
               alert("Instructors unassigned successfully!");
-              modal.style.display = "none";
             } else {
+              showBtnResult(unassignProgBtn, false);
               alert("Failed to unassign instructors.");
             }
+            modalDetails.innerHTML = "";
+            modal.style.display = "none";
           });
       }
     });
@@ -380,7 +396,6 @@ function allButtons(details) {
   document.querySelectorAll(".program-edit-btn").forEach((button) => {
     button.addEventListener("click", async function () {
       const originalId = this.getAttribute("data-id");
-      console.log(originalId);
 
       if (!originalId) {
         console.error("ID not found");
@@ -393,52 +408,65 @@ function allButtons(details) {
       const data = result[0];
 
       modalDetails.innerHTML = `
-          <form id="edit-program-form" class="w-96">
-            <div class="mb-4">
+        <form id="edit-program-form" class="w-96">
+          <div class="flex flex-row mb-4 gap-4">
+            <div class="w-1/3">
               <h3 class="text-xl font-semibold mb-3">Program Id</h3>
-              <input type="text" id="program-id" name="program-id" value="${
-                data.program_id
-              }" class="w-full outline outline-1 outline-gray-300 rounded-md text-lg px-1" placeholder="Enter Program ID" />
+              <input type="text" id="program-id" name="program-id" 
+              value="${data.program_id}" 
+              class="w-full outline outline-1 outline-gray-300 rounded-md text-lg px-1"
+                placeholder="Enter Program ID" />
             </div>
-            <div class="mb-4">
+            <div class="w-2/3">
               <h3 class="text-xl font-semibold mb-3">Program Name</h3>
-              <input type="text" id="program-name" name="program-name" value="${
-                data.program_name
-              }" class="w-full outline outline-1 outline-gray-300 rounded-md text-lg px-1" placeholder="Enter Program Name" />
+              <input type="text" id="program-name" name="program-name" 
+              value="${data.program_name}" 
+              class="w-full outline outline-1 outline-gray-300 rounded-md text-lg px-1"
+                placeholder="Enter Program Name" />
             </div>
-            <div class="mb-4">
-              <h3 class="text-xl font-semibold mb-3">Duration</h3>
-              <input type="number" id="program-duration" name="program-duration" value="${
-                data.program_duration
-              }" class="w-full outline outline-1 outline-gray-300 rounded-md text-lg px-1" placeholder="Enter Program Duration" />
-            </div>
-            <div class="mb-4">
+          </div>
+          <div class="flex flex-row mb-4 gap-4">
+            <div class="w-2/3">
               <h3 class="text-xl font-semibold mb-3">Program Fee</h3>
-              <input type="number" id="program_fee" name="program_fee" step="0.01" value="${
-                data.program_fee
-              }" class="w-full outline outline-1 outline-gray-300 rounded-md text-lg px-1" placeholder="Enter Program Fee ex. 1099.99" />
+              <input type="number" id="program_fee" name="program_fee" step="0.01" 
+              value="${data.program_fee}" 
+              class="w-full outline outline-1 outline-gray-300 rounded-md text-lg px-1"
+                placeholder="Enter Program Fee ex. 1099.99" />
             </div>
-            <div class="mb-4">
-              <h3 class="text-xl font-semibold mb-3">Description</h3>
-              <textarea type="textbox" id="program-description" name="program-description" class="w-full min-h-32 text-start outline outline-1 outline-gray-300 rounded-md text-lg px-1" placeholder="Enter Description"/>${
+            <div class="w-1/3">
+              <h3 class="text-xl font-semibold mb-3">Duration</h3>
+              <input type="number" id="program-duration" name="program-duration" 
+              value="${data.program_duration}" 
+              class="w-full outline outline-1 outline-gray-300 rounded-md text-lg px-1"
+                placeholder="Enter Program Duration" />
+            </div>
+          </div>
+
+          <div class="mb-4">
+            <h3 class="text-xl font-semibold mb-3">Description</h3>
+            <textarea type="textbox" id="program-description" name="program-description"
+              class="w-full min-h-32 text-start outline outline-1 outline-gray-300 rounded-md text-lg px-1"
+              placeholder="Enter Description" />${
                 data.program_description
               }</textarea>
-            </div>
-            <div class="mb-4">
-              <h3 class="text-xl font-semibold mb-3">Availability</h3>
-              <select id="program-availability" name="program-availability" required class="mt-1 text-lg block w-full outline outline-1 outline-gray-300 rounded-sm px-1">
-                <option value="Available" ${
-                  data.availability === "Available" ? "selected" : ""
-                }>Available</option>
-                <option value="Unavailable" ${
-                  data.availability === "Unavailable" ? "selected" : ""
-                }>Unavailable</option>
-              </select>
-            </div>
-            <button id="program-submit-button" type="submit" class=" bg-blue-800 text-white text-lg rounded-md px-2">Save</button>
-          </form>
+          </div>
+          <div class="mb-4">
+            <h3 class="text-xl font-semibold mb-3">Availability</h3>
+            <select id="program-availability" name="program-availability" required
+              class="mt-1 text-lg block w-full outline outline-1 outline-gray-300 rounded-sm px-1">
+              <option value="Available" ${
+                data.availability === "Available" ? "selected" : ""
+              }>Available</option>
+              <option value="Unavailable" ${
+                data.availability === "Unavailable" ? "selected" : ""
+              }>Unavailable</option>
+            </select>
+          </div>
+          <button id="program-submit-button" type="submit" class=" bg-blue-800 text-white text-lg rounded-md px-2">Save</button>
+        </form>
         `;
       modal.style.display = "flex";
+      const editProgBtn = document.getElementById("program-submit-button");
 
       // Attach event listener for form submission
       document
@@ -456,6 +484,7 @@ function allButtons(details) {
           const programDescription = document.getElementById(
             "program-description"
           ).value;
+          showBtnLoading(editProgBtn);
 
           try {
             const updateResponse = await fetch(`/api/programs/${originalId}`, {
@@ -471,11 +500,15 @@ function allButtons(details) {
               }),
             });
             if (updateResponse.ok) {
+              showBtnResult(editProgBtn, true);
               alert("Program updated successfully!");
               renderProgramList();
             } else {
+              showBtnResult(editProgBtn, false);
               alert("Failed to update program. Please try again.");
             }
+
+            modalDetails.innerHTML = "";
             modal.style.display = "none";
           } catch (error) {
             console.error("Error updating program data", error);
@@ -510,6 +543,7 @@ function allButtons(details) {
         </form>
       `;
       modal.style.display = "flex";
+      const coverSubmitBtn = document.getElementById("cover-submit-button");
 
       document
         .getElementById("cover-upload-form")
@@ -518,6 +552,7 @@ function allButtons(details) {
           const coverPhoto = document.getElementById("program-cover").files[0];
           const formData = new FormData();
           formData.append("program-cover", coverPhoto);
+          showBtnLoading(coverSubmitBtn);
 
           try {
             const response = await fetch(
@@ -528,11 +563,15 @@ function allButtons(details) {
               }
             );
             if (response.ok) {
+              showBtnResult(coverSubmitBtn, true);
               alert("Program photo uploaded successfully!");
               renderProgramList();
             } else {
+              showBtnResult(coverSubmitBtn, false);
               alert("Failed to upload program cover. Please try again.");
             }
+
+            modalDetails.innerHTML = "";
             modal.style.display = "none";
           } catch (error) {
             console.error("Error uploading program photo", error);
@@ -545,17 +584,14 @@ function allButtons(details) {
   // View Car photo Upload
   document.querySelectorAll(".view-btn").forEach((button) => {
     button.addEventListener("click", function () {
-      const carData = JSON.parse(this.getAttribute("data-car"));
+      const progId = this.getAttribute("data-id");
       const fileType = this.getAttribute("data-file-type");
-
-      const byteArray = new Uint8Array(carData);
-      const blob = new Blob([byteArray], { type: fileType });
-      const url = URL.createObjectURL(blob);
-
-      const newWindow = window.open();
-      newWindow.document.write(
-        `<img src="${url}" alt="Car Picture" style="width: 100%; height: auto;" />`
-      );
+      const program = filterProgramList(details, progId);
+      openFileViewer({
+        fileData: program[0].program_cover,
+        fileType,
+        title: `Program Id #${progId}`,
+      });
     });
   });
 
@@ -635,6 +671,7 @@ function allButtons(details) {
 
       tokenIndicator.classList.remove("animate-pulse");
       document.getElementById("delete-no").addEventListener("click", () => {
+        modalDetails.innerHTML = "";
         modal.style.display = "none";
       });
     });
@@ -642,12 +679,14 @@ function allButtons(details) {
 
   // When the user clicks on <span> (x), close the modal
   span.onclick = function () {
+    modalDetails.innerHTML = "";
     modal.style.display = "none";
   };
 
   // When the user clicks anywhere outside of the modal, close it
   window.onclick = function (event) {
     if (event.target == modal) {
+      modalDetails.innerHTML = "";
       modal.style.display = "none";
     }
   };

@@ -68,16 +68,7 @@ async function renderApplicantsTable() {
           )
           .join("")}
       </tbody>
-    </table>
-
-    <div id="myModal" class="fixed inset-0 z-50 items-center justify-center hidden bg-gray-900 bg-opacity-50">
-      <div class="relative bg-white rounded-lg shadow-lg min-w-screen-lg max-w-screen-lg p-6 ">
-        <span
-          class="close absolute top-0 right-2 text-3xl font-semibold text-gray-700 hover:text-gray-900 cursor-pointer ">&times;</span>
-        <h2 class="text-xl font-semibold">Applicant Details</h2>
-        <p id="modal-details" class="mt-4">the details</p>
-      </div>
-    </div>
+    </table>  
   `;
   allButtons();
 }

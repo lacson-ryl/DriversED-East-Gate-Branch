@@ -1,4 +1,5 @@
 import { encryptData, decryptData } from "../utils/f-webCryptoKeys.js";
+import { openFileViewer } from "../utils/file-helper.js";
 import {
   showLoadingMessage,
   showOperationResult,
@@ -55,17 +56,12 @@ async function renderPaymentList() {
                             ${
                               arr.screenshot_receipt
                                 ? `
-                              <a href="javascript:void(0);" class="text-blue-700 hover:underline view-btn" data-id="${
-                                arr.user_payment_id
-                              }" data-file='${JSON.stringify(
-                                    arr.screenshot_receipt.data
-                                  )}' data-file-type="image/jpeg">
+                              <a href="javascript:void(0);" class="text-blue-700 hover:underline view-btn" data-id="${arr.user_payment_id}" 
+                              data-file='${arr.screenshot_receipt.data}' data-file-type="image/jpeg">
                                   <img src="/f-css/solid/icons_for_buttons/photograph.svg" class="w-6 h-6 reverse-color" />
                                   </a>
   
-                              <button data-id="${
-                                arr.user_payment_id
-                              }" class="receipt-upload-btn text-yellow-600 rounded-md px-2 hover:underline">
+                              <button data-id="${arr.user_payment_id}" class="receipt-upload-btn text-yellow-600 rounded-md px-2 hover:underline">
                               <img src="/f-css/solid/icons_for_buttons/upload.svg" class="w-6 h-6 reverse-color" />
                               </button>
                                `
@@ -302,44 +298,11 @@ function allButtons(data) {
   // View for payment receipt
   document.querySelectorAll(".view-btn").forEach((button) => {
     button.addEventListener("click", function () {
-      const fileData = JSON.parse(this.getAttribute("data-file"));
+      const dataId = this.getAttribute("data-id");
+      const fileData = this.getAttribute("data-file");
       const fileType = this.getAttribute("data-file-type");
 
-      const byteArray = new Uint8Array(fileData);
-      const blob = new Blob([byteArray], { type: fileType });
-      const url = URL.createObjectURL(blob);
-
-      const newWindow = window.open("", "_blank", "width=800,height=600");
-      newWindow.document.write(`
-          <html>
-            <head>
-              <title>Payment Receipt</title>
-              <style>
-                body {
-                  background-color: black;
-                  display: flex;
-                  justify-content: center;
-                  align-items: center;
-                  height: 100vh;
-                  margin: 0;
-                }
-                img {
-                  max-width: 100%;
-                  max-height: 100%;
-                }
-              </style>
-            </head>
-            <body>
-              <img src="${url}" alt="payment-receipt" />
-            </body>
-          </html>
-        `);
-      newWindow.document.close();
-
-      // Revoke the object URL after the new window has loaded the content
-      newWindow.onload = function () {
-        URL.revokeObjectURL(url);
-      };
+      openFileViewer({ fileData, fileType, title: `Payment ID #${dataId}` });
     });
   });
 

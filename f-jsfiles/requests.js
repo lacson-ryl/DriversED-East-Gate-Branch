@@ -63,15 +63,6 @@ async function renderRequestDetsTable() {
                 .join("")}
         </tbody>
     </table>
-
-    <div id="myModal" class="fixed inset-0 z-50 items-center justify-center hidden bg-gray-900 bg-opacity-50">
-        <div class="relative bg-white rounded-lg shadow-lg min-w-screen-md max-w-screen-md p-6 ">
-            <span
-                class="close absolute top-0 right-2 text-3xl font-semibold text-gray-700 hover:text-gray-900 cursor-pointer ">&times;</span>
-            <h2 id="modal-title" class="text-xl font-semibold">Request Details</h2>
-            <p id="modal-details" class="mt-4">the details</p>
-        </div>
-    </div>
     `;
   }
 
@@ -104,7 +95,7 @@ function allButtons() {
 
         if (response.ok) {
           modalDetails.innerHTML = `
-                <div class="min-w-72"
+                <div class="min-w-72 max-w-xl"
                   <div class="mb-4">
                       <h3 class="text-xl font-semibold">Name</h3>
                       <p>${data.user_name}</p>
@@ -114,7 +105,7 @@ function allButtons() {
                       <p>${data.request_title}</p>
                   </div>
                   <div class="mb-4">
-                      <h3 class="text-xl font-semibold">Details</h3>
+                      <h3 class="text-xl font-semibold text-wrap">Details</h3>
                       <p>${data.request_details}</p>
                   </div>
                   <div class="mb-4">

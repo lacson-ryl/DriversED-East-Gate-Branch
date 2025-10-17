@@ -1,3 +1,5 @@
+import { encryptData, decryptData } from "../utils/f-webCryptoKeys.js";
+import { openFileViewer } from "../utils/file-helper.js";
 import { showBtnLoading, showBtnResult } from "../utils/modal-feedback.js";
 
 // Initialize modal and its components
@@ -7,11 +9,13 @@ const modalDetails = document.getElementById("modal-details");
 
 const attendanceTable = document.getElementById("attendance-table");
 const traineeInfoBox = document.getElementById("trainee-info-box");
-const backBtn = document.getElementById("back-btn");
 
-const attendanceList = [];
-async function fetchAttendanceList() {
-  const response = await fetch("/api/instructor/attendance-list");
+const pdcBtn = document.getElementById("pdc-takers-btn");
+const tdcBtn = document.getElementById("tdc-takers-btn");
+let attendanceList, usersProfilePics;
+async function fetchAttendanceList(type) {
+  const response = await fetch(`/api/instructor/attendance-list/${type}`);
+
   if (!response.ok) {
     modalDetails.innerText = `Cant fetch attendance list right now`;
     modal.style.display = "flex";
@@ -20,39 +24,68 @@ async function fetchAttendanceList() {
     }, 3000);
     return;
   }
-
-  const data = await response.json();
-  attendanceList.push(...data);
+  if (type == "tdc") {
+    tdcBtn.classList.add("outline");
+    pdcBtn.classList.remove("outline");
+  } else if (type == "pdc") {
+    tdcBtn.classList.remove("outline");
+    pdcBtn.classList.add("outline");
+  }
+  const { encrypted } = await response.json();
+  const { list, pictures } = await decryptData(encrypted);
+  attendanceList = list;
+  usersProfilePics = Array.isArray(pictures) ? pictures : [pictures];
   renderAttendanceTable(attendanceList);
 }
-fetchAttendanceList();
+
+let currentType;
+
+tdcBtn.addEventListener("click", (event) => {
+  event.preventDefault();
+  currentType = "tdc";
+  fetchAttendanceList("tdc");
+});
+
+pdcBtn.addEventListener("click", (event) => {
+  event.preventDefault();
+  currentType = "pdc";
+  fetchAttendanceList("pdc");
+});
 
 function renderAttendanceTable(dataList) {
   // Group data by date
   const groupedData = dataList.reduce((acc, item) => {
-    const date = item.date; // Assuming `date` is the field for attendance date
-    if (!acc[date]) {
-      acc[date] = [];
-    }
+    const date = item.date;
+    if (!acc[date]) acc[date] = [];
     acc[date].push(item);
     return acc;
   }, {});
 
+  // Sort keys and rebuild as a new object
+  const sortedGroupedData = Object.fromEntries(
+    Object.entries(groupedData).sort(
+      ([dateA], [dateB]) => new Date(dateA) - new Date(dateB)
+    )
+  );
+
   // Generate HTML for collapsible sections
-  const tableHTML = Object.keys(groupedData)
+  const tableHTML = Object.keys(sortedGroupedData)
     .map((date) => {
       let desktopRows = "";
-      desktopRows = groupedData[date]
+      desktopRows = sortedGroupedData[date]
         .map(
           (trainee) => `
               <!-- Desktop Row -->
-              <tr class="hidden md:table-row text-left hover:outline outline-1 outline-black">
+              <tr class="hidden md:table-row text-center hover:outline outline-1 outline-black">
                 <td class="border border-gray-300 px-4 py-2">${
                   trainee.attendance_id
                 }</td>
+                <td class="border border-gray-300 px-4 py-2 text-left">
+                ${trainee.created_by.toUpperCase()} - 
+                ${trainee.creator_id} - ${trainee.creator_name}</td>
                 <td class="border border-gray-300 px-4 py-2">${
-                  trainee.creator_id
-                } - ${trainee.user_name}</td>
+                  trainee.date_am_pm
+                }</td>
                 <td class="border border-gray-300 px-4 py-2">${
                   trainee.hours_attended
                 }</td>
@@ -87,7 +120,7 @@ function renderAttendanceTable(dataList) {
         .join("");
 
       let mobileRows = "";
-      mobileRows = groupedData[date]
+      mobileRows = sortedGroupedData[date]
         .map((trainee) => {
           return `
               <!-- Mobile Row -->
@@ -99,12 +132,16 @@ function renderAttendanceTable(dataList) {
                       <span class="font-semibold">ID:</span>
                       <span>${trainee.attendance_id}</span>
                     </div>
+                    <div>
+                      <span class="font-semibold">Slot:</span>
+                      <span>${trainee.date_am_pm}</span>
+                    </div>
                     <div>Hours: ${trainee.hours_attended}</div>
                   </div>
                   <div class="flex gap-5">
                     <span class="font-semibold">Profile:</span>
                     <div class="ml-2 text-sm flex gap-5">
-                      <div>${trainee.user_name}</div>
+                      <div>${trainee.creator_name}</div>
                       <div>Status: 
                         ${
                           trainee.status === "Present"
@@ -139,18 +176,19 @@ function renderAttendanceTable(dataList) {
         .join("");
 
       return `
-        <div class="collapsible-section">
-          <button class="flex justify-between collapsible-header bg-sky-500 text-white px-4 py-2 w-full text-left font-semibold z-10">
-            ${date} - ${groupedData[date].length}
+        <div class="collapsible-section mb-1 animate-fadeIn">
+          <button class="flex justify-between collapsible-header shadow-sm shadow-gray-400 rounded-xl bg-sky-500 text-white px-4 py-2 w-full text-left font-semibold z-10">
+            ${date} - ${sortedGroupedData[date].length}
             <img id="collapsible-icon" src="/f-css/solid/icons_for_buttons/chevron-down.svg" class="w-4 h-4 place-self-center" />
           </button>
           <div class="collapsible-content overflow-auto max-h-data-table">
             <div class="overflow-auto max-h-data-table">
               <table class="w-full text-left text-sm border-collapse border-2 border-gray-300 mt-2">
                 <thead>
-                  <tr class="hidden md:table-row">
+                  <tr class="hidden text-center md:table-row">
                     <th class="border border-gray-300 px-4 py-2 w-12">ID</th>
-                    <th class="border border-gray-300 px-4 py-2">User ID - Name</th>
+                    <th class="border border-gray-300 px-4 py-2 text-left">User ID - Name</th>
+                    <th class="border border-gray-300 px-4 py-2 w-20">Slot</th>
                     <th class="border border-gray-300 px-4 py-2 w-36">Attended Hours</th>
                     <th class="border border-gray-300 px-4 py-2 w-24">Status</th>
                     <th class="border border-gray-300 px-4 py-2 w-24">Action</th>
@@ -225,6 +263,10 @@ function filterAttendanceList(data, filterBy, id) {
   return data.filter((item) => item[filterBy] == id);
 }
 
+function filterPictureMap(id) {
+  return usersProfilePics.filter((item) => item.user_id == id);
+}
+
 function allButtons(dataList) {
   document.querySelectorAll(".request-status-btn").forEach((button) => {
     button.addEventListener("click", function () {
@@ -252,9 +294,10 @@ function allButtons(dataList) {
               <p>Name: ${result.user_name} ${result.date} </p>
               <form>
               <div class="mb-4">
-                  <h3 class="text-xl font-semibold mb-3">Hours Attended</h3>
+                  <h3 class="text-xl font-semibold mb-3">Hours Attended <span class="text-sm text-gray-600">if absent leave blank</span></h3>
                   <input type="number" id="hours-attended" name="hours-attended" class="w-full outline outline-1 outline-gray-300 rounded-md text-lg px-1" placeholder="Enter Hours" />
               </div>
+             
               </form>
               <div class="justify-self-end space-x-4 mt-5">
                 <button id="status-attended" value="Verified" class="bg-blue-700 hover:bg-gradient-to-t from-sky-400 to-sky-800 text-white text-lg rounded-md px-2">Attended</button>
@@ -299,7 +342,7 @@ function allButtons(dataList) {
           setTimeout(() => {
             modal.style.display = "none";
           }, 3000);
-          fetchAttendanceList();
+          fetchAttendanceList(currentType);
         } else {
           alert(`Can't change status of ID no. ${id}`);
         }
@@ -329,23 +372,15 @@ function allButtons(dataList) {
       }
 
       const filteredList = filterAttendanceList(dataList, "attendance_id", id);
-      const courseID = filteredList[0].user_course_id;
-      console.log("courseID", courseID);
-      const response = await fetch(
-        `/api/instructor-dashboard/trainee-info/${courseID}`
-      );
-      if (!response.ok) {
-        modalDetails.innerText = "Cant fetch trainee info right now";
-        modal.style.display = "flex";
-        setTimeout(() => {
-          modal.style.display = "none";
-        }, 4000);
-        return;
-      }
+      let filteredProfilePic;
 
-      const data = await response.json();
-      traineesInfo(data[0]);
-      console.log("data", data);
+      filteredList[0].created_by == "user"
+        ? (filteredProfilePic = filterPictureMap(filteredList[0].creator_id))
+        : null;
+
+      const courseID = filteredList[0].user_course_id;
+      const profile = await fetchProfile(courseID);
+      traineesInfo(profile[0], filteredProfilePic);
     });
   });
 
@@ -436,18 +471,38 @@ function allButtons(dataList) {
   });
 }
 
-function traineesInfo(profile) {
+async function fetchProfile(courseID) {
+  const response = await fetch(
+    `/api/instructor-dashboard/trainee-info/${courseID}`
+  );
+  if (!response.ok) {
+    modalDetails.innerText = "Cant fetch trainee info right now";
+    modal.style.display = "flex";
+    setTimeout(() => {
+      modal.style.display = "none";
+    }, 4000);
+    return;
+  }
+  const data = await response.json();
+  return data;
+}
+
+function traineesInfo(profile, profilePic) {
   traineeInfoBox.innerHTML = "";
   traineeInfoBox.innerHTML = `
-          <div class="flex flex-col md:flex-row gap-5">
-              <div class="flex flex-col place-self-center">
-                  <img src="/f-css/solid/user-bg.jpg" alt="" class="w-28 h-28">
+          <div class="flex flex-col md:flex-row gap-5 animate-fadeIn" >
+              <div class="flex flex-col place-items-center md:place-self-center">
+                  <img src="${
+                    Object.keys(profilePic).length !== 0
+                      ? profilePic[0].profilepic
+                      : "/f-css/solid/black/user.svg"
+                  }" alt="" class="w-28 h-28">
                   <div>
                       <p>User Course ID: <span>${profile.course_id}</span></p>
-                      <a id="edit-profile-btn"
-                          class="bg-sky-900 hover:bg-red-600 text-white font-bold px-2 rounded-lg focus:outline-none focus:shadow-outline">
-                          Edit Profile
-                      </a>
+                      <button id="back-btn"
+                          class="bg-sky-900 hover:bg-red-600 text-white font-bold py-1 px-2 rounded-lg focus:outline-none focus:shadow-outline">
+                          Back
+                      </button>
                   </div>
               </div>
               <div class="flex flex-col gap-3">
@@ -485,11 +540,14 @@ function traineesInfo(profile) {
                           : '<span class="text-gray-700 hover:font-semibold rounded-md">Pending</span>'
                       }</p>
                           <p>Grade Sheet: ${
-                            profile.grading_status === "Pending"
+                            !profile.grade_sheet
                               ? `<button id="upload-grade-sheet-btn"
                               class="outline outline-1 outline-gray-400 hover:outline-gray-700 rounded-md px-1">Upload</button>`
                               : `<button id="view-grade-sheet-btn"
-                              class="outline outline-1 outline-gray-400 hover:outline-gray-700 rounded-md px-1">View</button>`
+                              class="outline outline-1 outline-gray-400 hover:outline-gray-700 rounded-md px-1">View</button>
+                                <button id="upload-grade-sheet-btn"
+                              class="outline outline-1 outline-gray-400 hover:outline-gray-700 rounded-md px-1">Upload</button>
+                              `
                           }</p>
                   </div>
                   <p>Certificate: ${
@@ -503,7 +561,8 @@ function traineesInfo(profile) {
       `;
   traineeInfoBox.style.display = "flex";
   attendanceTable.style.display = "none";
-  backBtn.style.display = "flex";
+
+  const backBtn = document.getElementById("back-btn");
 
   // Add event listener for the "View Certificate" button
   const viewCertificateBtn = document.getElementById("view-certificate-btn");
@@ -528,17 +587,12 @@ function traineesInfo(profile) {
   if (viewGradeSheetBtn) {
     viewGradeSheetBtn.addEventListener("click", (event) => {
       event.preventDefault();
-      const gradeSheetUrl = profile.grade_sheet;
-      if (gradeSheetUrl) {
-        const newWindow = window.open(gradeSheetUrl, "_blank");
-        if (newWindow) {
-          newWindow.focus();
-        } else {
-          alert("Please allow popups for this website.");
-        }
-      } else {
-        alert("Grade sheet is not available.");
-      }
+
+      openFileViewer({
+        fileData: profile.grade_sheet,
+        fileType: profile.grade_sheet_type,
+        title: "View Grading Sheet",
+      });
     });
   }
   //Grading sheet for completed course upload
@@ -552,12 +606,14 @@ function traineesInfo(profile) {
             <div class="mb-4">
                 <h3 class="text-lg font-semibold mb-4">Grade
                 <input type="number" id="course-grade" name="course-grade" 
-                value="${result.grade}" 
+                 value="${result.grade || ""}"
                 class="w-full outline outline-1 outline-gray-300 rounded-md px-2 py-1 mt-1" placeholder="Enter Trainee Grade"/>
             </div>
             <div class="mb-4">
                 <h3 class="text-lg font-semibold mb-4">Upload of grade sheet: 
-                  <hr class="border-white">user-name:  ${result.user_name} | course: ${result.course_id} - ${result.program_name} </h3>
+                  <hr class="border-white">user-name:  ${
+                    result.user_name
+                  } | course: ${result.course_id} - ${result.program_name} </h3>
                 <input type="file" id="grade-completion-file" name="grade-completion-file" 
                 class="w-full rounded-md text-lg px-1" accept="image/*"/>
             </div>
@@ -575,7 +631,7 @@ function traineesInfo(profile) {
           event.preventDefault();
           const file = document.getElementById("grade-completion-file")
             .files[0];
-          const courseGrade = document.getElementById("course-grade");
+          const courseGrade = document.getElementById("course-grade").value;
           const formData = new FormData();
           formData.append("grade-completion-file", file);
           formData.append("courseGrade", courseGrade);
@@ -594,7 +650,7 @@ function traineesInfo(profile) {
             if (response.ok) {
               showBtnResult(gradeUploadBtn, true);
               alert("Grading Sheet upload success!");
-              traineesInfo(data);
+              traineesInfo(data, profilePic);
             } else {
               showBtnResult(gradeUploadBtn, false);
               alert(data.error);
@@ -602,6 +658,7 @@ function traineesInfo(profile) {
             setTimeout(() => {
               modal.style.display = "none";
             }, 3000);
+            return;
           } catch (error) {
             console.error("Error uploading Template", error);
             alert("An error occurred while uploading Template.");
@@ -616,7 +673,6 @@ function traineesInfo(profile) {
     event.preventDefault();
     traineeInfoBox.style.display = "none";
     attendanceTable.style.display = "flex";
-    backBtn.style.display = "none";
   });
 }
 

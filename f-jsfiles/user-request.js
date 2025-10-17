@@ -40,7 +40,7 @@ async function renderRequestTable() {
             <td class="border border-gray-300 px-4 py-2 truncate">${
               arr.date_created
             }</td>
-            <td class="border border-gray-300 px-4 py-2 truncate">
+            <td class="border border-gray-300 px-4 py-2 text-center">
               ${
                 arr.status == "Accept"
                   ? '<div class="text-green-600 font-semibold rounded-md px-2">Accepted</div>'
@@ -127,7 +127,7 @@ async function renderRequestTable() {
                 <th class="border border-gray-300 px-4 py-2">Title</th>
                 <th class="w-24 border border-gray-300 px-4 py-2">Details</th>
                 <th class="w-32 border border-gray-300 px-4 py-2">Date</th>
-                <th class="w-24 border border-gray-300 px-4 py-2">Status</th>
+                <th class="w-28 border border-gray-300 px-4 py-2">Status</th>
                 <th class="border border-gray-300 px-4 py-2">Reason</th>
             </tr>
           </thead>
@@ -142,10 +142,10 @@ async function renderRequestTable() {
 }
 renderRequestTable();
 
+const modal = document.getElementById("myModal");
+const span = document.getElementsByClassName("close")[0];
+const modalDetails = document.getElementById("modal-details");
 function allButtons() {
-  const modal = document.getElementById("myModal");
-  const span = document.getElementsByClassName("close")[0];
-  const modalDetails = document.getElementById("modal-details");
   //submition of requestform
   const requestForm = document.getElementById("request-form");
 

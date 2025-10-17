@@ -1,6 +1,8 @@
 import mysql from "mysql2";
 import dotenv from "dotenv";
 import bcrypt from "bcrypt";
+import { renderBase64File } from "../utils/file-converter.js";
+import { fileTypeFromBuffer } from "file-type";
 dotenv.config();
 
 export const pool = mysql
@@ -548,35 +550,45 @@ export async function uploadProfile(
   civilStatus,
   address,
   ltoClientId,
-  trainingPurpose,
+  identification_card,
+  idCard,
+  prn,
   profilePicture,
   userId
 ) {
-  const [result] = await pool.query(
-    `
+  try {
+    const [result] = await pool.query(
+      `
     INSERT INTO user_profile (
-            first_name, last_name, middle_name, phone_number, lto_client_id, email, birth_date, nationality, gender, address, civil_status, training_purpose,
-            profile_picture, user_id
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            first_name, last_name, middle_name, phone_number, lto_client_id, email, 
+            birth_date, nationality, gender, address, civil_status,
+            profile_picture, identification_card, identification_card_picture, prn, user_id
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `,
-    [
-      firstName,
-      lastName,
-      middleName,
-      phoneNumber,
-      ltoClientId,
-      email,
-      birthDate,
-      nationality,
-      gender,
-      address,
-      civilStatus,
-      trainingPurpose,
-      profilePicture,
-      userId,
-    ]
-  );
-  return result.insertId;
+      [
+        firstName,
+        lastName,
+        middleName,
+        phoneNumber,
+        ltoClientId,
+        email,
+        birthDate,
+        nationality,
+        gender,
+        address,
+        civilStatus,
+        profilePicture,
+        identification_card,
+        idCard,
+        prn,
+        userId,
+      ]
+    );
+    return result.insertId;
+  } catch (error) {
+    console.error("Cant access save profile rigth now!");
+    throw error;
+  }
 }
 
 export async function getProfilewithUserId(id) {
@@ -670,19 +682,19 @@ export async function getAllDashboardCounts() {
       // Finished Applicants (user_courses table, program_duration == total_hours)
       pool.query(
         `SELECT COUNT(*) AS count FROM user_courses
-       WHERE program_duration = total_hours
+       WHERE program_duration <= total_hours
          AND MONTH(date_completed) = ? AND YEAR(date_completed) = ?`,
         [month, year]
       ),
       pool.query(
         `SELECT COUNT(*) AS count FROM user_courses
-       WHERE program_duration = total_hours
+       WHERE program_duration <= total_hours
          AND YEAR(date_completed) = ?`,
         [year]
       ),
       pool.query(
         `SELECT COUNT(*) AS count FROM user_courses
-       WHERE program_duration = total_hours`
+       WHERE program_duration <= total_hours`
       ),
 
       // TDC Takers (applications table, transmission = 'onsite')
@@ -797,7 +809,7 @@ export async function addPaymentMethod(
   methodFileType
 ) {
   const query = `
-    INSERT INTO payment_methods (method_name, availablity, method_file, method_file_type)
+    INSERT INTO payment_methods (method_name, availability, method_file, method_file_type)
     VALUES (?, ?, ?, ?)
   `;
   try {
@@ -817,7 +829,7 @@ export async function addPaymentMethod(
 export async function editPaymentMethod(methodId, methodName, availability) {
   const query = `
     UPDATE payment_methods
-    SET method_name = ?, availablity = ?
+    SET method_name = ?, availability = ?
     WHERE method_id = ?
   `;
   try {
@@ -869,6 +881,7 @@ export async function getInstructorScheduleForToday() {
     SELECT 
       i.instructor_id,
       i.instructor_name,
+      i.instructor_profile_picture AS profile_picture,
       a.date,
       a.am_available,
       a.pm_available,
@@ -891,10 +904,17 @@ export async function getInstructorScheduleForToday() {
 
   try {
     const [result] = await pool.query(query, [today]);
-    const formattedResult = result.map((row) => ({
-      ...row,
-      date: row.date ? formatDate(row.date) : null,
-    }));
+    const formattedResult = await Promise.all(
+      result.map(async (row) => ({
+        ...row,
+        am_applicant_name:
+          row.onsite_slots == null ? row.am_applicant_name : "TDC onsite class",
+        pm_applicant_name:
+          row.onsite_slots == null ? row.pm_applicant_name : "TDC onsite class",
+        date: row.date ? formatDate(row.date) : null,
+        profile_picture: await renderBase64File(row.profile_picture),
+      }))
+    );
     return formattedResult;
   } catch (error) {
     console.error("Error fetching instructor schedule for today", error);
@@ -1042,7 +1062,8 @@ export async function deleteApplication(id) {
   try {
     // Fetch the application details before deleting
     const application = await getApplicantadmin(id);
-    if (application.length === 0) {
+    console.log("application", application);
+    if (!application) {
       throw new Error("Application not found");
     }
 
@@ -1059,7 +1080,7 @@ export async function deleteApplication(id) {
         `,
         [id]
       );
-
+      console.log("course_id", application.user_course_id);
       // Update availability for startDate and continuation based on AM/PM selection
       await updateAvailability(
         connection,
@@ -1094,9 +1115,9 @@ export async function deleteApplication(id) {
       await connection.query(
         `
         DELETE FROM user_courses
-        WHERE user_id = ? AND date_started = ?
+        WHERE course_id = ?
         `,
-        [application.creator_id, application.start_date]
+        [application.user_course_id]
       );
 
       // Commit the transaction
@@ -1111,7 +1132,10 @@ export async function deleteApplication(id) {
       connection.release();
     }
 
-    return { clientId: application.creator_id };
+    return {
+      clientId: application.creator_id,
+      courseId: application.user_course_id,
+    };
   } catch (error) {
     console.error("Error deleting application:", error);
     throw error;
@@ -1142,13 +1166,24 @@ async function updateMonthlyApplicants(connection, increment = 1) {
 }
 
 export async function getAllPrograms() {
-  const result = await pool.query(
+  const [result] = await pool.query(
     `
     SELECT *
     FROM program_offers
     `
   );
-  return result[0];
+
+  const formattedResult = await Promise.all(
+    result.map(async (row) => ({
+      ...row,
+      program_cover: await renderBase64File(
+        row.program_cover,
+        row.program_cover_file_type
+      ),
+    }))
+  );
+
+  return formattedResult;
 }
 
 export async function editOneProgram(
@@ -1217,11 +1252,31 @@ export async function assignPrograms(instructor_id, program_ids) {
   const connection = await pool.getConnection();
   try {
     await connection.beginTransaction();
-    const values = program_ids.map((program_id) => [instructor_id, program_id]);
-    await connection.query(
-      "INSERT INTO instructor_programs (instructor_id, program_id) VALUES ?",
-      [values]
+
+    // Fetch existing program_ids for this instructor
+    const [existingRows] = await connection.query(
+      "SELECT program_id FROM instructor_programs WHERE instructor_id = ?",
+      [instructor_id]
     );
+    const existingProgramIds = new Set(
+      existingRows.map((row) => row.program_id)
+    );
+
+    // Filter out already assigned program_ids
+    const newValues = program_ids
+      .map((id) => Number(id)) // convert to number
+      .filter((program_id) => !existingProgramIds.has(program_id))
+      .map((program_id) => [instructor_id, program_id]);
+
+    console.log("newValues", newValues);
+    // Insert only new pairs
+    if (newValues.length > 0) {
+      await connection.query(
+        "INSERT INTO instructor_programs (instructor_id, program_id) VALUES ?",
+        [newValues]
+      );
+    }
+
     await connection.commit();
   } catch (error) {
     await connection.rollback();
@@ -1609,10 +1664,13 @@ export async function getUserPaymentsLogs(userId) {
   `;
   try {
     const [result] = await pool.query(query, [userId]);
-    const formattedResult = result.map((row) => ({
-      ...row,
-      date_created: formatDate(row.date_created),
-    }));
+    const formattedResult = await Promise.all(
+      result.map(async (row) => ({
+        ...row,
+        date_created: formatDate(row.date_created),
+        screenshot_receipt: await renderBase64File(row.screenshot_receipt),
+      }))
+    );
     return formattedResult;
   } catch (error) {
     console.error("Error fetching user payments list:", error);
@@ -1784,7 +1842,12 @@ export async function getUserRequest(userId) {
       `,
       [userId]
     );
-    return result; // Return the full result array to get all requests for the user
+
+    const formattedResult = result.map((row) => ({
+      ...row,
+      date_created: formatDate(row.date_created),
+    }));
+    return formattedResult; // Return the full result array to get all requests for the user
   } catch (error) {
     console.error("Error fetching user requests:", error);
     throw error; // Throw the error to be handled by the calling function
@@ -1830,7 +1893,6 @@ export async function editUserRequest(status, reason, rowId) {
       [status, reason, rowId]
     );
     const result = await getUserDetailRequest(rowId);
-    console.log("result", result);
     return {
       clientId: result.sender_id,
       title: result.request_title,
@@ -1859,6 +1921,23 @@ export async function checkInstructorAvailability(instructorId) {
   } catch (error) {
     console.error("Database query error:", error);
     throw error;
+  }
+}
+
+export async function setTdcDate(instructorId, date, am, pm, onsite) {
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+
+    await updateAvailability(connection, instructorId, date, am, pm, onsite);
+
+    await connection.commit();
+  } catch (error) {
+    await connection.rollback();
+    console.error("Error in setTdcDate:", error);
+    throw error;
+  } finally {
+    connection.release();
   }
 }
 
@@ -1939,20 +2018,20 @@ export async function updateOnsiteAvailability(instructorId, date, onsite) {
 async function isSlotTaken(instructorId, date, am, pm) {
   try {
     const [result] = await pool.query(
-      "SELECT am_available, pm_available FROM availability WHERE instructor_id = ? AND date = ?",
+      "SELECT am_available, pm_available, onsite_slots FROM availability WHERE instructor_id = ? AND date = ?",
       [instructorId, date]
     );
-    console.log("Slot query result:", result);
 
     if (result.length === 0) {
       return false; // No record found, slot is available
     }
 
-    const { am_available, pm_available } = result[0];
+    const { am_available, pm_available, onsite_slots } = result[0];
 
     // Check individual slot availability
-    if (am !== null && am_available === 1) return true;
-    if (pm !== null && pm_available === 1) return true;
+    if (am !== null && am_available === 1) return 1;
+    if (pm !== null && pm_available === 1) return 2;
+    if (!am && !pm && onsite_slots !== null) return 3;
 
     return false; // No conflicts
   } catch (error) {
@@ -1997,6 +2076,9 @@ export async function applyTDC(
   transmissionType,
   program_id
 ) {
+  if (role == "admin") {
+    userId = 0;
+  }
   if (transmissionType !== "Onsite") {
     // Check if startDate slot is already taken
     const startDateSlotTaken = await isSlotTaken(
@@ -2005,8 +2087,10 @@ export async function applyTDC(
       startDateAMPM === "AM" ? true : null,
       startDateAMPM === "PM" ? true : null
     );
-    if (startDateSlotTaken) {
+    if (startDateSlotTaken == 1 || startDateSlotTaken == 2) {
       throw new Error("Start date slot is already taken.");
+    } else if (startDateSlotTaken == 3) {
+      throw new Error("Selected start date is not available for this program");
     }
 
     // Check if continuation slot is already taken
@@ -2016,8 +2100,12 @@ export async function applyTDC(
       continuationAMPM === "AM" ? true : null,
       continuationAMPM === "PM" ? true : null
     );
-    if (continuationSlotTaken) {
+    if (continuationSlotTaken == 1 || continuationSlotTaken == 2) {
       throw new Error("Continuation date slot is already taken.");
+    } else if (continuationSlotTaken == 3) {
+      throw new Error(
+        "Selected continuation date is not available for this program"
+      );
     }
   } else {
     try {
@@ -2190,8 +2278,12 @@ export async function addContinuationDate(
       dateAMPM === "AM" ? true : null,
       dateAMPM === "PM" ? true : null
     );
-    if (continuationSlotTaken) {
+    if (continuationSlotTaken == 1 || continuationSlotTaken == 2) {
       throw new Error("Continuation date slot is already taken.");
+    } else if (continuationSlotTaken == 3) {
+      throw new Error(
+        "Selected Continuation date is not available for this program."
+      );
     }
   } else {
     // Check availability for the continuation date
@@ -2348,11 +2440,11 @@ export async function getAllPdcTdcTakers(type) {
 }
 
 export async function changeUserAttendanceStatus(id, status, hours) {
-  console.log("id, status, hours", id, status, hours);
   const [attendanceRows] = await pool.query(
     `SELECT * FROM attendance WHERE attendance_id = ?`,
     [id]
   );
+  console.log("attendanceRows", attendanceRows);
   const attendanceInfo = attendanceRows[0];
   if (!attendanceInfo) throw new Error("Attendance record not found");
 
@@ -2360,6 +2452,7 @@ export async function changeUserAttendanceStatus(id, status, hours) {
     attendanceInfo.user_course_id
   );
   const userCourseInfo = userCourseRows[0];
+  console.log("userCourseInfo", userCourseInfo);
   if (!userCourseInfo) throw new Error("User course not found");
 
   let setters, params;
@@ -2370,7 +2463,7 @@ export async function changeUserAttendanceStatus(id, status, hours) {
   const updatedHours = userCourseInfo.total_hours + safeHours;
   console.log("updatedHours", updatedHours);
 
-  if (updatedHours <= userCourseInfo.program_duration) {
+  if (updatedHours >= userCourseInfo.program_duration) {
     const date = new Date();
     setters = "date_completed = ?, total_hours = ?";
     params = [formatDate(date), updatedHours, userCourseInfo.course_id];
@@ -2394,7 +2487,7 @@ export async function changeUserAttendanceStatus(id, status, hours) {
     );
 
     await connection.commit();
-    return { userid: userCourseInfo.userId };
+    return { clientId: userCourseInfo.user_id };
   } catch (error) {
     await connection.rollback();
     console.error("Error changing attendance status", error);
@@ -2426,32 +2519,86 @@ export async function getUserAttendanceSchedule(userId, role) {
   }
 }
 
-export async function getAttendanceByInstructorId(id) {
-  const query = `
-  SELECT A.*, U.user_name
-  FROM attendance A
-  JOIN user U ON A.creator_id = U.user_id
-  WHERE A.instructor_id = ?
+export async function getAttendanceByInstructorId(id, type) {
+  let query = `
+    SELECT a.*, 
+    CASE 
+      WHEN a.created_by = 'user' THEN u.user_name 
+      WHEN a.created_by = 'admin' THEN ad.admin_name 
+      ELSE 'Unknown' 
+    END AS creator_name,
+    i.instructor_name
+    FROM attendance a
+    LEFT JOIN user u ON a.creator_id = u.user_id AND a.created_by = 'user'
+    LEFT JOIN admin_account ad ON a.creator_id = ad.account_id AND a.created_by = 'admin'
+    LEFT JOIN instructor i ON a.instructor_id = i.instructor_id
   `;
+
+  switch (type) {
+    case "pdc":
+      query += ` WHERE a.instructor_id = ? AND (a.transmission = 'Manual' OR a.transmission = 'Automatic')`;
+      break;
+    case "tdc":
+      query += ` WHERE a.instructor_id = ? AND a.transmission = 'onsite'`;
+      break;
+    default:
+      break;
+  }
+
   const [result] = await pool.query(query, [id]);
+
+  // Extract unique user IDs for profile picture lookup
+  const userIds = [
+    ...new Set(
+      result
+        .filter((row) => row.created_by === "user")
+        .map((row) => row.creator_id)
+    ),
+  ];
+
+  // Fetch profile pictures separately
+  let profilePicList = [];
+  if (userIds.length > 0) {
+    const [profileRows] = await pool.query(
+      `SELECT user_id, profile_picture FROM user_profile WHERE user_id IN (?)`,
+      [userIds]
+    );
+
+    profilePicList = await Promise.all(
+      profileRows.map(async ({ user_id, profile_picture }) => ({
+        user_id,
+        profilepic: await renderBase64File(profile_picture),
+      }))
+    );
+  }
+
+  // Format attendance rows
   const formattedResult = result.map((row) => ({
     ...row,
     date: formatDate(row.date),
   }));
-  return formattedResult;
+
+  return { data: formattedResult, userProfilePictures: profilePicList };
 }
 
 export async function getInstructors() {
   try {
     const [result] = await pool.query(
-      `SELECT *
-      FROM instructor`
+      `SELECT i.*, 
+      admin.user_email
+      FROM instructor i
+      LEFT JOIN admin_account admin ON i.account_id = admin.account_id`
     );
 
-    const formattedResult = result.map((row) => ({
-      ...row,
-      date_started: formatDate(row.date_started),
-    }));
+    const formattedResult = await Promise.all(
+      result.map(async (row) => ({
+        ...row,
+        date_started: formatDate(row.date_started),
+        instructor_profile_picture: await renderBase64File(
+          row.instructor_profile_picture
+        ),
+      }))
+    );
     return formattedResult;
   } catch (error) {
     console.error("Failed fetching instructors!", error);
@@ -2506,6 +2653,9 @@ export async function addInstructor(
   onsite,
   manual,
   automatic,
+  SSS,
+  Pagibig,
+  Philhealth,
   accreditaionNumber,
   dateStarted,
   profilePicture
@@ -2513,8 +2663,8 @@ export async function addInstructor(
   try {
     const [result] = await pool.query(
       `
-  INSERT INTO instructor (instructor_name, rate_per_hour, instructor_type, isTdcOnsite, isManual, isAutomatic, date_started, instructor_profile_picture, accreditation_number)
-  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+  INSERT INTO instructor (instructor_name, rate_per_hour, instructor_type, isTdcOnsite, isManual, isAutomatic, date_started, SSS, PhilHealth, Pag_ibig, instructor_profile_picture, accreditation_number)
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `,
       [
         name,
@@ -2524,6 +2674,9 @@ export async function addInstructor(
         manual,
         automatic,
         dateStarted,
+        SSS,
+        Philhealth,
+        Pagibig,
         profilePicture,
         accreditaionNumber,
       ]
@@ -2808,16 +2961,23 @@ export async function getCompletedCourseList() {
       LEFT JOIN instructor i ON uc.instructor_name = i.instructor_name
       LEFT JOIN user u ON uc.user_id = u.user_id
       LEFT JOIN program_offers po ON uc.program_name = po.program_name
-      WHERE uc.grading_status = 'Completed'
+      WHERE uc.total_hours >= uc.program_duration
       `);
 
-    const formattedResult = result.map((row) => ({
-      ...row,
-      date_started: row.date_started ? formatDate(row.date_started) : null,
-      date_completed: row.date_completed
-        ? formatDate(row.date_completed)
-        : null,
-    }));
+    const formattedResult = await Promise.all(
+      result.map(async (row) => ({
+        ...row,
+        date_started: row.date_started ? formatDate(row.date_started) : null,
+        date_completed: row.date_completed
+          ? formatDate(row.date_completed)
+          : null,
+        grade_sheet: await renderBase64File(row.grade_sheet),
+        certificate_file: await renderBase64File(
+          row.certificate_file,
+          row.certificate_file_type
+        ),
+      }))
+    );
     return formattedResult;
   } catch (error) {
     console.error("Error fetching completed courses", error);
@@ -2850,13 +3010,23 @@ export async function getTraineeCourseList(userId) {
   `;
   try {
     const [result] = await pool.query(query, [userId]);
-    const formattedResult = result.map((row) => ({
-      ...row,
-      date_started: !row.date_started ? null : formatDate(row.date_started),
-      date_completed: !row.date_completed
-        ? null
-        : formatDate(row.date_completed),
-    }));
+    const formattedResult = await Promise.all(
+      result.map(async (row) => ({
+        ...row,
+        date_started: !row.date_started ? null : formatDate(row.date_started),
+        date_completed: !row.date_completed
+          ? null
+          : formatDate(row.date_completed),
+        grade_sheet_type: row.grade_sheet
+          ? await fileTypeFromBuffer(row.grade_sheet)
+          : null,
+        grade_sheet: await renderBase64File(row.grade_sheet),
+        certificate_file: await renderBase64File(
+          row.certificate_file,
+          row.certificate_file_type
+        ),
+      }))
+    );
     return formattedResult;
   } catch (error) {
     console.error("Error fetching user course list", error);
@@ -2936,22 +3106,34 @@ export async function uploadTraineeCompletionCertificate(
   }
 }
 
-export async function uploadTraineeGradeSheet(id, fileBuffer, grade) {
-  const setters =
-    grade == null
-      ? "grade_sheet = ?"
-      : "grade = ?, grade_sheet = ?, grade_status = 'Completed'";
-  const params = grade == null ? [fileBuffer, id] : [grade, fileBuffer, id];
-  const query = `
-    UPDATE user_courses
-    SET ${setters}
-    WHERE course_id = ?
-  `;
-
+export async function uploadTraineeGradeSheet(id, gradeSheet, grade) {
   try {
+    const fields = [];
+    const params = [];
+
+    if (grade != null) {
+      fields.push("grade = ?", "grading_status = 'Completed'");
+      params.push(grade);
+    }
+
+    if (gradeSheet != null) {
+      fields.push("grade_sheet = ?");
+      params.push(gradeSheet);
+    }
+
+    if (fields.length === 0) return; // Nothing to update
+
+    const query = `
+      UPDATE user_courses
+      SET ${fields.join(", ")}
+      WHERE course_id = ?
+    `;
+
+    params.push(id); // course_id goes last
+
     await pool.query(query, params);
   } catch (error) {
-    console.error("Error updating database:", error);
+    console.error("Error updating grade sheet:", error);
     throw error;
   }
 }
@@ -2974,16 +3156,41 @@ export async function deleteTraineeCourseInfo(
   }
 }
 
+export async function deleteTraineeAttendance(creatorId, createdBy, courseId) {
+  const [result] = await pool.query(
+    `SELECT application_id FROM applications WHERE creator_id = ? AND created_by = ? AND user_course_id = ?`,
+    [creatorId, createdBy, courseId]
+  );
+  console.log("result", result);
+  try {
+    await deleteApplication(result[0].application_id);
+    return { message: "Course deleted successfully" };
+  } catch (error) {
+    console.error("Error Deleting Vehicle", error);
+    throw error;
+  }
+}
+
 // Function for vehicle list
 
 export async function getAllVehicle() {
-  const result = await pool.query(
+  const [result] = await pool.query(
     `
     SELECT *
     FROM vehicle_list
     `
   );
-  return result[0];
+  const formattedResult = await Promise.all(
+    result.map(async (row) => ({
+      ...row,
+      car_picture: await renderBase64File(row.car_picture),
+      lto_document: await renderBase64File(
+        row.lto_document,
+        row.lto_document_type
+      ),
+    }))
+  );
+  return formattedResult;
 }
 
 export async function updateVehicleStatus(id, status) {
@@ -3052,15 +3259,15 @@ export async function storeLtoDocument(vehicleId, fileBuffer, fileType) {
   }
 }
 
-export async function uploadVehiclePhoto(vehicleId, fileBuffer, fileType) {
+export async function uploadVehiclePhoto(vehicleId, fileBuffer) {
   const query = `
     UPDATE vehicle_list
-    SET car_picture = ?, car_picture_type = ?
+    SET car_picture = ?
     WHERE vehicle_id = ?
   `;
 
   try {
-    await pool.query(query, [fileBuffer, fileType, vehicleId]);
+    await pool.query(query, [fileBuffer, vehicleId]);
   } catch (error) {
     console.error("Error updating database:", error);
     throw error;
@@ -3144,14 +3351,15 @@ export async function markReadNotifications(connection, userId, role) {
 
 export async function saveCertificateToDatabase(courseId, pdfBuffer, fileType) {
   try {
-    const result = await pool.query(
+    const [result] = await pool.query(
       `
-      INSERT INTO user_courses (certificate_file, certificate_file_type)
-      VALUES (?, ?)
-      WHERE user_course_id = ?
+        UPDATE user_courses
+        SET certificate_file = ?, certificate_file_type = ?
+        WHERE course_id = ?
       `,
       [pdfBuffer, fileType, courseId]
     );
+
     return result;
   } catch (error) {
     console.error("Failed to upload the certificate", error);

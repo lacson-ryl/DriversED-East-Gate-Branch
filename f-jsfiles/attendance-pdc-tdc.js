@@ -1,9 +1,21 @@
+const pdcBtn = document.getElementById("pdc-takers-btn");
+const tdcBtn = document.getElementById("tdc-takers-btn");
+let currentType;
+
 async function renderAttendanceTable(type) {
   const response = await fetch(`/api/attendance/${type}`);
   if (!response.ok) return alert("Cant get attendance details for the table.");
 
+  if (type == "tdc") {
+    tdcBtn.classList.add("outline");
+    pdcBtn.classList.remove("outline");
+  } else if (type == "pdc") {
+    tdcBtn.classList.remove("outline");
+    pdcBtn.classList.add("outline");
+  }
+  currentType = type;
+
   const data = await response.json();
-  console.log("data", data);
   const groupedData = data.reduce((acc, item) => {
     const date = item.date;
     if (!acc[date]) acc[date] = [];
@@ -11,10 +23,17 @@ async function renderAttendanceTable(type) {
     return acc;
   }, {});
 
-  const tableHTML = Object.keys(groupedData)
+  // Sort keys and rebuild as a new object
+  const sortedGroupedData = Object.fromEntries(
+    Object.entries(groupedData).sort(
+      ([dateA], [dateB]) => new Date(dateA) - new Date(dateB)
+    )
+  );
+
+  const tableHTML = Object.keys(sortedGroupedData)
     .map((date) => {
       // Desktop rows
-      const desktopRows = groupedData[date]
+      const desktopRows = sortedGroupedData[date]
         .map(
           (arr) => `
             <tr class="hidden md:table-row text-center group hover:outline outline-1 outline-black">
@@ -50,7 +69,11 @@ async function renderAttendanceTable(type) {
                 </button>
               </td>
               <td class="border border-gray-300 px-4 py-2 text-center space-x-2">
-                <button data-id="${arr.attendance_id}"
+                <button 
+                data-id="${arr.attendance_id}"
+                data-creator-id="${arr.creator_id}"
+                data-created-by="${arr.created_by}"
+                data-course-id="${arr.user_course_id}"
                   class="delete-applicant-btn bg-rose-700 hover:bg-gradient-to-t from-rose-400 to-rose-800 text-white rounded-md px-2">
                   <img src="/f-css/solid/icons_for_buttons/trash.svg" class="w-6 h-6 reverse-color" />
                 </button>
@@ -61,9 +84,9 @@ async function renderAttendanceTable(type) {
         .join("");
 
       return `
-        <div class="collapsible-section mb-1">
-          <button class="flex justify-between shadow-sm shadow-gray-400 rounded-full collapsible-header bg-sky-500 text-white px-4 py-2 w-full text-left font-semibold z-10">
-            ${date} - ${groupedData[date].length}
+        <div class="collapsible-section mb-1 animate-fadeIn">
+          <button class="flex justify-between shadow-sm shadow-gray-400 rounded-xl collapsible-header bg-sky-500 text-white px-4 py-2 w-full text-left font-semibold z-10">
+            ${date} - ${sortedGroupedData[date].length}
             <img id="collapsible-icon" src="/f-css/solid/icons_for_buttons/chevron-down.svg" class="w-4 h-4 place-self-center" />
           </button>
           <div class="collapsible-content overflow-auto max-h-data-table">
@@ -99,6 +122,16 @@ async function renderAttendanceTable(type) {
   attachCollapsibleListeners();
   allButtons();
 }
+
+tdcBtn.addEventListener("click", (event) => {
+  event.preventDefault();
+  renderAttendanceTable("tdc");
+});
+
+pdcBtn.addEventListener("click", (event) => {
+  event.preventDefault();
+  renderAttendanceTable("pdc");
+});
 
 // Collapsible logic (same as instructor dashboard)
 function attachCollapsibleListeners() {
@@ -204,7 +237,7 @@ function allButtons() {
           setTimeout(() => {
             modal.style.display = "none";
           }, 3000);
-          renderAttendanceTable();
+          renderAttendanceTable(currentType);
         } else {
           alert(`Can't change status of ID no. ${id}`);
         }
@@ -223,6 +256,9 @@ function allButtons() {
     button.addEventListener("click", async function (event) {
       event.preventDefault();
       const id = this.getAttribute("data-id");
+      const creatorId = this.getAttribute("data-creator-id");
+      const createdBy = this.getAttribute("data-created-by");
+      const courseId = this.getAttribute("data-course-id");
 
       if (!id) {
         console.error("ID not found");
@@ -248,7 +284,7 @@ function allButtons() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           id,
-          path: `/api/applicant/${id}`,
+          path: `/api/delete-attendance`,
         }),
       });
 
@@ -267,18 +303,20 @@ function allButtons() {
           "click",
           async () => {
             try {
-              const deleteResponse = await fetch(`/api/applicant/${id}`, {
+              const deleteResponse = await fetch(`/api/delete-attendance`, {
                 method: "DELETE",
                 headers: {
                   "Content-Type": "application/json",
                   "x-delete-token": data.deleteToken,
                 },
+                body: JSON.stringify({ id, creatorId, createdBy, courseId }),
               });
+              const dataDelRes = await deleteResponse.json();
               if (deleteResponse.ok) {
-                tokenIndicator.innerText = `Successfully Deleted Applicant ID #${id}`;
-                renderAttendanceTable();
+                tokenIndicator.innerText = dataDelRes.message;
+                renderAttendanceTable(currentType);
               } else {
-                tokenIndicator.innerText = `Can't Delete Applicant ID #${id}`;
+                tokenIndicator.innerText = dataDelRes.error;
               }
               setTimeout(() => {
                 modal.style.display = "none";
@@ -315,13 +353,3 @@ function allButtons() {
     }
   };
 }
-
-document.getElementById("tdc-takers-btn").addEventListener("click", (event) => {
-  event.preventDefault();
-  renderAttendanceTable("tdc");
-});
-
-document.getElementById("pdc-takers-btn").addEventListener("click", (event) => {
-  event.preventDefault();
-  renderAttendanceTable("pdc");
-});

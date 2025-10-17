@@ -26,7 +26,7 @@ adminPassport.use(
     {
       clientID: process.env.GOOGLE_ADMIN_CLIENT_ID,
       clientSecret: process.env.GOOGLE_ADMIN_CLIENT_SECRET,
-      callbackURL: "http://localhost:8000/auth/google/admin/callback",
+      callbackURL: `${process.env.HOST}/auth/google/admin/callback`,
     },
     async (accessToken, refreshToken, profile, done) => {
       try {
@@ -76,7 +76,7 @@ userPassport.use(
     {
       clientID: process.env.GOOGLE_USER_CLIENT_ID,
       clientSecret: process.env.GOOGLE_USER_CLIENT_SECRET,
-      callbackURL: "http://localhost:8000/auth/google/user/callback",
+      callbackURL: `${process.env.HOST}/auth/google/user/callback`,
     },
     async (accessToken, refreshToken, profile, done) => {
       try {
@@ -164,7 +164,7 @@ changePasswordPassport.use(
     {
       clientID: process.env.GOOGLE_CHANGE_PASSWORD_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CHANGE_PASSWORD_SECRET,
-      callbackURL: "http://localhost:8000/auth/google/change-password/callback",
+      callbackURL: `${process.env.HOST}/auth/google/change-password/callback`,
     },
     async (accessToken, refreshToken, profile, done) => {
       try {

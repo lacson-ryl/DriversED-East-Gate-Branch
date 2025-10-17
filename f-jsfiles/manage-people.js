@@ -1,10 +1,11 @@
-import { encryptData, decryptData } from "../utils/f-webCryptoKeys.js";
 import {
   showLoadingMessage,
   showOperationResult,
   showBtnLoading,
   showBtnResult,
 } from "../utils/modal-feedback.js";
+
+import { encryptData, decryptData } from "../utils/f-webCryptoKeys.js";
 
 // Initialize modal and its components
 const modal = document.getElementById("myModal");
@@ -15,158 +16,147 @@ async function renderInstructorsList() {
   const response = await fetch("/api/manage-people/list");
   const encrypted = await response.json();
   const data = await decryptData(encrypted.encrypted);
-  console.log("data", data);
+  console.log('data', data);
   const instructorTable = document.getElementById(
     "instructors-payroll-history-table"
   );
 
-  if (!data) {
+  if (!response.ok) {
     instructorTable.innerHTML = `
-        <table id="instructors-table" class="mt-3 mb-5 mx-3 text-left justify-items-start table-fixed border-collapse border-2 border-gray-300">
+        <table id="instructors-table" class="mt-3 mb-5 mx-3 text-left justify-items-center table-fixed border-collapse border-2 border-gray-300">
           <thead>
             <tr>
-              <th class="border border-gray-300 px-4 py-2 w-36">Failed to render Instructor Table</th>
+              <th class="border border-gray-300 px-4 py-2">Failed to render Instructor Table</th>
+            </tr>
+          </thead>
+        </table>
+      `;
+  } else if (Object.keys(data).length == 0) {
+    instructorTable.innerHTML = `
+        <table id="instructors-table" class="mt-3 mb-5 mx-3 text-left justify-items-center table-fixed border-collapse border-2 border-gray-300">
+          <thead>
+            <tr>
+              <th class="border border-gray-300 px-4 py-2">No Instructor added yet.</th>
             </tr>
           </thead>
         </table>
       `;
   } else {
     const details = data;
+    console.log("details", details);
     let tableRows = details
       .map(
         (arr) => `
-        <tr class="text-center hover:outline outline-1 outline-black">
-          <td class="border border-gray-300 px-4 py-2">${arr.instructor_id}</td>
-          <td class="border border-gray-300 px-4 py-2">${
-            arr.instructor_name
-          } - ${arr.rate_per_hour}</td>
-          <td class="border border-gray-300 px-4 py-2">${
-            arr.instructor_type
-          }</td>
-          <td class="border border-gray-300 px-4 py-2">
-            ${
-              arr.isTdcOnsite === 1
-                ? '<div class="text-green-600 font-semibold rounded-md px-2">YES</div>'
-                : '<div class="text-red-600 font-semibold rounded-md px-2">NO</div>'
-            }
-          </td>
-          <td class="border border-gray-300 px-4 py-2">
-            ${
-              arr.isManual === 1
-                ? '<div class="text-green-600 font-semibold rounded-md px-2">YES</div>'
-                : '<div class="text-red-600 font-semibold rounded-md px-2">NO</div>'
-            }
-          </td>
-          <td class="border border-gray-300 px-4 py-2">
-            ${
-              arr.isAutomatic === 1
-                ? '<div class="text-green-600 font-semibold rounded-md px-2">YES</div>'
-                : '<div class="text-red-600 font-semibold rounded-md px-2">NO</div>'
-            }
-          </td>
-          <td class="border border-gray-300 px-4 py-2">${arr.date_started}</td>
-          <td class="border border-gray-300 px-4 py-2 text-sm">
-            ${arr.SSS || 0} | ${arr.Pag_ibig || 0} | ${arr.Philhealth || 0}
-          </td>
-          <td class="border border-gray-300 px-4 py-2">
-            <button data-id="${arr.instructor_id}"
-              class="instructor-weekly-payroll-btn hover:bg-gray-200 hover:outline outline-1 outline-black rounded-md px-2">Weekly</button>
-            <button data-id="${arr.instructor_id}"
-              class="instructor-payroll-btn hover:bg-gray-200 hover:outline outline-1 outline-black rounded-md px-2">History</button>
-          </td>
-          <td class="border border-gray-300 px-4 py-2">${
-            arr.account_id
-              ? `<div class="text-green-600 font-semibold rounded-md px-2">YES</div>`
-              : `<button data-id="${arr.instructor_id}"
-              class="instructor-assign-account-btn bg-blue-700 hover:bg-gradient-to-t from-sky-400 to-sky-800 text-white rounded-md px-2"
-              >Assign</button>`
-          } 
-          </td>
-          <td class="border border-gray-300">
-            <button data-id="${arr.instructor_id}"
-              class="instructor-edit-btn bg-blue-700 hover:bg-gradient-to-t from-sky-400 to-sky-800 text-white rounded-md px-2">
-              <img src="/f-css/solid/icons_for_buttons/pencil.svg" class="w-6 h-6 reverse-color" />
-            </button>
-            <button data-id="${arr.instructor_id}"
-              class="instructor-delete-btn bg-rose-700 hover:bg-gradient-to-t from-rose-400 to-rose-800 text-white rounded-md px-2">
-              <img src="/f-css/solid/icons_for_buttons/trash.svg" class="w-6 h-6 reverse-color" />
-            </button>
-          </td>
-        </tr>
-      `
+          <tr class="text-center hover:outline outline-1 outline-black">
+            <td class="border border-gray-300 px-2 py-2">
+              <img src="${
+                arr.instructor_profile_picture
+                  ? arr.instructor_profile_picture
+                  : "/f-css/solid/black/user.svg"
+              }"
+                  alt="Instructor Photo"
+                  class="w-10 h-10 object-cover rounded-full mx-auto" />
+            </td>
+            <td class="border border-gray-300 px-4 py-2">
+            ${arr.instructor_id} - ${arr.instructor_name} - ${
+          arr.rate_per_hour
+        }</td>
+            <td class="border border-gray-300 px-4 py-2">${
+              arr.instructor_type
+            }</td>
+            <td class="border border-gray-300 px-4 py-2">
+              ${
+                arr.isTdcOnsite === 1
+                  ? '<div class="text-green-600 font-semibold rounded-md px-2">YES</div>'
+                  : '<div class="text-red-600 font-semibold rounded-md px-2">NO</div>'
+              }
+            </td>
+            <td class="border border-gray-300 px-4 py-2">
+              ${
+                arr.isManual === 1
+                  ? '<div class="text-green-600 font-semibold rounded-md px-2">YES</div>'
+                  : '<div class="text-red-600 font-semibold rounded-md px-2">NO</div>'
+              }
+            </td>
+            <td class="border border-gray-300 px-4 py-2">
+              ${
+                arr.isAutomatic === 1
+                  ? '<div class="text-green-600 font-semibold rounded-md px-2">YES</div>'
+                  : '<div class="text-red-600 font-semibold rounded-md px-2">NO</div>'
+              }
+            </td>
+            <td class="border border-gray-300 px-4 py-2">${
+              arr.date_started
+            }</td>
+            <td class="border border-gray-300 px-4 py-2 text-sm">
+              <span class="text-blue-500">${arr.SSS || 0}</span> |
+              <span class="text-red-500">${arr.Pag_ibig || 0}</span> |
+              <span class="text-yellow-500">${arr.Philhealth || 0}</span>
+            </td>
+            <td class="border border-gray-300 px-4 py-2">
+              <button data-id="${
+                arr.instructor_id
+              }" class="instructor-weekly-payroll-btn hover:bg-gray-200 hover:outline outline-1 outline-black rounded-md px-2">Weekly</button>
+              <button data-id="${
+                arr.instructor_id
+              }" class="instructor-payroll-btn hover:bg-gray-200 hover:outline outline-1 outline-black rounded-md px-2">History</button>
+            </td>
+            <td class="border border-gray-300 px-4 py-2">
+              ${
+                arr.account_id
+                  ? `<div class="text-green-600 font-semibold rounded-md px-2">YES</div>
+                    <button data-id="${arr.instructor_id}" class="instructor-assign-account-btn bg-rose-700 hover:bg-gradient-to-t from-rose-400 to-rose-800 text-white rounded-md px-2">Change</button>
+                  `
+                  : `<button data-id="${arr.instructor_id}" class="instructor-assign-account-btn bg-blue-700 hover:bg-gradient-to-t from-sky-400 to-sky-800 text-white rounded-md px-2">Assign</button>`
+              }
+            </td>
+            <td class="border border-gray-300 px-2 py-2">
+              <button data-id="${
+                arr.instructor_id
+              }" class="instructor-edit-btn bg-blue-700 hover:bg-gradient-to-t from-sky-400 to-sky-800 text-white rounded-md px-2">
+                <img src="/f-css/solid/icons_for_buttons/pencil.svg" class="w-6 h-6 reverse-color" />
+              </button>
+              <button data-id="${arr.instructor_id}" 
+              data-account-id="${
+                arr.account_id
+              }" class="instructor-delete-btn bg-rose-700 hover:bg-gradient-to-t from-rose-400 to-rose-800 text-white rounded-md px-2">
+                <img src="/f-css/solid/icons_for_buttons/trash.svg" class="w-6 h-6 reverse-color" />
+              </button>
+            </td>
+          </tr>
+        `
       )
       .join("");
+
     instructorTable.innerHTML = `
         <table id="manage-people-table" class="w-full text-center justify-items-start table-fixed border-collapse border-2 border-gray-300">
           <thead>
-            <tr class=" text-sm">
-              <th class="border border-gray-300 px-4 py-2 w-10">ID</th>
-              <th class="border border-gray-300 px-4 py-2">Name & Hourly Pay</th>
+            <tr class="text-sm">
+              <th class="border border-gray-300 px-2 py-2 w-12">Photo</th>
+              <th class="border border-gray-300 px-4 py-2">ID - Name - Hourly Pay</th>
               <th class="border border-gray-300 px-4 py-2 w-16">Type</th>
               <th class="border border-gray-300 px-4 py-2 w-24 text-sm">TDC <hr class="border-0"> Onsite</th>
               <th class="border border-gray-300 px-4 py-2 w-24">Manual</th>
               <th class="border border-gray-300 px-4 py-2 w-28">Automatic</th>
               <th class="border border-gray-300 px-4 py-2 w-32">Date Started</th>
-              <th class="border border-gray-300 px-4 py-2 text-sm">Benefits <hr class="border border-black"> SSS | Pagibig | PhilHealth</th>
+              <th class="border border-gray-300 px-4 py-2 text-sm">Benefits <hr class="border border-black"> 
+                <span class="text-blue-500">SSS<span> | 
+                <span class="text-red-500">Pagibig<span> | 
+                <span class="text-yellow-500">PhilHealth<span></th>
               <th class="border border-gray-300 px-4 py-2 w-24">Payroll</th>
               <th class="border border-gray-300 px-4 py-2 w-24">Account</th>
               <th class="border border-gray-300 px-4 py-2 w-24">Actions</th>
             </tr>
           </thead>
+
           <tbody>${tableRows}</tbody>
         </table>
       `;
 
     allButton(details);
   }
-}
-
-renderInstructorsList();
-
-function filterDataById(data, filterBy, id) {
-  const filteredData = data.filter((item) => item[filterBy] == id);
-  return filteredData[0];
-}
-
-function filterPayrollByYear(details) {
-  const yearFilterSearch = document.getElementById("year-filter");
-  yearFilterSearch.style.display = "flex";
-
-  const form = document.getElementById("year-month-payroll-filter-form");
-  const newForm = form.cloneNode(true); // Clone the form to remove existing listeners
-  form.parentNode.replaceChild(newForm, form);
-
-  newForm.addEventListener("submit", async (event) => {
-    event.preventDefault();
-
-    if (!Array.isArray(details) || details.length === 0) {
-      console.error("Invalid or empty payroll data.");
-      alert("No payroll data available.");
-      return;
-    }
-
-    const month = document.getElementById("month").value;
-    const year = document.getElementById("year").value;
-    const month_year = `${month} ${year}`;
-    const result = details.filter((item) =>
-      item.month_year.includes(month_year)
-    );
-    console.log(result);
-
-    if (result.length === 0) {
-      alert("No payroll data found for the selected year.");
-      renderMonthlyPayrollTable([]); // Clear the table
-      return;
-    }
-
-    renderMonthlyPayrollTable(result);
-  });
-}
-
-function allButton(details) {
-  // Modal form template for adding a instructor
   const modalForm = `
-    <form id="add-instructor-form" enctype="multipart/form-data" class="min-w-    96">
+    <form id="add-instructor-form" enctype="multipart/form-data" class="w-96">
       <div class="mb-4">
         <h3 class="text-xl font-semibold mb-3">Instructor Name</h3>
         <input type="text" id="instructor-name" name="name" required
@@ -215,6 +205,24 @@ function allButton(details) {
           </select>
         </div>
       </div>
+
+      <div class="flex flex-row gap-4 mb-4">
+        <div class="w-1/3">
+          <h3 class="text-xl font-semibold mb-3">SSS</h3>
+          <input type="number" name="SSS" step="0.01" min="0"
+            class="w-full outline outline-1 outline-gray-300 rounded-md text-lg px-1" placeholder="Ex. 209.78" />
+        </div>
+        <div class="w-1/3">
+          <h3 class="text-xl font-semibold mb-3">Pagibig</h3>
+          <input type="number" name="Pagibig" step="0.01" min="0"
+            class="w-full outline outline-1 outline-gray-300 rounded-md text-lg px-1" placeholder="Ex. 209.78" />
+        </div>
+        <div class="w-1/3">
+          <h3 class="text-xl font-semibold mb-3">Philhealth</h3>
+          <input type="number" name="Philhealth" step="0.01" min="0"
+            class="w-full outline outline-1 outline-gray-300 rounded-md text-lg px-1" placeholder="Ex. 209.78" />
+        </div>
+      </div>
       
       <div class="mb-4 flex flex-row gap-4">
         <div class="mb-4">
@@ -246,6 +254,7 @@ function allButton(details) {
       event.preventDefault();
       modalDetails.innerHTML = modalForm;
       modal.style.display = "flex";
+      setupImagePreview();
 
       const submitBtn = document.getElementById("instructor-submit-button");
       document.getElementById("add-instructor-form").addEventListener(
@@ -266,12 +275,15 @@ function allButton(details) {
             if (response.ok) {
               showBtnResult(submitBtn, true);
               alert("Successfully add Instructor!");
+              renderInstructorsList();
             } else {
               showBtnResult(submitBtn, false);
               alert("Can't add Instructor right now!");
             }
-            modalDetails.innerText = "";
-            modal.style.display = "none";
+            setTimeout(() => {
+              modalDetails.innerText = "";
+              modal.style.display = "none";
+            }, 3000);
           } catch (error) {
             console.error("Internal Server error", error);
             alert("Internal Server error");
@@ -282,6 +294,51 @@ function allButton(details) {
       );
     });
   }
+}
+
+renderInstructorsList();
+
+function filterDataById(data, filterBy, id) {
+  const filteredData = data.filter((item) => item[filterBy] == id);
+  return filteredData[0];
+}
+
+function filterPayrollByYear(details) {
+  const yearFilterSearch = document.getElementById("year-filter");
+  yearFilterSearch.style.display = "flex";
+
+  const form = document.getElementById("year-month-payroll-filter-form");
+  const newForm = form.cloneNode(true); // Clone the form to remove existing listeners
+  form.parentNode.replaceChild(newForm, form);
+
+  newForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+
+    if (!Array.isArray(details) || details.length === 0) {
+      console.error("Invalid or empty payroll data.");
+      alert("No payroll data available.");
+      return;
+    }
+
+    const month = document.getElementById("month").value;
+    const year = document.getElementById("year").value;
+    const month_year = `${month} ${year}`;
+    const result = details.filter((item) =>
+      item.month_year.includes(month_year)
+    );
+
+    if (result.length === 0) {
+      alert("No payroll data found for the selected year.");
+      renderMonthlyPayrollTable([]); // Clear the table
+      return;
+    }
+
+    renderMonthlyPayrollTable(result);
+  });
+}
+
+function allButton(details) {
+  const addButton = document.getElementById("add-instructor-button");
 
   // Assign Accounts
   document
@@ -317,7 +374,7 @@ function allButton(details) {
               </label>
               <input
                 class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight hover:border-blue-900 focus:outline-none focus:border-blue-900"
-                id="user_email" name="userEmail" type="text" placeholder="Enter your email: Ex. myemail@mail.my">
+                id="user_email" name="userEmail" value="${filteredData.user_email}" type="text" placeholder="Enter your email: Ex. myemail@mail.my">
             </div>
             <div class="mb-4">
               <label for="account_role" class="block text-gray-700 text-sm font-bold mb-2">
@@ -335,7 +392,7 @@ function allButton(details) {
               </label>
               <input
                 class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight hover:border-blue-900 focus:outline-none focus:border-blue-900"
-                id="prn" name="prn" type="text" placeholder="Do not include special characters and spaces">
+                id="prn" name="prn" type="text" value="${filteredData.prn}" placeholder="Do not include special characters and spaces">
             </div>
             <div class="flex items-center">
               <button id="assign-account-button"
@@ -366,10 +423,10 @@ function allButton(details) {
                   body: JSON.stringify({ encryptedWithEncAesKey: encrypting }),
                 }
               );
-
+              const data = await response.json();
               if (!response.ok) {
                 showBtnResult(assignAccBtn, false);
-                alert("Error assigning account");
+                alert(data.error);
               } else {
                 showBtnResult(assignAccBtn, true);
                 alert(`Assigning account successful.`);
@@ -403,11 +460,27 @@ function allButton(details) {
 
       modalDetails.innerHTML = `
             <form id="edit-instructor-form" enctype="multipart/form-data" class="w-96">
-              <div class="mb-4">
-                <h3 class="text-xl font-semibold mb-3">Instructor Name</h3>
-                <input type="text" id="instructor-name" name="name" value="${
-                  data.instructor_name
-                }" required class="w-full outline outline-1 outline-gray-300 rounded-md text-lg px-1" placeholder="Enter Instructor Name" />
+              <div class="flex flex-row gap-4 mb-4 w-full">
+                <div class="w-32 gap-4 items-center">
+                  <img id="profile-picture-preview"
+                    class="object-cover aspect-square w-32 rounded-md border-2 content-center border-gray-300 mb-4" 
+                    src="
+                    ${
+                      data.instructor_profile_picture
+                        ? data.instructor_profile_picture
+                        : ""
+                    }
+                    "
+                    alt="Profile Picture Preview">
+                  <input type="file" id="profile-picture-input" name="profile_picture" accept="image/*" class="text-sm text-gray-600">
+                </div>
+                <div class="w-full">
+                  <h3 class="text-xl font-semibold mb-3">Instructor Name</h3>
+                  <input type="text" id="instructor-name" name="name" value="${
+                    data.instructor_name
+                  }" required class="w-full outline outline-1 outline-gray-300 rounded-md text-lg px-1" placeholder="Enter Instructor Name" />
+                </div>  
+                
               </div>
               <div class="flex flex-row gap-4 mb-4">
                 <div class="w-1/2">
@@ -466,6 +539,28 @@ function allButton(details) {
                   </select>
                 </div>
               </div>
+              
+              <div class="flex flex-row gap-4 mb-4">
+                <div class="w-1/3">
+                  <h3 class="text-xl font-semibold mb-3">SSS</h3>
+                  <input type="number" name="SSS" step="0.01" min="0"
+                    value="${data.SSS || ""}"
+                    class="w-full outline outline-1 outline-gray-300 rounded-md text-lg px-1" placeholder="Ex. 209.78" />
+                </div>
+                <div class="w-1/3">
+                  <h3 class="text-xl font-semibold mb-3">Pagibig</h3>
+                  <input type="number" name="Pagibig" step="0.01" min="0"
+                    value="${data.Pag_ibig || ""}"
+                    class="w-full outline outline-1 outline-gray-300 rounded-md text-lg px-1" placeholder="Ex. 209.78" />
+                </div>
+                <div class="w-1/3">
+                  <h3 class="text-xl font-semibold mb-3">Philhealth</h3>
+                  <input type="number" name="Philhealth" step="0.01" min="0"
+                    value="${data.Philhealth || ""}"
+                    class="w-full outline outline-1 outline-gray-300 rounded-md text-lg px-1" placeholder="Ex. 209.78" />
+                </div>
+              </div>
+
               <div class="mb-4">
                 <h3 class="text-xl font-semibold mb-3">Accreditation Number</h3>
                 <input type="text" id="accreditation-number" name="accreditationNumber" value="${
@@ -477,12 +572,13 @@ function allButton(details) {
                 <input type="date" id="date-started" name="dateStarted" value="${
                   data.date_started
                 }" class=" items-center outline outline-1 outline-gray-300 rounded-md text-lg px-1" 
-                placeholder="Enter Program Name" />
+                 />
               </div>
               <button id="instructor-submit-button" type="submit" class="bg-blue-800 text-white rounded-md px-2">Submit</button>
             </form>
           `;
       modal.style.display = "flex";
+      setupImagePreview();
 
       // Attach event listener for form submission
       const editForm = document.getElementById("edit-instructor-form");
@@ -506,15 +602,25 @@ function allButton(details) {
             }
           );
           const data = await updateResponse.json();
-          if (updateResponse.ok) {
-            showBtnResult(instructorSubmitBtn, true);
-            alert(data.message);
-            renderInstructorsList();
-          } else {
-            showBtnResult(instructorSubmitBtn, false);
-            alert(data.error);
+
+          if (!updateResponse.ok) {
+            if (contentType && contentType.includes("application/json")) {
+              const error = await updateResponse.json();
+              console.error("Server error:", error);
+            } else {
+              const text = await updateResponse.text();
+              console.error("HTML error:", text);
+            }
+            return;
           }
-          modal.style.display = "none";
+
+          showBtnResult(instructorSubmitBtn, true);
+          alert(data.message);
+          renderInstructorsList();
+          setTimeout(() => {
+            modalDetails.innerText = "";
+            modal.style.display = "none";
+          }, 3000);
         } catch (error) {
           console.error("Error updating instructor data", error);
           alert("An error occurred while updating the instructor.");
@@ -540,7 +646,6 @@ function allButton(details) {
         filterPayrollByYear(data);
         renderMonthlyPayrollTable(data);
         backButton.style.display = "flex";
-        addButton.style.display = "none";
       } else {
         console.error("Error fetching instructor payroll data", error);
         modalDetails.innerHTML =
@@ -558,7 +663,6 @@ function allButton(details) {
         document.getElementById("year-filter").style.display = "none";
         const rowId = this.getAttribute("data-id");
         backButton.style.display = "flex";
-        addButton.style.display = "none";
         renderCurrentPayroll(rowId);
       });
     });
@@ -576,7 +680,8 @@ function allButton(details) {
   document.querySelectorAll(".instructor-delete-btn").forEach((button) => {
     button.addEventListener("click", async function () {
       const rowId = this.getAttribute("data-id");
-      console.log("rowId", rowId);
+      const accountId = this.getAttribute("data-account-id");
+
       if (!rowId) {
         modalDetails.innerHTML = "<p>ID not found.</p>";
         modal.style.display = "flex";
@@ -626,6 +731,7 @@ function allButton(details) {
                     "Content-Type": "application/json",
                     "x-delete-token": data.deleteToken,
                   },
+                  body: JSON.stringify({ id: accountId }),
                 }
               );
               if (deleteResponse.ok) {
@@ -635,6 +741,7 @@ function allButton(details) {
                 tokenIndicator.innerText = `Can't Delete Instructor ID #${rowId}`;
               }
               setTimeout(() => {
+                modalDetails.innerText = "";
                 modal.style.display = "none";
               }, 3000);
             } catch (error) {
@@ -655,6 +762,25 @@ function allButton(details) {
         modal.style.display = "none";
       });
     });
+  });
+}
+
+function setupImagePreview(
+  inputId = "profile-picture-input",
+  previewId = "profile-picture-preview"
+) {
+  const input = document.getElementById(inputId);
+  const preview = document.getElementById(previewId);
+  if (!input || !preview) return;
+  input.addEventListener("change", function (event) {
+    const file = event.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        preview.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
   });
 }
 
@@ -850,12 +976,14 @@ function renderWeeklyPayrollTable(data) {
 
 // When the user clicks on <span> (x), close the modal
 span.onclick = function () {
+  modalDetails.innerText = "";
   modal.style.display = "none";
 };
 
 // When the user clicks anywhere outside of the modal, close it
 window.onclick = function (event) {
   if (event.target == modal) {
+    modalDetails.innerText = "";
     modal.style.display = "none";
   }
 };

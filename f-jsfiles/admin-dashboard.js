@@ -5,6 +5,7 @@ import {
   showBtnLoading,
   showBtnResult,
 } from "../utils/modal-feedback.js";
+import { openFileViewer } from "../utils/file-helper.js";
 
 //start clock of admin dashboard
 function updateClock() {
@@ -154,7 +155,7 @@ function showNotification(message, type) {
   }, 3000);
 }
 
-const dashboardDetails = [];
+let dashboardDetails;
 
 async function fetchDashboardDetails() {
   try {
@@ -166,14 +167,14 @@ async function fetchDashboardDetails() {
       return;
     }
     const data = await response.json();
-    dashboardDetails.push(data);
+    dashboardDetails = data;
   } catch (error) {
     console.error("Error fetching dashboard details:", error);
     showNotification("Error fetching dashboard details", "error");
   }
 }
 
-fetchDashboardDetails();
+await fetchDashboardDetails();
 
 function filterMethodList(methodList, methodId) {
   return methodList.filter((arr) => arr.method_id == methodId);
@@ -182,10 +183,10 @@ function filterMethodList(methodList, methodId) {
 async function renderPaymentMethodsList() {
   const methodsTable = document.getElementById("payment-method-table");
   try {
-    if (dashboardDetails.length === 0) {
+    if (!dashboardDetails) {
       await fetchDashboardDetails();
     }
-    const data = dashboardDetails[0];
+    const data = dashboardDetails;
     const methodList = data.methodList;
     methodsTable.innerHTML = `
       <table id="payment-methods-table" class="w-full border-collapse">
@@ -210,22 +211,18 @@ async function renderPaymentMethodsList() {
                   method.method_name
                 }</td>
                 <td class="border border-gray-300 px-4 py-2">${
-                  method.availablity
+                  method.availability
                 }</td>
                 <td class="border border-gray-300 px-4 py-2">
                   <div class="flex flex-row items-center justify-center">
                     ${
                       method.method_file
-                        ? `<a href="javascript:void(0);" class="text-blue-700 hover:underline view-file-btn" data-id="${
-                            method.method_id
-                          }" data-file='${JSON.stringify(
-                            method.method_file
-                          )}' data-file-type="${method.method_file_type}">
+                        ? `<a href="javascript:void(0);" class="text-blue-700 hover:underline view-file-btn" data-id="${method.method_id}" 
+                            data-file='${method.method_file}' 
+                            data-file-type="${method.method_file_type}">
                             View
                           </a>
-                          <button data-id="${
-                            method.method_id
-                          }" class="upload-file-btn text-yellow-600 rounded-md px-2 hover:underline">
+                          <button data-id="${method.method_id}" class="upload-file-btn text-yellow-600 rounded-md px-2 hover:underline">
                             Upload
                           </button`
                         : `<button data-id="${method.method_id}" class="upload-file-btn text-yellow-600 rounded-md px-2 hover:underline">
@@ -266,10 +263,10 @@ function errorBox(message) {
 }
 
 async function renderInstructorsSchedule() {
-  if (dashboardDetails.length === 0) {
+  if (!dashboardDetails) {
     await fetchDashboardDetails();
   }
-  const data = dashboardDetails[0];
+  const data = dashboardDetails;
   const scheduleList = data.scheduleList;
   const instructorsSchedules = document.getElementById("instructor-schedules");
 
@@ -284,35 +281,45 @@ async function renderInstructorsSchedule() {
   }
 
   const scheduleBoard = scheduleList
-    .map((arr) =>
-      !arr.date
-        ? ""
-        : `
-    <div class="min-h-80 min-w-72 text-center space-y-2">
-        <img src="/f-css/solid/black/user-group.svg" class="m-auto py-5 w-28 h-28 border-2 border-black rounded-full" />
-        <h1 class="text-xl font-semibold">${arr.instructor_name}</h1>
-        <ul>
-          ${
-            arr.am_available === 1
-              ? `
-            <h3 class="text-left pl-5 font-semibold">Morning:</h3>
-            <li class="inline">${arr.am_applicant_name}</li><br>
-            `
-              : ""
-          }
-          ${
-            arr.pm_available === 1
-              ? `
-            <h3 class="text-left pl-5 font-semibold">Afternoon:</h3>
-            <li class="inline">${arr.pm_applicant_name}</li><br>
-            `
-              : ""
-          }
-        </ul>
-    </div>
-  `
-    )
+    .map((arr) => {
+      if (
+        !arr.date ||
+        (arr.am_available === null &&
+          arr.pm_available === null &&
+          arr.onsite_slots === null)
+      ) {
+        return "";
+      }
+
+      return `
+        <div class="min-h-80 min-w-72 text-center space-y-2">
+          <img src="${
+            arr.profile_picture || "/f-css/solid/black/user.svg"
+          }" class="m-auto object-center w-28 h-28 border-2 border-black rounded-full" />
+          <h1 class="text-xl font-semibold">${arr.instructor_name}</h1>
+          <ul>
+            ${
+              arr.am_applicant_name !== null
+                ? `
+              <h3 class="text-left pl-5 font-semibold">Morning:</h3>
+              <li class="inline">${arr.am_applicant_name}</li><br>
+              `
+                : ""
+            }
+            ${
+              arr.pm_applicant_name !== null
+                ? `
+              <h3 class="text-left pl-5 font-semibold">Afternoon:</h3>
+              <li class="inline">${arr.pm_applicant_name}</li><br>
+              `
+                : ""
+            }
+          </ul>
+        </div>
+      `;
+    })
     .join("");
+
   instructorsSchedules.innerHTML = scheduleBoard;
 }
 
@@ -437,7 +444,7 @@ function paymentButtons(methodList) {
           const availability = document.getElementById("availability").value;
 
           showBtnLoading(editSumbitBtn);
-          
+
           try {
             const response = await fetch("/api/payment-method/edit", {
               method: "PUT",
@@ -446,14 +453,14 @@ function paymentButtons(methodList) {
             });
 
             if (response.ok) {
-              showBtnResult(editSumbitBtn, true)
+              showBtnResult(editSumbitBtn, true);
               showNotification(
                 "Payment Method changed successfully!",
                 "success"
               );
               renderPaymentMethodsList();
             } else {
-              showBtnResult(editSumbitBtn, false)
+              showBtnResult(editSumbitBtn, false);
               showNotification(
                 "Can't change Payment Method right now!",
                 "error"
@@ -609,48 +616,14 @@ function paymentButtons(methodList) {
   document.querySelectorAll(".view-file-btn").forEach((button) => {
     button.addEventListener("click", function () {
       const methodId = this.getAttribute("data-id");
-      const fileData = JSON.parse(this.getAttribute("data-file"));
+      const fileData = this.getAttribute("data-file");
       const fileType = this.getAttribute("data-file-type");
 
-      const byteArray = new Uint8Array(fileData);
-      const blob = new Blob([byteArray], { type: fileType });
-      const url = URL.createObjectURL(blob);
-
-      const newWindow = window.open("", "_blank", "width=800,height=600");
-      newWindow.document.write(`
-        <html>
-          <head>
-            <title>Payment Method File</title>
-            <style>
-              body {
-                background-color: black;
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                height: 100vh;
-                margin: 0;
-              }
-              img, iframe {
-                max-width: 100%;
-                max-height: 100%;
-              }
-            </style>
-          </head>
-          <body>
-            ${
-              fileType.startsWith("image/")
-                ? `<img src="${url}" alt="payment-method-file" />`
-                : `<iframe src="${url}" frameborder="0"></iframe>`
-            }
-          </body>
-        </html>
-      `);
-      newWindow.document.close();
-
-      // Revoke the object URL after the new window has loaded the content
-      newWindow.onload = function () {
-        URL.revokeObjectURL(url);
-      };
+      openFileViewer({
+        fileData: fileData,
+        fileType: fileType,
+        title: `Method Id: #${methodId}`,
+      });
     });
   });
 

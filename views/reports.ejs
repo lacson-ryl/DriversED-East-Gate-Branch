@@ -49,6 +49,7 @@
 
                 const reportTableScript = document.createElement('script');
                 reportTableScript.src = '/f-jsfiles/reports.js';
+                reportTableScript.type = 'module';
                 document.body.appendChild(reportTableScript);
 
             } catch (error) {
