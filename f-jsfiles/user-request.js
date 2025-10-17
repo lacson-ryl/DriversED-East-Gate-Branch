@@ -1,4 +1,7 @@
-console.log("user-request loaded");
+import {
+  showLoadingMessage,
+  showOperationResult,
+} from "../utils/modal-feedback.js";
 
 const fetchUserRequestList = async () => {
   try {
@@ -144,13 +147,17 @@ function allButtons() {
   const span = document.getElementsByClassName("close")[0];
   const modalDetails = document.getElementById("modal-details");
   //submition of requestform
-  document
-    .getElementById("request-form")
-    .addEventListener("submit", async function (event) {
-      console.log("clicked");
+  const requestForm = document.getElementById("request-form");
+
+  requestForm.addEventListener(
+    "submit",
+    async function (event) {
       event.preventDefault();
       const titleRequest = document.getElementById("title-request").value;
       const detailsRequest = document.getElementById("details-request").value;
+
+      showLoadingMessage(modalDetails, "Processing your Request...");
+      modal.style.display = "flex";
 
       try {
         const response = await fetch("/api/submit-request", {
@@ -160,17 +167,28 @@ function allButtons() {
         });
 
         if (response.ok) {
-          alert(`Request Successfully Submitted`);
+          showOperationResult(
+            modalDetails,
+            true,
+            `Request Successfully Submitted`
+          );
+          requestForm.reset();
           renderRequestTable();
         } else {
           const data = await response.json();
-          alert(`Error: ${data.error}`);
+          showOperationResult(modalDetails, false, `Error: ${data.error}`);
         }
+
+        setTimeout(() => {
+          modal.style.display = "none";
+        }, 3000);
       } catch (error) {
         console.log("Internal Server Error", error);
         alert("Internal Server Error.");
       }
-    });
+    },
+    { once: true }
+  );
 
   document.querySelectorAll(".request-details-btn").forEach((button) => {
     button.addEventListener("click", async function () {
@@ -224,16 +242,15 @@ function allButtons() {
       }
     });
   });
-
-  // When the user clicks on <span> (x), close the modal
-  span.onclick = function () {
-    modal.style.display = "none";
-  };
-
-  // When the user clicks anywhere outside of the modal, close it
-  window.onclick = function (event) {
-    if (event.target == modal) {
-      modal.style.display = "none";
-    }
-  };
 }
+// When the user clicks on <span> (x), close the modal
+span.onclick = function () {
+  modal.style.display = "none";
+};
+
+// When the user clicks anywhere outside of the modal, close it
+window.onclick = function (event) {
+  if (event.target == modal) {
+    modal.style.display = "none";
+  }
+};

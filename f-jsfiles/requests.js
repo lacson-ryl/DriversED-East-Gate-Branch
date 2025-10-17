@@ -1,3 +1,10 @@
+import {
+  showLoadingMessage,
+  showOperationResult,
+  showBtnLoading,
+  showBtnResult,
+} from "../utils/modal-feedback.js";
+
 async function renderRequestDetsTable() {
   const response = await fetch("/api/requests/list");
   const data = await response.json();
@@ -172,6 +179,9 @@ function allButtons() {
             </form>
         `;
         modal.style.display = "flex";
+        const requestStatusBtn = document.getElementById(
+          "request-status-button"
+        );
 
         document
           .getElementById("request-status-form")
@@ -179,7 +189,7 @@ function allButtons() {
             event.preventDefault();
             const status = document.getElementById("status").value;
             const reason = document.getElementById("reason").value;
-
+            showBtnLoading(requestStatusBtn);
             try {
               const response = await fetch("/api/request/change-status", {
                 method: "PUT",
@@ -188,10 +198,12 @@ function allButtons() {
               });
 
               if (response.ok) {
+                showBtnResult(requestStatusBtn, true);
                 alert("Status Change Successfully!");
                 renderRequestDetsTable();
                 modal.style.display = "none";
               } else {
+                showBtnResult(requestStatusBtn, false);
                 alert("Unable to change right now!");
                 modal.style.display = "none";
               }

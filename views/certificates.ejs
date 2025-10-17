@@ -12,7 +12,7 @@
 <body class="flex flex-row w-full over">
     <div id="sidebar-container">
     </div>
-    <div id="main-content" class="block ml-ml-250 w-calc space-y-2">
+    <div id="main-content" class="block ml-ml-250 w-calc animate-fadeIn space-y-2">
         <div id="top-bar" class="flex h-15 flex-row w-full sticky shadow-inner bg-white border-b-2 p-4">
             <div id="left-side" class="flex flex-row gap-4 relative">
                 <div>
@@ -41,13 +41,14 @@
             </div>
 
             <div id="certificate-table" class="mt-3 mb-5 mx-3">
-               
+
             </div>
 
-           
+
 
         </div>
     </div>
+    <script type="module" src="../utils/modal-feedback.js"></script>
     <script>
 
         document.addEventListener('DOMContentLoaded', async () => {
@@ -60,6 +61,7 @@
 
                 const addCertScript = document.createElement('script');
                 addCertScript.src = '/f-jsfiles/certificate.js';
+                addCertScript.type = 'module';
                 document.body.appendChild(addCertScript);
             } catch (error) {
                 console.error('Authorization error:', error);

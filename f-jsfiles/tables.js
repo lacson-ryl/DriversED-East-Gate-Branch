@@ -31,8 +31,12 @@ async function renderApplicantsTable() {
               <td class="border border-gray-300 px-4 py-2 text-xs">
                 ${arr.application_id}
               </td>
-              <td class="border border-gray-300 px-4 py-2">${arr.created_by == "user" ? "USER" : "ADMIN"}</td>
-              <td class="border border-gray-300 px-4 py-2">${arr.creator_name}</td>
+              <td class="border border-gray-300 px-4 py-2">${
+                arr.created_by == "user" ? "USER" : "ADMIN"
+              }</td>
+              <td class="border border-gray-300 px-4 py-2">${
+                arr.creator_name
+              }</td>
               <td class="border border-gray-300 px-4 py-2">
                 ${arr.instructor_name}
               </td>
@@ -53,7 +57,9 @@ async function renderApplicantsTable() {
               </td>
               <td class="border border-gray-300 px-4 py-2">${arr.created}</td>
               <td class="hidden group-hover:flex justify-around mt-2 text-center">
-                <button data-id="${arr.application_id}" class="delete-applicant-btn bg-rose-700 hover:bg-gradient-to-t from-rose-400 to-rose-800 text-white rounded-md px-2">
+                <button data-id="${
+                  arr.application_id
+                }" class="delete-applicant-btn bg-rose-700 hover:bg-gradient-to-t from-rose-400 to-rose-800 text-white rounded-md px-2">
                   Delete
                 </button>
               </td>
@@ -84,51 +90,87 @@ function allButtons() {
   const modalDetails = document.getElementById("modal-details");
 
   // Add event listeners to all detail buttons FOR APPLICANTS PAGE
-
+  //Delete Applicant
   document.querySelectorAll(".delete-applicant-btn").forEach((button) => {
     button.addEventListener("click", async function (event) {
       event.preventDefault();
       const applicantId = this.getAttribute("data-id");
 
       if (!applicantId) {
-        console.error("ID not found");
         modalDetails.innerHTML = "<p>ID not found.</p>";
         modal.style.display = "flex";
         return;
       }
 
       modalDetails.innerHTML = `
-        <p>Are you sure you want to delete ID #${applicantId}?</p>
-        <div class="justify-self-end space-x-4 mt-5">
-          <button id="delete-yes" class="bg-blue-700 hover:bg-gradient-to-t from-sky-400 to-sky-800 text-white text-lg rounded-md px-2">Yes</button>
-          <button id="delete-no" class="bg-rose-700 hover:bg-gradient-to-t from-rose-400 to-rose-800 text-white text-lg rounded-md px-2">No</button>
-        </div>
-      `;
+      <p id="delete-token-indicator" class="text-sm animate-pulse text-gray-500">fetching delete token...</p>
+      <p>Are you sure you want to delete Applicant ID #${applicantId}?</p>
+      <div class="justify-self-end space-x-4 mt-5">
+        <button id="delete-yes" class="bg-blue-700 text-white rounded-md px-2" disabled>Yes</button>
+        <button id="delete-no" class="bg-rose-700 text-white rounded-md px-2">No</button>
+      </div>
+    `;
       modal.style.display = "flex";
 
-      document
-        .getElementById("delete-yes")
-        .addEventListener("click", async () => {
-          try {
-            const response = await fetch(`/api/applicant/${applicantId}`, {
-              method: "DELETE",
-              headers: { "Content-Type": "application/json" },
-            });
-            if (response.ok) {
-              alert(`Successfully Deleted ID no. ${applicantId}`);
-              renderApplicantsTable();
-            } else {
-              alert(`Can't Delete ID no. ${applicantId}`);
-            }
-            modal.style.display = "none";
-          } catch (error) {
-            console.error("Error deleting application.", error);
-            modalDetails.innerHTML =
-              "<p>An error occurred while deleting application.</p>";
-            modal.style.display = "flex";
-          }
-        });
+      const tokenIndicator = document.getElementById("delete-token-indicator");
+      const response = await fetch("/api/delete-token", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: applicantId,
+          path: `/api/applicant/${applicantId}`,
+        }),
+      });
 
+      const data = await response.json();
+      if (!response.ok) {
+        tokenIndicator.innerText =
+          data.error || "Failed to fetch delete token.";
+        tokenIndicator.classList.add("text-red-600");
+      } else {
+        tokenIndicator.innerText = "token available";
+        tokenIndicator.classList.add("text-green-600");
+
+        const deleteYes = document.getElementById("delete-yes");
+        deleteYes.disabled = false;
+        deleteYes.addEventListener(
+          "click",
+          async () => {
+            try {
+              const deleteResponse = await fetch(
+                `/api/applicant/${applicantId}`,
+                {
+                  method: "DELETE",
+                  headers: {
+                    "Content-Type": "application/json",
+                    "x-delete-token": data.deleteToken,
+                  },
+                }
+              );
+              if (deleteResponse.ok) {
+                tokenIndicator.innerText = `Successfully Deleted Applicant ID #${applicantId}`;
+                renderApplicantsTable();
+              } else {
+                tokenIndicator.innerText = `Can't Delete Applicant ID #${applicantId}`;
+                tokenIndicator.classList.add("text-red-600");
+              }
+              setTimeout(() => {
+                modal.style.display = "none";
+              }, 3000);
+            } catch (error) {
+              console.error("Error deleting application.", error);
+              tokenIndicator.innerText = "An error occurred while deleting.";
+              tokenIndicator.classList.add("text-red-600");
+              setTimeout(() => {
+                modal.style.display = "none";
+              }, 3000);
+            }
+          },
+          { once: true }
+        );
+      }
+
+      tokenIndicator.classList.remove("animate-pulse");
       document.getElementById("delete-no").addEventListener("click", () => {
         modal.style.display = "none";
       });

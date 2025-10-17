@@ -11,7 +11,7 @@ import {
   findAccountByEmail,
   addNotification,
 } from "./b-database.js";
-import { generateTemporaryPassword } from "./b-authenticate.js";
+import { generateTemporaryPassword } from "../middleware/b-authenticate.js";
 import { sendEmail } from "./b-email-config.js";
 
 dotenv.config();
@@ -87,30 +87,48 @@ userPassport.use(
         } else {
           const random8CharacPass = generateTemporaryPassword(8);
           console.log("random8CharacPass", random8CharacPass);
-          const hashedPassword = await bcrypt.hash(random8CharacPass, 10);
+          let hashedPassword;
+          try {
+            hashedPassword = await bcrypt.hash(random8CharacPass, 10);
+          } catch (hashErr) {
+            console.error("Error hashing password:", hashErr);
+            return done(hashErr, null);
+          }
+
           const newUser = {
             name: profile.displayName,
             email: email,
             password: hashedPassword,
             isVerify: "true",
           };
+
           const userId = await saveUser(newUser);
+          console.log("userId", userId);
           newUser.user_id = userId;
           newUser.user_role = "user";
 
-          await sendEmail("new-account", email, {
-            name: profile.displayName,
-            email: email,
-            generatedPassword: random8CharacPass,
-            dateCreated: new Date().toLocaleDateString(),
-          });
-          await addNotification(
-            userId,
-            "user",
-            "Welcome!!",
-            `Greetings to you, ${profile.displayName}!!
-            Thank you for choosing our driving school.`
-          );
+          try {
+            await sendEmail("new-account", email, {
+              name: profile.displayName,
+              email: email,
+              generatedPassword: random8CharacPass,
+              dateCreated: new Date().toLocaleDateString(),
+            });
+          } catch (emailErr) {
+            console.error("Email sending failed:", emailErr);
+          }
+
+          try {
+            await addNotification(
+              userId,
+              "user",
+              "Welcome!!",
+              `Greetings to you, ${profile.displayName}!!
+                Thank you for choosing our driving school.`
+            );
+          } catch (notifErr) {
+            console.error("Notification failed:", notifErr);
+          }
           return done(null, newUser);
         }
       } catch (error) {

@@ -11,7 +11,7 @@
 <body class="flex flex-row w-full">
     <div id="sidebar-container">
     </div>
-    <div id="main-content" class="ml-ml-64 h- phone-w-calc md:desktop-w-calc md:ml-[160px] space-y-2">
+    <div id="main-content" class="ml-ml-64 h- phone-w-calc md:desktop-w-calc md:ml-[160px] space-y-2 animate-fadeIn">
         <div id="top-bar" class="flex flex-row w-full sticky shadow-inner bg-white border-b-2 p-4 mb-5 opacity-95">
             <div id="left-side" class="flex flex-row gap-4 relative">
                 <div>
@@ -35,7 +35,7 @@
                 <form id="request-form" method="POST" action="javascript:void(0);">
                     <div class="mb-4">
                         <label>Title</label>
-                        <input id="title-request" name="title-request" type="text" 
+                        <input id="title-request" name="title-request" type="text"
                             class="shadow-md appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight hover:border-blue-900 focus:outline-none focus:border-blue-900" />
                     </div>
 
@@ -69,6 +69,7 @@
             <p id="modal-details" class="min-w-96 mt-4">the details</p>
         </div>
     </div>
+    <script type="module" src="../utils/modal-feedback.js"></script>
     <script>
 
         document.addEventListener('DOMContentLoaded', () => {
@@ -81,17 +82,8 @@
 
                 const userRequestScript = document.createElement('script');
                 userRequestScript.src = '/f-jsfiles/user-request.js';
+                userRequestScript.type = "module";
                 document.body.appendChild(userRequestScript);
-
-                const urlParams = new URLSearchParams(window.location.search);
-                const error = urlParams.get("error");
-
-                if (error === "token_not_found") {
-                    alert("Authorization token not found. Please log in.");
-                } else if (error === "invalid_token") {
-                    alert("Invalid token. Please log in.");
-                }
-
             } catch (error) {
                 console.error('Authorization error:', error);
                 alert("You are not authorized to view this page.");

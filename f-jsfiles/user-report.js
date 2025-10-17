@@ -1,3 +1,8 @@
+import {
+  showLoadingMessage,
+  showOperationResult,
+} from "../utils/modal-feedback.js";
+
 const fetchUserReportList = async () => {
   try {
     const response = await fetch(`/api/user-reports`, {
@@ -138,17 +143,22 @@ async function renderReportTable() {
 
 renderReportTable();
 
+const modal = document.getElementById("myModal");
+const span = document.getElementsByClassName("close")[0];
+const modalDetails = document.getElementById("modal-details");
 function allButtons() {
-  const modal = document.getElementById("myModal");
-  const span = document.getElementsByClassName("close")[0];
-  const modalDetails = document.getElementById("modal-details");
   //submition of reportform
-  document
-    .getElementById("report-form")
-    .addEventListener("submit", async function (event) {
+  const reportForm = document.getElementById("report-form");
+
+  reportForm.addEventListener(
+    "submit",
+    async function (event) {
       event.preventDefault();
       const titleReport = document.getElementById("title-report").value;
       const detailsReport = document.getElementById("details-report").value;
+
+      showLoadingMessage(modalDetails, "Processing your Report...");
+      modal.style.display = "flex";
 
       try {
         const response = await fetch("/api/submit-report", {
@@ -158,17 +168,27 @@ function allButtons() {
         });
 
         if (response.ok) {
-          alert(`Report Successfully Submitted`);
+          reportForm.reset();
+          showOperationResult(
+            modalDetails,
+            true,
+            `Report Successfully Submitted`
+          );
           renderReportTable();
         } else {
           const data = await response.json();
-          alert(`Error: ${data.error}`);
+          showOperationResult(modalDetails, false, `Error: ${data.error}`);
         }
+        setTimeout(() => {
+          modal.style.display = "none";
+        }, 3000);
       } catch (error) {
         console.log("Internal Server Error", error);
         alert("Internal Server Error.");
       }
-    });
+    },
+    { once: true }
+  );
 
   document.querySelectorAll(".report-details-btn").forEach((button) => {
     button.addEventListener("click", async function () {

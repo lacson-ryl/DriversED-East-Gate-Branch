@@ -1,5 +1,5 @@
 import crypto from "crypto";
-import { getKeysWithUserId } from "./b-database.js";
+import { getKeysWithUserId } from "../config/b-database.js";
 import dotenv from "dotenv";
 dotenv.config();
 

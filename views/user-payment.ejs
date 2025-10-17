@@ -15,7 +15,7 @@
 <body class=" flex flex-row w-full">
     <div id="sidebar-container">
     </div>
-    <div id="main-content" class="ml-ml-64 phone-w-calc md:desktop-w-calc md:ml-[160px] space-y-2">
+    <div id="main-content" class="ml-ml-64 phone-w-calc md:desktop-w-calc md:ml-[160px] space-y-2 animate-fadeIn">
         <div id="top-bar" class="flex flex-row w-full sticky shadow-inner bg-white border-b-2 p-4 mb-5 opacity-95">
             <div id="left-side" class="flex flex-row gap-4 relative">
                 <div>
@@ -110,11 +110,12 @@
             <span
                 class="close absolute top-0 right-2 text-3xl font-semibold text-gray-700 hover:text-gray-900 cursor-pointer ">&times;</span>
             <h2 id="title-details" class="text-xl font-semibold">User Payment</h2>
-            <p id="modal-details" class="mt-4">the details</p>
+            <div id="modal-details" class="mt-4">the details</div>
         </div>
     </div>
-    <script type="module" src="../f-webCryptoKeys.js"></script>
-    <script type="module" src="../f-keyManager.js"></script>
+    <script type="module" src="../utils/f-webCryptoKeys.js"></script>
+    <script type="module" src="../utils/f-keyManager.js"></script>
+    <script type="module" src="../utils/modal-feedback.js"></script>
 
     <script>
 

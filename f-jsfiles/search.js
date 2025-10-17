@@ -1,4 +1,10 @@
-import { encryptData, decryptData } from "../f-webCryptoKeys.js";
+import { encryptData, decryptData } from "../utils/f-webCryptoKeys.js";
+import {
+  showLoadingMessage,
+  showOperationResult,
+  showBtnLoading,
+  showBtnResult,
+} from "../utils/modal-feedback.js";
 
 //initialize modal elements;
 const modal = document.getElementById("myModal");
@@ -13,6 +19,9 @@ document
 
     const formData = new FormData(event.target);
     const encrypting = await encryptData(formData);
+    showLoadingMessage(modalDetails, "Checking account records for a match");
+    modal.style.display = "flex";
+
     const response = await fetch("/api/user-search", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -20,11 +29,19 @@ document
     });
 
     const data = await response.json();
-    if (!response.ok) {
-      alert(data.error);
+    if (!response.ok || !data.encryptedProfile) {
+      return showOperationResult(modalDetails, false, data.error);
     }
+    showLoadingMessage(modalDetails, "Decrypting data...");
     const decrypted = await decryptData(data.encryptedProfile);
 
+    if (!decrypted) {
+      return showOperationResult(modalDetails, false, "No match Found!");
+    }
+    setTimeout(() => {
+      modalDetails.innerHTML = "";
+      modal.style.display = "none";
+    }, 4000);
     const userInfoCards = document.getElementById("user-infos");
     userInfoCards.innerHTML = decrypted
       .map((profile) => {
@@ -343,6 +360,7 @@ async function renderUserInfo(userId) {
       modalDetails.innerHTML = "";
       modalDetails.innerHTML = modalform;
       modal.style.display = "flex";
+      const paymentSubmitBtn = document.getElementById("payment-submit-button");
 
       // Event listener for the form submission
       document
@@ -352,6 +370,7 @@ async function renderUserInfo(userId) {
 
           const formData = new FormData(event.target);
           const encrypting = await encryptData(formData);
+          showBtnLoading(paymentSubmitBtn);
 
           try {
             const response = await fetch("/api/payment/add", {
@@ -360,9 +379,11 @@ async function renderUserInfo(userId) {
               body: JSON.stringify({ encryptedWithEncAesKey: encrypting }),
             });
             if (response.ok) {
+              showBtnResult(paymentSubmitBtn, true);
               alert("Payment Added Successfully!");
               renderUserInfo(userId);
             } else {
+              showBtnResult(paymentSubmitBtn, false);
               alert("Can't add Payment right now!");
             }
             modal.style.display = "none";
@@ -417,92 +438,141 @@ async function renderUserInfo(userId) {
                     <option value="PM">PM</option>
                 </select>
             </div>
-            <button type="submit" class="bg-blue-500 text-white px-4 py-2 mt-4">Submit</button>
+            <button id="add-continuation-btn" type="submit" class="bg-blue-500 text-white px-4 py-2 mt-4">Submit</button>
 
         </form>
       `;
       modalDetails.innerHTML = "";
       modalDetails.innerHTML = modalForm;
       modal.style.display = "flex";
-
+      const addContinuationBtn = document.getElementById(
+        "add-continuation-btn"
+      );
       // Event listener for the form submission
-      addContinuationForm.addEventListener("submit", async (event) => {
-        event.preventDefault();
+      document
+        .getElementById("add-continuation-form")
+        .addEventListener("submit", async (event) => {
+          event.preventDefault();
 
-        const formData = new FormData(event.target);
-        formData.append("clientId", userId);
+          const formData = new FormData(event.target);
+          formData.append("clientId", userId);
+          showBtnLoading(addContinuationBtn);
 
-        try {
-          const response = await fetch(
-            "/api/user-application/add-continuation",
-            {
-              method: "POST",
-              body: formData,
+          try {
+            const response = await fetch(
+              "/api/user-application/add-continuation",
+              {
+                method: "POST",
+                body: formData,
+              }
+            );
+            const data = await response.json();
+
+            if (!response.ok) {
+              showBtnResult(addContinuationBtn, false);
+              alert(data.error);
+            } else {
+              showBtnResult(addContinuationBtn, true);
+              alert(data.message);
+              renderUserInfo(userId);
             }
-          );
-          const data = await response.json();
-
-          if (!response.ok) alert(data.error);
-
-          alert(data.message);
-          renderUserInfo(userId);
-        } catch (error) {
-          alert("Sorry! Can’t connect to the server right now.");
-          console.error(error); // Log the error to the console for debugging
-        }
-      });
+            modal.style.display = "none";
+          } catch (error) {
+            alert("Sorry! Can’t connect to the server right now.");
+            console.error(error); // Log the error to the console for debugging
+          }
+        });
     });
   });
 
+  //Delete Course
   document.querySelectorAll(".delete-course-btn").forEach((btn) => {
-    btn.addEventListener("click", function (event) {
+    btn.addEventListener("click", async function (event) {
       event.preventDefault();
       const userId = btn.getAttribute("data-user-id");
       const instructorName = btn.getAttribute("data-instructor-name");
       const dateStarted = btn.getAttribute("data-date-started");
       const courseId = btn.getAttribute("data-course-id");
-      const toEncrypt = {
-        clientId: userId,
-        instructorName: instructorName,
-        dateStarted: dateStarted,
-        courseId: courseId,
-      };
 
       modalTitle.innerText = "Save Changes";
       modalDetails.innerHTML = `
+      <p id="delete-token-indicator" class="text-sm animate-pulse text-gray-500">fetching delete token...</p>
       <p>Delete course of ID #${courseId}?</p>
       <p class="mt-3">${user.user_name} - ${dateStarted}</p>
       <div class="justify-self-end space-x-4 mt-5">
-        <button id="delete-yes" class="bg-green-700 hover:bg-gradient-to-t from-green-400 to-green-800 text-white text-lg rounded-md px-2">YES</button>
-        <button id="delete-no" class="bg-red-700 hover:bg-gradient-to-t from-red-400 to-red-800 text-white text-lg rounded-md px-2">NO</button>
+        <button id="delete-yes" class="bg-green-700 text-white rounded-md px-2" disabled>YES</button>
+        <button id="delete-no" class="bg-red-700 text-white rounded-md px-2">NO</button>
       </div>
     `;
       modal.style.display = "flex";
 
-      document
-        .getElementById("delete-yes")
-        .addEventListener("click", async (event) => {
-          event.preventDefault();
-          const encrypt = await encryptData(toEncrypt);
-          // Call your API to find and delete the application
-          const response = await fetch("/api/delete-application-by-course", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ encryptedWithEncAesKey: encrypt }),
-          });
-          const result = await response.json();
-          if (result.success) {
-            modalDetails.innerText = "Application deleted!";
-            setInterval(() => {
-              modal.style.display = "none";
-              renderUserInfo(userId);
-            }, 5000);
-          } else {
-            console.error(result.error);
-            modalDetails.innerText =
-              result.error || "Failed to delete application.";
-          }
-        });
+      const tokenIndicator = document.getElementById("delete-token-indicator");
+      const response = await fetch("/api/delete-token", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: courseId,
+          path: `/api/delete-application-by-course`,
+        }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        tokenIndicator.innerText =
+          data.error || "Failed to fetch delete token.";
+        tokenIndicator.classList.add("text-red-600");
+      } else {
+        tokenIndicator.innerText = "token available";
+        tokenIndicator.classList.add("text-green-600");
+
+        const deleteYes = document.getElementById("delete-yes");
+        deleteYes.disabled = false;
+        deleteYes.addEventListener(
+          "click",
+          async () => {
+            try {
+              const response = await fetch(
+                "/api/delete-application-by-course",
+                {
+                  method: "DELETE",
+                  headers: {
+                    "Content-Type": "application/json",
+                    "x-delete-token": data.deleteToken,
+                  },
+                  body: JSON.stringify({
+                    clientId: userId,
+                    instructorName,
+                    dateStarted,
+                    courseId,
+                  }),
+                }
+              );
+              const result = await response.json();
+              if (result.success) {
+                tokenIndicator.innerText = "Application deleted!";
+                setTimeout(() => {
+                  modal.style.display = "none";
+                  renderUserInfo(userId);
+                }, 3000);
+              } else {
+                tokenIndicator.innerText =
+                  result.error || "Failed to delete application.";
+                tokenIndicator.classList.add("text-red-600");
+              }
+            } catch (error) {
+              console.error("Error deleting course", error);
+              tokenIndicator.innerText = "An error occurred while deleting.";
+              tokenIndicator.classList.add("text-red-600");
+              setTimeout(() => {
+                modal.style.display = "none";
+              }, 3000);
+            }
+          },
+          { once: true }
+        );
+      }
+
+      tokenIndicator.classList.remove("animate-pulse");
       document.getElementById("delete-no").addEventListener("click", () => {
         modal.style.display = "none";
       });

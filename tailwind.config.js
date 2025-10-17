@@ -18,6 +18,7 @@ module.exports = {
       animation: {
         fadeIn: "fadeIn 0.5s ease-in-out forwards",
         fadeOut: "fadeOut 0.5s ease-in-out forwards",
+        "spin-slow": "spin 2s linear infinite",
       },
       keyframes: {
         fadeIn: {
@@ -27,6 +28,11 @@ module.exports = {
         fadeOut: {
           "0%": { opacity: "1" },
           "100%": { opacity: "0" },
+        },
+        spin: {
+          to: {
+            transform: "rotate(360deg)",
+          },
         },
         zIndex: {
           50: "50",

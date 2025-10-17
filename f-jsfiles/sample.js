@@ -1,4 +1,4 @@
-import { encryptData, decryptData } from "../f-webCryptoKeys.js";
+import { encryptData, decryptData } from "../utils/f-webCryptoKeys.js";
 
 import { KeyManager } from "../f-keyManager.js";
 

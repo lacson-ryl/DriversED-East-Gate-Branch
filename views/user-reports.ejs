@@ -11,7 +11,7 @@
 <body class="flex flex-row w-full">
     <div id="sidebar-container">
     </div>
-    <div id="main-content" class="ml-ml-64 h- phone-w-calc md:desktop-w-calc md:ml-[160px] space-y-2">
+    <div id="main-content" class="ml-ml-64 h- phone-w-calc md:desktop-w-calc md:ml-[160px] space-y-2 animate-fadeIn">
         <div id="top-bar" class="flex flex-row w-full sticky shadow-inner bg-white border-b-2 p-4 mb-5 opacity-95">
             <div id="left-side" class="flex flex-row gap-4 relative">
                 <div>
@@ -69,6 +69,8 @@
             <p id="modal-details" class="min-w-96 mt-4">the details</p>
         </div>
     </div>
+
+    <script type="module" src="../utils/modal-feedback.js"></script>
     <script>
 
         document.addEventListener('DOMContentLoaded', () => {
@@ -81,16 +83,8 @@
 
                 const userReportScript = document.createElement('script');
                 userReportScript.src = '/f-jsfiles/user-report.js';
+                userReportScript.type = 'module';
                 document.body.appendChild(userReportScript);
-
-                const urlParams = new URLSearchParams(window.location.search);
-                const error = urlParams.get("error");
-
-                if (error === "token_not_found") {
-                    alert("Authorization token not found. Please log in.");
-                } else if (error === "invalid_token") {
-                    alert("Invalid token. Please log in.");
-                }
 
             } catch (error) {
                 console.error('Authorization error:', error);

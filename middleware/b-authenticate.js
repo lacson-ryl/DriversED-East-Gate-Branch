@@ -1,15 +1,16 @@
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
+import redis from "../config/b-redis.js";
 dotenv.config();
 
 const secretKey = process.env.secret_key;
 
 export function authenticateToken(req, res, next) {
   const token = req.cookies.jwtToken;
-  console.log("Token from cookie:", token); 
+  console.log("Token from cookie:", token);
 
   if (!token) {
-    console.log("No token found"); 
+    console.log("No token found");
     if (req.originalUrl.startsWith("/user")) {
       return res.redirect("/user-login?error=token_not_found");
     } else {
@@ -19,14 +20,14 @@ export function authenticateToken(req, res, next) {
 
   jwt.verify(token, secretKey, (error, user) => {
     if (error) {
-      console.log("Token verification failed:", error); 
+      console.log("Token verification failed:", error);
       if (req.originalUrl.startsWith("/user")) {
         return res.redirect("/user-login?error=invalid_token");
       } else {
         return res.redirect("/adminlogi?error=invalid_token");
       }
     }
-    console.log("Token verified, user:", user); 
+    console.log("Token verified, user:", user);
     req.user = user;
     next();
   });
@@ -61,11 +62,11 @@ export function generateTemporaryPassword(length) {
 }
 
 export function authenticateTokenForChangingCredentials(req, res, next) {
-  const token = req.cookies.changePasswordEmailToken; 
-  console.log("Token from cookie:", token); 
+  const token = req.cookies.changePasswordEmailToken;
+  console.log("Token from cookie:", token);
 
   if (!token) {
-    console.log("No token found"); 
+    console.log("No token found");
     return res
       .status(401)
       .json({ error: "Token not found. Unauthorized access." });
@@ -73,11 +74,45 @@ export function authenticateTokenForChangingCredentials(req, res, next) {
 
   jwt.verify(token, secretKey, (error, decoded) => {
     if (error) {
-      console.log("Token verification failed:", error); 
+      console.log("Token verification failed:", error);
       return res.status(403).json({ error: "Invalid or expired token." });
     }
-    console.log("Token verified, decoded data:", decoded); 
-    req.tokenData = decoded; 
-    next(); 
+    console.log("Token verified, decoded data:", decoded);
+    req.tokenData = decoded;
+    next();
   });
+}
+
+export async function verifyDeleteToken(req, res, next) {
+  if (req.method !== "DELETE") return next();
+
+  const token = req.headers["x-delete-token"];
+  if (!token) return res.status(400).json({ error: "Missing delete token" });
+
+  let payload;
+  try {
+    payload = jwt.verify(token, secretKey);
+  } catch {
+    return res.status(403).json({ error: "Invalid or expired token" });
+  }
+
+  if (payload.sub !== req.user.userId) {
+    return res.status(403).json({ error: "Token not for this user" });
+  }
+
+  // exact path match
+  const actualPath = req.originalUrl.split("?")[0];
+  if (payload.path !== actualPath) {
+    return res.status(403).json({ error: "Token path mismatch" });
+  }
+
+  // enforce one-time use
+  const usedKey = `del:used:${payload.jti}`;
+  const set = await redis.set(usedKey, "1", { NX: true, EX: 60 });
+  if (set !== "OK") {
+    return res.status(403).json({ error: "Token already used" });
+  }
+
+  req.deleteToken = payload;
+  next();
 }

@@ -1,4 +1,5 @@
-import { encryptData, decryptData } from "../f-webCryptoKeys.js";
+import { encryptData, decryptData } from "../utils/f-webCryptoKeys.js";
+import { showBtnLoading, showBtnResult } from "../utils/modal-feedback.js";
 
 async function renderDetails() {
   const response = await fetch(`/api/user-profile`);
@@ -134,14 +135,19 @@ async function renderDetails() {
         }
       });
 
-    document
-      .getElementById("profile-form")
-      .addEventListener("submit", async function (event) {
+    const profileSubmitBtn = document.getElementById("submit-request-btn");
+
+    document.getElementById("profile-form").addEventListener(
+      "submit",
+      async function (event) {
         event.preventDefault(); // Prevent the default form submission
 
         const form = document.getElementById("profile-form");
         const formData = new FormData(form);
         const encrypted = await encryptData(formData);
+
+        showBtnLoading(profileSubmitBtn);
+
         try {
           const response = await fetch("/api/user-profile-submit", {
             method: "POST",
@@ -149,15 +155,22 @@ async function renderDetails() {
             body: JSON.stringify({ encryptedWithEncAesKey: encrypted }),
           });
           if (response.ok) {
+            showBtnResult(profileSubmitBtn, true);
             alert("Profile submitted successfully!");
+            setTimeout(() => {
+              window.location.href = "/user-profile";
+            }, 3000);
           } else {
-            alert("Failed to submit profile.");
+            showBtnResult(profileSubmitBtn, false);
+            alert("Failed to submit profile. Please try again later!");
           }
         } catch (error) {
           console.error("Error submitting profile:", error);
           alert("An error occurred while submitting the profile.");
         }
-      });
+      },
+      { once: true }
+    );
   } else {
     const profile = data.userProfileDetails;
 
@@ -334,7 +347,7 @@ async function renderDetails() {
 
         <button id="edit-request-btn"
             class="bg-sky-900 hover:bg-red-600 m-auto text-white font-bold mt-5 py-2 px-4 rounded-lg focus:outline-none focus:shadow-outline"
-            type="submit" value="edit-request">
+            type="submit">
             Save
         </button>
 
@@ -343,14 +356,18 @@ async function renderDetails() {
 </div>
 
     `;
-    document
-      .getElementById("edit-profile-form")
-      .addEventListener("submit", async function (event) {
+    const editProfileBtn = document.getElementById("edit-request-btn");
+    document.getElementById("edit-profile-form").addEventListener(
+      "submit",
+      async function (event) {
         event.preventDefault(); // Prevent the default form submission
 
         const form = document.getElementById("edit-profile-form");
         const formData = new FormData(form);
         const encrypted = await encryptData(formData);
+
+        showBtnLoading(editProfileBtn);
+
         try {
           const response = await fetch("/api/user-profile-edit", {
             method: "PUT",
@@ -359,16 +376,22 @@ async function renderDetails() {
           });
           const data = await response.json();
           if (response.ok) {
+            showBtnResult(editProfileBtn, true);
             alert(data.message);
-            window.location.href = "/user-profile";
+            setTimeout(() => {
+              window.location.href = "/user-profile";
+            }, 3000);
           } else {
-            alert("Failed to submit profile.");
+            showBtnResult(editProfileBtn, false);
+            alert("Failed to edit profile. Please try again later!");
           }
         } catch (error) {
           console.error("Error submitting profile:", error);
           alert("An error occurred while submitting the profile.", data.error);
         }
-      });
+      },
+      { once: true }
+    );
   }
   document
     .getElementById("profile-picture-input")
