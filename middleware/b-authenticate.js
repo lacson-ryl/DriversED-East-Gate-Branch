@@ -125,7 +125,8 @@ export function verifyGitHubSignature(req, res, next) {
   if (!signature) return res.status(401).send('No signature');
 
   const hmac = crypto.createHmac('sha256', githubSecret);
-  const digest = 'sha256=' + hmac.update(req.rawBody).digest('hex');
+  hmac.update(req.body); // req.body is a Buffer
+  const digest = `sha256=${hmac.digest('hex')}`;
 
   if (!crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(digest))) {
     return res.status(403).send('Invalid signature');
