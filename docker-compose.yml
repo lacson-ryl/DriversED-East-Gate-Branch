@@ -1,7 +1,6 @@
-version: '3.8'
+version: "3.8"
 
 services:
-
   mysql:
     image: mysql:8.0
     ports:
@@ -22,6 +21,8 @@ services:
       retries: 5
     networks:
       - app-net
+    env_file:
+      - .env.production
 
   redis:
     image: redis
@@ -37,6 +38,8 @@ services:
       retries: 3
     networks:
       - app-net
+    env_file:
+      - .env.production
 
   nodeapp:
     build: .
@@ -53,6 +56,8 @@ services:
     stop_grace_period: 10s
     networks:
       - app-net
+    env_file:
+      - .env.production
 
   nginx:
     image: nginx:latest
@@ -70,6 +75,8 @@ services:
       - nodeapp
     networks:
       - app-net
+    env_file:
+      - .env.production
 
 networks:
   app-net:
