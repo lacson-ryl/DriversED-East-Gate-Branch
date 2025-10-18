@@ -267,23 +267,28 @@ const limiter = rateLimit({
 app.use(limiter); // Apply to all routes
 
 // Webhook endpoint
-app.post("/github-webhook", verifyGitHubSignature, (req, res) => {
-  console.log("Webhook received:", req.body);
-  exec(
-    `
+app.post(
+  "/github-webhook",
+  express.raw({ type: "application/json" }),
+  verifyGitHubSignature,
+  (req, res) => {
+    console.log("Webhook received:", req.body);
+    exec(
+      `
     git pull origin main
     docker-compose --env-file .env.production up -d
     `,
-    (err, stdout, stderr) => {
-      if (err) {
-        console.error("Git pull failed:", stderr);
-        return res.status(500).send("Git pull failed");
+      (err, stdout, stderr) => {
+        if (err) {
+          console.error("Git pull failed:", stderr);
+          return res.status(500).send("Git pull failed");
+        }
+        console.log("Git pull output:", stdout);
+        res.status(200).send("Update fetched");
       }
-      console.log("Git pull output:", stdout);
-      res.status(200).send("Update fetched");
-    }
-  );
-});
+    );
+  }
+);
 
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
