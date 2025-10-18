@@ -33,7 +33,6 @@ dotenv.config();
 
 const PORT = process.env.port;
 const secretKey = process.env.secret_key;
-const githubSecret = process.env.GITHUB_SECRET;
 
 // Get the directory name
 const __filename = fileURLToPath(import.meta.url);

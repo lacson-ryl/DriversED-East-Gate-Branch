@@ -4,6 +4,7 @@ import redis from "../config/b-redis.js";
 dotenv.config();
 
 const secretKey = process.env.secret_key;
+const GITHUB_SECRET = process.env.GITHUB_SECRET;
 
 export function authenticateToken(req, res, next) {
   const token = req.cookies.jwtToken;
