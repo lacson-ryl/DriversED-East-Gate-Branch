@@ -4,7 +4,7 @@ import redis from "../config/b-redis.js";
 dotenv.config();
 
 const secretKey = process.env.secret_key;
-const GITHUB_SECRET = process.env.GITHUB_SECRET;
+const githubSecret = process.env.GITHUB_SECRET;
 
 export function authenticateToken(req, res, next) {
   const token = req.cookies.jwtToken;
@@ -123,7 +123,7 @@ export function verifyGitHubSignature(req, res, next) {
   const signature = req.headers['x-hub-signature-256'];
   if (!signature) return res.status(401).send('No signature');
 
-  const hmac = crypto.createHmac('sha256', GITHUB_SECRET);
+  const hmac = crypto.createHmac('sha256', githubSecret);
   const digest = 'sha256=' + hmac.update(req.rawBody).digest('hex');
 
   if (!crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(digest))) {
