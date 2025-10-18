@@ -258,6 +258,14 @@ app.post(
   }
 );
 
+app.use((req, res, next) => {
+  if (!req.route) {
+    return res.status(404).end(); // No logging, no message
+  }
+  next();
+});
+
+
 const limiter = rateLimit({
   windowMs: 5 * 60 * 1000, // 15 minutes
   max: 100, // Limit each IP to 100 requests per windowMs
