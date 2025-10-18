@@ -70,6 +70,8 @@ services:
       - .:/app
     depends_on:
       - nodeapp
+    env_file:
+      - .env.production
     networks:
       - app-net
 
