@@ -1,4 +1,7 @@
+version: '3.8'
+
 services:
+
   mysql:
     image: mysql:8.0
     ports:
@@ -17,8 +20,6 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
-    env_file:
-      - .env.production
     networks:
       - app-net
 
@@ -34,20 +35,16 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-    env_file:
-      - .env.production
     networks:
       - app-net
 
   nodeapp:
     build: .
     ports:
-      - "${port}:${port}"
+      - "${port}:8000"
     depends_on:
       - redis
       - mysql
-    env_file:
-      - .env.production
     volumes:
       - .:/app
       - app-node-modules:/app/node_modules
@@ -67,6 +64,7 @@ services:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf
       - ./nginx/conf.d/default.conf:/etc/nginx/conf.d/default.conf
       - ./certs:/etc/nginx/certs
+      - /etc/letsencrypt:/etc/letsencrypt:ro
       - .:/app
     depends_on:
       - nodeapp

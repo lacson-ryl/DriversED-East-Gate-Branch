@@ -15,6 +15,7 @@ import session from "express-session";
 import validator from "validator";
 import axios from "axios";
 import rateLimit from "express-rate-limit";
+import { exec } from "child_process";
 
 import {
   adminPassport,
@@ -32,6 +33,7 @@ dotenv.config();
 
 const PORT = process.env.port;
 const secretKey = process.env.secret_key;
+const githubSecret = process.env.GITHUB_SECRET;
 
 // Get the directory name
 const __filename = fileURLToPath(import.meta.url);
@@ -265,6 +267,20 @@ const limiter = rateLimit({
 
 app.use(limiter); // Apply to all routes
 
+// Webhook endpoint
+app.post("/github-webhook", verifyGitHubSignature, (req, res) => {
+  console.log("Webhook received:", req.body);
+
+  exec("git pull origin main", (err, stdout, stderr) => {
+    if (err) {
+      console.error("Git pull failed:", stderr);
+      return res.status(500).send("Git pull failed");
+    }
+    console.log("Git pull output:", stdout);
+    res.status(200).send("Update fetched");
+  });
+});
+
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 
@@ -379,6 +395,7 @@ import {
   authenticateTokenForChangingCredentials,
   generateTemporaryPassword,
   verifyDeleteToken,
+  verifyGitHubSignature,
 } from "./middleware/b-authenticate.js";
 
 import { renderBase64File } from "./utils/file-converter.js";
@@ -3698,7 +3715,7 @@ app.post(
     try {
       const { userId, role } = req.user;
       const { clientId, courseId, instructorId } = req.body;
-      console.log('pdc', clientId, courseId, instructorId)
+      console.log("pdc", clientId, courseId, instructorId);
 
       const logoPath = path.join(
         __dirname,
@@ -3896,10 +3913,11 @@ app.post(
         payload,
       });
 
-      const convertedPdfBuff = Buffer.isBuffer(pdfBuffer) ? pdfBuffer : Buffer.from(pdfBuffer);
+      const convertedPdfBuff = Buffer.isBuffer(pdfBuffer)
+        ? pdfBuffer
+        : Buffer.from(pdfBuffer);
 
       console.log("pdfBuffer size:", convertedPdfBuff.length);
-
 
       if (type == "database") {
         try {
@@ -3910,7 +3928,7 @@ app.post(
           );
         } catch (error) {
           throw new Error("Cant upload certificate to the database.");
-        } 
+        }
         /*
         await sendEmail("completion-certificate", user.email, {
           name: user.first_name,
@@ -3974,7 +3992,7 @@ app.post(
     try {
       const { userId, role } = req.user;
       const { clientId, courseId, instructorId } = req.body;
-      console.log('tdc', clientId, courseId, instructorId);
+      console.log("tdc", clientId, courseId, instructorId);
 
       const instructor = await getInstructorwithId(instructorId);
       const user = await getProfilewithUserId(clientId);
@@ -4149,7 +4167,7 @@ app.post(
       });
 
       const name = `${profileInputs.lastName.toUpperCase()} ${profileInputs.firstName.toUpperCase()} ${profileInputs.middleName.toUpperCase()}`;
-      
+
       if (type === "database") {
         await saveCertificateToDatabase(
           courseId,
