@@ -8,11 +8,23 @@ RUN apt-get update && apt-get install -y \
   curl \
   && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Copy only what's needed
-COPY package*.json ./
-RUN sed -i '/"name":/a \  "type": "module",' package.json
+# Create a dedicated package.json for the webhook
+RUN echo '{ \
+  "name": "webhook-server", \
+  "version": "1.0.0", \
+  "type": "module", \
+  "main": "webhook-server.js", \
+  "scripts": { "start": "node webhook-server.js" }, \
+  "dependencies": { \
+    "express": "^4.21.1", \
+    "dotenv": "^16.4.5" \
+  } \
+}' > package.json
+
+# Install dependencies
 RUN npm install
 
+# Copy only what's needed
 COPY webhook-server.js ./
 COPY .env.production ./
 
