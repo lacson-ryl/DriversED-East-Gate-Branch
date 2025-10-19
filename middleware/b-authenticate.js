@@ -1,7 +1,6 @@
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
 import redis from "../config/b-redis.js";
-import crypto from "crypto";
 dotenv.config();
 
 const secretKey = process.env.secret_key;
