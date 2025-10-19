@@ -937,7 +937,7 @@ app.post(
         program_id
       );
 
-      let enrolltype = transmissionType == "onsite" ? "TDC" : "PDC";
+      let enrolltype = transmissionType == "Onsite" ? "TDC" : "PDC";
       if (userId !== 0) {
         const profile = await getUserAccountById(userId);
         let appliedDates = `${startDate} - ${continuation}`;
