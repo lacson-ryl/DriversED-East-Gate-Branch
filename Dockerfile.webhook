@@ -11,7 +11,10 @@ RUN apt-get update && apt-get install -y \
 COPY package*.json ./
 RUN npm install
 
-COPY ./webhook-server.js ./middleware ./utils ./
+COPY ./webhook-server.js ./
+COPY ./middleware ./middleware
+COPY ./utils ./utils
+
 
 # Optional: if you use dotenv or other config files
 COPY .env.production ./
