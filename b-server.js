@@ -1405,7 +1405,7 @@ app.get(
   }
 );
 
-app.get("/admin-registration", async (req, res) => {
+app.get("/admin-registration", authenticateToken, authorizeRole("admin"), async (req, res) => {
   try {
     res.render("admin-registration-form");
   } catch (error) {
@@ -1415,7 +1415,7 @@ app.get("/admin-registration", async (req, res) => {
   }
 });
 
-app.post("/api/admin-registration", async (req, res) => {
+app.post("/api/admin-registration", authenticateToken, authorizeRole("admin"), async (req, res) => {
   try {
     const { admin_name, user_email, user_password } = req.body;
     if (!admin_name || !user_email || !user_password) {
