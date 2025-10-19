@@ -937,10 +937,10 @@ app.post(
         program_id
       );
 
+      let enrolltype = transmissionType == "onsite" ? "TDC" : "PDC";
       if (userId !== 0) {
         const profile = await getUserAccountById(userId);
         let appliedDates = `${startDate} - ${continuation}`;
-        let enrolltype = transmissionType == "onsite" ? "TDC" : "PDC";
         await sendEmail("apply-enroll", profile.user_email, {
           name: profile.user_name,
           appliedDates: appliedDates,

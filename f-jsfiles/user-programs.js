@@ -242,7 +242,6 @@ async function updateCalendar(instructorId) {
     } else {
       // Check if the date is unavailable
       const slots = availability[dateKey];
-      console.log("slots", slots);
       if (isSunday) {
         dayDiv.classList.add("bg-red-100"); // Unavailable dates are red
       } else if (slots) {
@@ -511,6 +510,7 @@ async function addContinuationDate() {
 
       showBtnResult(continuationSubmitBtn, true);
       alert(data.message);
+      addContinuationForm.reset();
       renderForm(); // Refresh the calendar to show updated availability
       renderUserApplicationsList();
 
