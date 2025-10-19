@@ -1,7 +1,7 @@
 // webhook-server.js
 import express from "express";
 import dotenv from "dotenv";
-import { exec } from "child_process";
+import http from "http";
 import { createHmac, timingSafeEqual } from "node:crypto";
 
 dotenv.config();
@@ -9,6 +9,7 @@ dotenv.config();
 const app = express();
 const PORT = process.env.WEBHOOK_PORT || 9000;
 const githubSecret = process.env.GITHUB_SECRET;
+const execSecret = process.env.EXEC_SECRET;
 
 // Middleware to verify GitHub signature
 function verifyGitHubSignature(req, res, next) {
@@ -39,21 +40,29 @@ app.post(
     }
 
     if (event === "push") {
-      console.log("GitHub webhook push received:", req.body);
-      exec(
-        `
-        git pull origin main
-        docker-compose --env-file .env.production up -d
-        `,
-        (err, stdout, stderr) => {
-          if (err) {
-            console.error("Git pull failed:", stderr);
-            return res.status(500).send("Git pull failed");
-          }
-          console.log("Git pull output:", stdout);
-          res.status(200).send("Update fetched");
+      const trigger = http.request(
+        {
+          hostname: "localhost",
+          port: 8000,
+          path: "/trigger-rebuild",
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-exec-secret": execSecret,
+          },
+        },
+        (triggerRes) => {
+          console.log(`Rebuild trigger response: ${triggerRes.statusCode}`);
+          res.status(200).send("Push received, rebuild triggered");
         }
       );
+
+      trigger.on("error", (err) => {
+        console.error("Failed to trigger rebuild:", err);
+        res.status(500).send("Trigger failed");
+      });
+
+      trigger.end();
     } else {
       console.log("Unhandled GitHub event:", event);
       res.status(400).send("Unhandled event");

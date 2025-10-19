@@ -260,6 +260,28 @@ app.post(
   }
 );
 
+app.post("/trigger-rebuild", (req, res) => {
+  try {
+    if (req.headers["x-exec-secret"] !== process.env.EXEC_SECRET) {
+      return res.status(401).send("Invalid Exec Secret");
+    }
+
+    exec(
+      "git pull origin main && docker-compose --env-file .env.production up -d",
+      (err, stdout, stderr) => {
+        if (err) {
+          console.error("Rebuild failed:", stderr);
+          return res.status(500).send("Rebuild failed");
+        }
+        console.log("Rebuild successful:", stdout);
+        res.status(200).send("Rebuild triggered");
+      }
+    );
+  } catch (error) {
+    return res.status(500).send("Trigger Failed");
+  }
+});
+
 const limiter = rateLimit({
   windowMs: 5 * 60 * 1000, // 15 minutes
   max: 100, // Limit each IP to 100 requests per windowMs
@@ -4234,7 +4256,6 @@ async function shutdown(signal) {
 
 process.on("SIGINT", () => shutdown("SIGINT"));
 process.on("SIGTERM", () => shutdown("SIGTERM"));
-
 
 app.use((req, res, next) => {
   if (!req.route) {
