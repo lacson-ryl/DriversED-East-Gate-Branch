@@ -15,7 +15,6 @@ import session from "express-session";
 import validator from "validator";
 import axios from "axios";
 import rateLimit from "express-rate-limit";
-import { exec } from "child_process";
 
 import {
   adminPassport,
@@ -265,7 +264,6 @@ app.use((req, res, next) => {
   next();
 });
 
-
 const limiter = rateLimit({
   windowMs: 5 * 60 * 1000, // 15 minutes
   max: 100, // Limit each IP to 100 requests per windowMs
@@ -273,30 +271,6 @@ const limiter = rateLimit({
 });
 
 app.use(limiter); // Apply to all routes
-
-// Webhook endpoint
-app.post(
-  "/github-webhook",
-  express.raw({ type: "application/json" }),
-  verifyGitHubSignature,
-  (req, res) => {
-    console.log("Webhook received:", req.body);
-    exec(
-      `
-    git pull origin main
-    docker-compose --env-file .env.production up -d
-    `,
-      (err, stdout, stderr) => {
-        if (err) {
-          console.error("Git pull failed:", stderr);
-          return res.status(500).send("Git pull failed");
-        }
-        console.log("Git pull output:", stdout);
-        res.status(200).send("Update fetched");
-      }
-    );
-  }
-);
 
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
