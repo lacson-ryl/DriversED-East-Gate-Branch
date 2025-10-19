@@ -3705,6 +3705,114 @@ app.get(
 );
 
 app.get(
+  "sample-certificates-completion",
+  authenticateToken,
+  authorizeRole("user"),
+  async (req, res) => {
+    try {
+      const { userId, role } = req.user;
+
+      const logoPath = path.join(
+        __dirname,
+        "./f-css/solid/drivers_ed_logo-no-bg.png"
+      );
+      const driversEdLogo = `data:image/png;base64,${fs.readFileSync(
+        logoPath,
+        "base64"
+      )}`;
+
+      // Example data to pass to the EJS template
+      const dlCodesLeft = [
+        { code: "A (L1,L2,L3)", mt: false, at: false },
+        { code: "A1 (L4,L5,L6,L7)", mt: false, at: false },
+        { code: "B (M1)", mt: false, at: false },
+        { code: "B1 (M2)", mt: false, at: false },
+        { code: "B2 (N1)", mt: false, at: false },
+      ];
+
+      const dlCodesRight = [
+        { code: "BE (01, 02)", mt: false, at: false },
+        { code: "C (N2, N3)", mt: false, at: false },
+        { code: "CE (03, 04)", mt: false, at: false },
+        { code: "D (M3)", mt: false, at: false },
+      ];
+      const user = await getProfilewithUserId(userId);
+
+      const certificateInputs = [
+        {
+          controlNumber: "SAMPLESAMPLESAMPLE",
+          certificateNumber: "SAMPLESAMPLESAMPLE",
+          accredNumOfBranch: "SAMPLESAMPLESAMPLE",
+          driversEdLogo: driversEdLogo,
+        },
+      ];
+      const fullName = `${user.last_name.toUpperCase()} ${user.first_name.toUpperCase()} ${user.middle_name.toUpperCase()}`;
+      const userProfile = [
+        {
+          fullName: fullName || null,
+          address: user.address,
+          ltoClientId: "SAMPLESAMPLESAMPLE",
+          birthday: user.birth_date,
+          gender: user.gender,
+          civilStatus: user.civil_status,
+          nationality: user.nationality,
+        },
+      ];
+
+      // Calculate the age after defining the userProfile
+      userProfile[0].age = user.birth_date
+        ? Math.floor(
+            (new Date() - new Date(user.birth_date)) /
+              (1000 * 60 * 60 * 24 * 365.25)
+          )
+        : null;
+
+      userProfile[0].profilePicture = await renderBase64File(
+        user.profile_picture
+      );
+
+      const userCourse = [
+        {
+          courseName: "SAMPLESAMPLE",
+          dateStarted: "01/01/2001",
+          dateFinished: "01/01/2001",
+          totalHours: 10,
+        },
+      ];
+
+      const instructorProfile = [
+        {
+          instructorName: "SAMPLESAMPLE",
+          accredNumOfInstructor: "SAMPLESAMPLE",
+        },
+      ];
+
+      const encrypted = await encryptData(
+        {
+          dlCodesLeft,
+          dlCodesRight,
+          certificateInputs,
+          userProfile,
+          userCourse,
+          instructorProfile,
+          clientId,
+          courseId,
+          instructorId,
+        },
+        userId,
+        role
+      );
+      res.status(200).render("sample", {
+        encrypted,
+      });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: "Internal Server Error" });
+    }
+  }
+);
+
+app.get(
   "/certificates-completion-pdc",
   authenticateToken,
   authorizeRole("admin"),

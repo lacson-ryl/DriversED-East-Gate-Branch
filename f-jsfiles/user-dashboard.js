@@ -44,96 +44,145 @@ async function renderUserCourseCards() {
     document.querySelector(".swiper-button-prev").style.display = "none";
     return;
   } else {
-    courseList = traineesCourseList;
-    clientCourseCard.innerHTML = traineesCourseList
-      .map((arr) => {
-        const progress =
-          arr.total_hours === 0
-            ? 0
-            : Math.round((arr.total_hours / arr.program_duration) * 100);
+    function generateCourseCard(course, scheduleList) {
+      const progress =
+        course.total_hours === 0
+          ? 0
+          : Math.round((course.total_hours / course.program_duration) * 100);
 
-        const courseId = arr.course_id;
-        return `
-          <div class="swiper-slide p-2">
-            <div class="card flex flex-col scale-75 md:scale-100 max-w-full max-h-screen gap-y-5 items-center">
-              <div class="relative min-w-96 w-1/2 min-h-44 bg-white text-center text-black border-2 border-l-4 border-b-4 border-b-yellow-400 border-l-yellow-400 rounded-xl p-5 space-y-2 shadow-lg transform transition duration-500 hover:scale-105">
-                <div class="absolute top-2 left-2 rounded-full w-6 h-6 text-sm md:w-8 md:h-8 md:text-base bg-yellow-400 text-red-600 flex items-center justify-center font-medium">
-                  ${courseId}
+      const courseId = course.course_id;
+
+      const scheduleHTML = scheduleList
+        .filter((s) => s.user_course_id == courseId)
+        .map(
+          (s) => `<p class="text-sm">${s.date} - ${s.slot} - ${s.status}</p>`
+        )
+        .join("");
+
+      return `
+        <div class="swiper-slide p-2">
+          <div class="card flex flex-col scale-75 md:scale-100 max-w-full max-h-screen gap-y-5 items-center">
+            <div class="relative min-w-96 w-1/2 min-h-44 bg-white text-center text-black border-2 border-l-4 border-b-4 border-b-yellow-400 border-l-yellow-400 rounded-xl p-5 space-y-2 shadow-lg transform transition duration-500 hover:scale-105">
+              <div class="absolute top-2 left-2 rounded-full w-6 h-6 text-sm md:w-8 md:h-8 md:text-base bg-yellow-400 text-red-600 flex items-center justify-center font-medium">
+                ${courseId}
+              </div>
+
+              <h1 class="text-2xl mb-2 font-bold text-gray-800">${
+                course.program_name
+              }</h1>
+              <p class="text-green-700 font-semibold">Enrolled</p>
+              <h2 class="text-xl mb-2 font-semibold text-gray-700">${
+                course.instructor_name
+              }</h2>
+
+              <div class="flex justify-between items-center gap-3">
+                <div class="w-2/3">
+                  <div class="flex h-5 w-full overflow-hidden rounded-md bg-neutral-50 dark:bg-white outline outline-1 outline-gray-200"
+                      role="progressbar" aria-valuenow="${progress}" aria-valuemin="0" aria-valuemax="100">
+                    <div class="h-full rounded-md bg-blue-500 p-0.5 text-center text-sm font-semibold leading-none text-black"
+                        style="width: ${progress >= 100 ? 100 : progress}%">
+                      <span>${progress >= 100 ? 100 : progress}%</span>
+                    </div>
+                  </div>
+                  <p class="text-sm text-black font-semibold">${
+                    course.total_hours
+                  } / ${course.program_duration} Hours</p>
+                </div>
+                <div class="w-1/3 text-left">
+                  <p class="text-sm">Start: ${course.date_started}</p>
+                  <p class="text-sm">End: ${
+                    !course.date_completed
+                      ? "--/--/----"
+                      : course.date_completed
+                  }</p>
+                </div>
+              </div>
+
+              <div class="w-full text-left mt-2">
+                <h5 class="text-base font-semibold">Schedule:</h5>
+                ${scheduleHTML}
+
+                <div class="flex flex-row items-center justify-around mt-2">
+                  <div class="text-base font-semibold">Grade:
+                    ${course.grade || ""}
+                    ${
+                      course.grade == 0
+                        ? course.grading_status
+                        : `<button class="grading-sheet-view-button bg-yellow-500 text-white px-2 py-1 rounded-md hover:outline outline-1 outline-offset-2 outline-red-500 mt-1" data-id="${courseId}">View</button>`
+                    }
+                  </div>
+                  <div class="text-base font-semibold">Certificate:
+                    ${
+                      !course.certificate_file
+                        ? "Pending"
+                        : `<a href="${
+                            course.type == "sample"
+                              ? course.certificate_file
+                              : "#"
+                          }" class="certificate-view-button bg-yellow-500 text-white px-2 py-1 rounded-md hover:outline outline-1 outline-offset-2 outline-red-500 mt-1" data-id="${
+                            course.course_id
+                          }">
+                            View
+                          </a>`
+                    }
+                  </div>
+
                 </div>
 
-                <h1 class="text-2xl mb-2 font-bold text-gray-800">${
-                  arr.program_name
-                }</h1>
-                <p class="text-green-700 font-semibold">Enrolled</p>
-                <h2 class="text-xl mb-2 font-semibold text-gray-700">${
-                  arr.instructor_name
-                }</h2>
-                <div class="flex justify-between items-center gap-3">
-                  <div class="w-2/3 ">
-                    <div class="flex h-5 w-full overflow-hidden rounded-md bg-neutral-50 dark:bg-white outline outline-1 outline-gray-200"
-                        role="progressbar" aria-label="default progress bar" aria-valuenow="${progress}" aria-valuemin="0"
-                        aria-valuemax="100">
-                      <div class="h-full rounded-md bg-blue-500 p-0.5 text-center  text-sm font-semibold leading-none text-black"
-                          style="width: ${progress >= 100 ? 100 : progress}%">
-                        <span>${progress >= 100 ? 100 : progress}%</span>
-                      </div>
-                    </div>
-                    <div>
-                      <p class="text-sm text-black font-semibold">${
-                        arr.total_hours
-                      } / ${arr.program_duration} Hours</p>
-                    </div>
-                  </div>
-                  <div class="w-1/3 text-left">
-                    <p class="text-sm">Start: ${arr.date_started}</p>
-                    <p class="text-sm">End: ${
-                      !arr.date_completed ? "--/--/----" : arr.date_completed
-                    }</p>
-                  </div>
-                </div>
-                <div class="w-full text-left mt-2">
-                  <h5 class="text-base font-semibold">Schedule:</h5>
-                  ${traineesCourseSchedule
-                    .filter((schedule) => schedule.user_course_id == courseId)
-                    .map(
-                      (schedule) => `
-                      <p class="text-sm">${schedule.date} - ${schedule.slot} - ${schedule.status}</p>`
-                    )
-                    .join("")}
-                  <div class="flex flex-row items-center justify-around mt-2">
-                    <div class="text-base font-semibold">Grade:
-                       ${arr.grade || ""}
-                       ${
-                         arr.grade == 0
-                           ? arr.grading_status
-                           : `
-                          <button class="grading-sheet-view-button bg-yellow-500 text-white px-2 py-1 rounded-md hover:outline outline-1 outline-offset-2 outline-red-500  mt-1" 
-                            data-id="${courseId}">View</button>
-                          `
-                       }
-                    </div>
-                    <div class="text-base font-semibold">Certificate:
-                      ${
-                        !arr.certificate_file
-                          ? "Pending"
-                          : `<button class="certificate-view-button bg-yellow-500 text-white px-2 py-1 rounded-md hover:outline outline-1 outline-offset-2 outline-red-500 mt-1" 
-                              data-id="${courseId}">
-                              View
-                            </button>`
-                      }
-                    </div>
-                  </div>
-                  <h6 class="text-base font-semibold mt-2">Payment: ${
-                    arr.isPaid === 0
-                      ? `<span class="text-black font-semibold">${arr.program_fee} <a href="/user-payments" class="text-blue-500 underline">Click here to Pay</a></span>`
-                      : `<span class="text-green-700 font-semibold">Paid ✓</span>`
-                  }</h6>
-                </div>
+                <h6 class="text-base font-semibold mt-2">Payment: ${
+                  course.isPaid === 0
+                    ? `<span class="text-black font-semibold">${course.program_fee} <a href="/user-payments" class="text-blue-500 underline">Click here to Pay</a></span>`
+                    : `<span class="text-green-700 font-semibold">Paid ✓</span>`
+                }</h6>
               </div>
             </div>
           </div>
+        </div>
         `;
-      })
+    }
+    const sampleCourseData = {
+      course_id: 0,
+      program_name: "Defensive Driving Course",
+      instructor_name: "John Dela Cruz",
+      total_hours: 12,
+      program_duration: 20,
+      date_started: "2025-10-01",
+      date_completed: null,
+      grade: 85,
+      grading_status: "Completed",
+      type: "sample",
+      certificate_file: "/f-css/sample-certificate.pdf",
+      isPaid: 1,
+      program_fee: "2,500",
+    };
+    const sampleScheduleList = [
+      {
+        user_course_id: 0,
+        date: "2025-10-02",
+        slot: "AM/PM",
+        status: "Completed",
+      },
+      {
+        user_course_id: 0,
+        date: "2025-10-04",
+        slot: "AM/PM",
+        status: "Completed",
+      },
+      {
+        user_course_id: 0,
+        date: "2025-10-06",
+        slot: "AM/PM",
+        status: "Scheduled",
+      },
+    ];
+    clientCourseCard.innerHTML = generateCourseCard(
+      sampleCourseData,
+      sampleScheduleList
+    );
+    courseList = traineesCourseList;
+
+    clientCourseCard.innerHTML += traineesCourseList
+      .map((course) => generateCourseCard(course, traineesCourseSchedule))
       .join("");
   }
 
@@ -192,7 +241,7 @@ function allButtons() {
     button.addEventListener("click", function () {
       const courseId = this.getAttribute("data-id");
       const filtered = filterData(courseList, "course_id", courseId);
-      console.log('filtered', filtered);
+      console.log("filtered", filtered);
 
       openFileViewer({
         fileData: filtered[0].certificate_file,
