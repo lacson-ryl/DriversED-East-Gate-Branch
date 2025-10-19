@@ -53,6 +53,7 @@ app.set("view engine", "ejs");
 //app.set("views", path.join(__dirname, "views"));
 app.set("views", path.join(process.cwd(), "views"));
 
+app.set("trust proxy", true);
 
 // CORS setup
 const corsOptions = {
