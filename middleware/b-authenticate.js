@@ -118,19 +118,3 @@ export async function verifyDeleteToken(req, res, next) {
   req.deleteToken = payload;
   next();
 }
-
-// Middleware to verify GitHub signature
-export function verifyGitHubSignature(req, res, next) {
-  const signature = req.headers['x-hub-signature-256'];
-  if (!signature) return res.status(401).send('No signature');
-
-  const hmac = crypto.createHmac('sha256', githubSecret);
-  hmac.update(req.body); // req.body is a Buffer
-  const digest = `sha256=${hmac.digest('hex')}`;
-
-  if (!crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(digest))) {
-    return res.status(403).send('Invalid signature');
-  }
-
-  next();
-}

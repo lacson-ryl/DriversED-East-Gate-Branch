@@ -1,23 +1,22 @@
-# Dockerfile.webhook
+# Use a lightweight Node.js base image
 FROM node:20-slim
 WORKDIR /app
 
-# Install only what's needed
+# Install minimal dependencies
 RUN apt-get update && apt-get install -y \
   ca-certificates \
+  curl \
   && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Copy only what's needed for the webhook
+# Copy only what's needed
 COPY package*.json ./
 RUN npm install
 
-COPY ./webhook-server.js ./
-COPY ./middleware ./middleware
-COPY ./utils ./utils
-
-
-# Optional: if you use dotenv or other config files
+COPY webhook-server.js ./
 COPY .env.production ./
 
+# Expose the webhook port
 EXPOSE 9000
+
+# Start the webhook server
 CMD ["node", "webhook-server.js"]

@@ -2,12 +2,27 @@
 import express from "express";
 import dotenv from "dotenv";
 import { exec } from "child_process";
-import { verifyGitHubSignature } from "./middleware/b-authenticate.js"; // adjust path if needed
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.WEBHOOK_PORT || 9000;
+
+// Middleware to verify GitHub signature
+function verifyGitHubSignature(req, res, next) {
+  const signature = req.headers['x-hub-signature-256'];
+  if (!signature) return res.status(401).send('No signature');
+
+  const hmac = crypto.createHmac('sha256', githubSecret);
+  hmac.update(req.body); // req.body is a Buffer
+  const digest = `sha256=${hmac.digest('hex')}`;
+
+  if (!crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(digest))) {
+    return res.status(403).send('Invalid signature');
+  }
+
+  next();
+}
 
 app.post(
   "/github-webhook",
