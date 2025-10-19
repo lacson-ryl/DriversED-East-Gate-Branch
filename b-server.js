@@ -50,7 +50,9 @@ app.use("/f-jsfiles", express.static(path.join(__dirname, "f-jsfiles"))); // ✅
 
 // View engine
 app.set("view engine", "ejs");
-app.set("views", path.join(__dirname, "views"));
+//app.set("views", path.join(__dirname, "views"));
+app.set("views", path.join(process.cwd(), "views"));
+
 
 // CORS setup
 const corsOptions = {
@@ -256,13 +258,6 @@ app.post(
     }
   }
 );
-
-app.use((req, res, next) => {
-  if (!req.route) {
-    return res.status(404).end(); // No logging, no message
-  }
-  next();
-});
 
 const limiter = rateLimit({
   windowMs: 5 * 60 * 1000, // 15 minutes
@@ -4238,6 +4233,14 @@ async function shutdown(signal) {
 
 process.on("SIGINT", () => shutdown("SIGINT"));
 process.on("SIGTERM", () => shutdown("SIGTERM"));
+
+
+app.use((req, res, next) => {
+  if (!req.route) {
+    return res.status(404).end(); // No logging, no message
+  }
+  next();
+});
 
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`Server is running at ${PORT}`);
