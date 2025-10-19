@@ -10,6 +10,7 @@ RUN apt-get update && apt-get install -y \
 
 # Copy only what's needed
 COPY package*.json ./
+RUN sed -i '/"name":/a \  "type": "module",' package.json
 RUN npm install
 
 COPY webhook-server.js ./
