@@ -108,7 +108,7 @@ async function renderUserCourseCards() {
                     ${
                       course.grade == 0
                         ? course.grading_status
-                        : `<button class="grading-sheet-view-button bg-yellow-500 text-white px-2 py-1 rounded-md hover:outline outline-1 outline-offset-2 outline-red-500 mt-1" data-id="${courseId}">View</button>`
+                        : `<button class="grading-sheet-view-button bg-yellow-500 text-white px-2 py-2 rounded-md hover:outline outline-1 outline-offset-2 outline-red-500 mt-1" data-id="${courseId}">View</button>`
                     }
                   </div>
                   <div class="text-base font-semibold">Certificate:
@@ -142,8 +142,8 @@ async function renderUserCourseCards() {
     }
     const sampleCourseData = {
       course_id: 0,
-      program_name: "Defensive Driving Course",
-      instructor_name: "John Dela Cruz",
+      program_name: "Sample Driving Course",
+      instructor_name: "Juan Dela Cruz",
       total_hours: 12,
       program_duration: 20,
       date_started: "2025-10-01",
