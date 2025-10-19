@@ -46,7 +46,7 @@ services:
       context: .
       dockerfile: Dockerfile
     ports:
-      - "${port}:8000"
+      - "8000:8000"
     env_file:
       - .env.production
     depends_on:
@@ -88,8 +88,6 @@ services:
       dockerfile: Dockerfile.webhook
     ports:
       - "9000:9000"
-    networks:
-      - app-net
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9000/github-webhook"]
       interval: 30s
@@ -97,6 +95,8 @@ services:
       retries: 3
     env_file:
       - .env.production
+    networks:
+      - app-net
 
 networks:
   app-net:
