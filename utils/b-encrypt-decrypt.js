@@ -2,7 +2,7 @@ import crypto from "crypto";
 import { getKeysWithUserId } from "../config/b-database.js";
 import dotenv from "dotenv";
 dotenv.config();
-
+console.log("hello world");
 const secretKey = process.env.secret_key;
 
 export function generateKeyPair() {
