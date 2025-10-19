@@ -7,6 +7,7 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.WEBHOOK_PORT || 9000;
+const githubSecret = process.env.GITHUB_SECRET;
 
 // Middleware to verify GitHub signature
 function verifyGitHubSignature(req, res, next) {

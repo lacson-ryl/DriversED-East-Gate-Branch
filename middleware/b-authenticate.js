@@ -5,7 +5,6 @@ import crypto from "crypto";
 dotenv.config();
 
 const secretKey = process.env.secret_key;
-const githubSecret = process.env.GITHUB_SECRET;
 
 export function authenticateToken(req, res, next) {
   const token = req.cookies.jwtToken;
