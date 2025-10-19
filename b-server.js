@@ -386,7 +386,6 @@ import {
   authenticateTokenForChangingCredentials,
   generateTemporaryPassword,
   verifyDeleteToken,
-  verifyGitHubSignature,
 } from "./middleware/b-authenticate.js";
 
 import { renderBase64File } from "./utils/file-converter.js";
