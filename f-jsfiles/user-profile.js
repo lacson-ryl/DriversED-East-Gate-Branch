@@ -116,7 +116,7 @@ function profileDetialsBlank(courseList) {
     ${renderUserCourseTaken(courseList)}
     </div>
 
-    <a id="edit-profile-btn" href="/user-profile-form"
+    <a id="edit-profile-btn" href="/account/user-profile-form"
         class="bg-sky-900 hover:bg-red-600 m-auto text-white font-bold py-2 px-4 rounded-lg focus:outline-none focus:shadow-outline"
          value="edit-profile-request">
         Edit
@@ -129,7 +129,7 @@ function profileDetialsBlank(courseList) {
 }
 
 async function renderDetails() {
-  const response = await fetch("/api/user-profile");
+  const response = await fetch("/account/api/user-profile");
   const encrypted = await response.json();
   console.log("encrypted", encrypted);
   const data = await decryptData(encrypted.encrypted);
@@ -265,7 +265,7 @@ async function renderDetails() {
 
     <div class="gap-4 mb-5">${renderUserCourseTaken(userCourseInfoList)}</div>
 
-    <a id="edit-profile-btn" href="/user-profile-form"
+    <a id="edit-profile-btn" href="/account/user-profile-form"
         class="bg-sky-900 hover:bg-red-600 m-auto text-white font-bold py-2 px-4 mt-9 rounded-lg focus:outline-none focus:shadow-outline"
          value="edit-profile-request">
         Edit

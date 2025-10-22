@@ -47,7 +47,7 @@ export const KeyManager = {
       const exportedPub = await crypto.subtle.exportKey("spki", publicKey);
       const pemPub = arrayBufferToPemPublicKey(exportedPub);
 
-      const response = await fetch("/api/public-key/share", {
+      const response = await fetch("/account/api/public-key/share", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ clientPublicKey: pemPub }),
@@ -56,7 +56,7 @@ export const KeyManager = {
       try {
         data = await response.json();
       } catch (e) {
-        console.error("Failed to parse JSON from /api/public-key/share", e);
+        console.error("Failed to parse JSON from /account/api/public-key/share", e);
         throw new Error("Invalid server response");
       }
 

@@ -1,5 +1,5 @@
 async function renderApplicantsTable() {
-  const response = await fetch("/api/applicants/list");
+  const response = await fetch("/account/api/applicants/list");
   if (!response.ok) return alert("Cant get applicants details for the table.");
 
   const data = await response.json();
@@ -104,12 +104,12 @@ function allButtons() {
       modal.style.display = "flex";
 
       const tokenIndicator = document.getElementById("delete-token-indicator");
-      const response = await fetch("/api/delete-token", {
+      const response = await fetch("/account/api/delete-token", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           id: applicantId,
-          path: `/api/applicant/${applicantId}`,
+          path: `/account/api/applicant/${applicantId}`,
         }),
       });
 
@@ -129,7 +129,7 @@ function allButtons() {
           async () => {
             try {
               const deleteResponse = await fetch(
-                `/api/applicant/${applicantId}`,
+                `/account/api/applicant/${applicantId}`,
                 {
                   method: "DELETE",
                   headers: {

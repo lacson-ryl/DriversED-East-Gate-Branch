@@ -36,13 +36,23 @@
         <div id="content" class="flex flex-col w-full">
             <div class="flex justify-between items-center mr-4 my-2">
                 <h2 class="text-lg ml-4"> Manage Instructors</h2>
-                <button id="add-instructor-button"
-                    class="bg-blue-700 flex items-center hover:bg-gradient-to-t from-blue-400 to-blue-800 text-white rounded-lg px-2 py-1">
-                    <IMG src="/f-css/solid/white/plus.svg" class="w-7 h-7" />
-                    <span class="inline-block">Add Instructor</span>
-                </button>
+                <div class="flex flex-row gap-5">
+                    <button id="show-accounts-button"
+                        class="bg-blue-700 flex items-center hover:bg-gradient-to-t from-blue-400 to-blue-800 text-white rounded-lg px-2 py-1">
+                        <IMG src="/f-css/solid/white/plus.svg" class="w-7 h-7" />
+                        <span class="inline-block">Show Accounts</span>
+                    </button>
+                    <button id="add-instructor-button"
+                        class="bg-blue-700 flex items-center hover:bg-gradient-to-t from-blue-400 to-blue-800 text-white rounded-lg px-2 py-1">
+                        <IMG src="/f-css/solid/white/plus.svg" class="w-7 h-7" />
+                        <span class="inline-block">Add Instructor</span>
+                    </button>
+                </div>
             </div>
-            <div id="instructors-payroll-history-table" class="max-h-96 mt-3 mb-5 mx-3 overflow-auto shadow-md">
+            <div id="instructors-table" class="max-h-[450px] mt-3 mb-5 mx-3 overflow-auto shadow-md animate-fadeIn">
+
+            </div>
+            <div id="accounts-table" class="hidden max-h-[450px] mt-3 mb-5 mx-3 overflow-auto shadow-md animate-fadeIn">
 
             </div>
             <div class="flex flex-row justify-end gap-4 px-4 w-full">
@@ -89,8 +99,8 @@
     </div>
     </div>
 
-    <div id="myModal" class="fixed inset-0 z-50 items-center justify-center hidden bg-gray-900 bg-opacity-50">
-        <div class="relative bg-white rounded-lg shadow-lg min-w-96 max-w-xl p-6">
+    <div id="myModal" class="fixed inset-0 z-40 items-center justify-center hidden bg-gray-900 bg-opacity-50">
+        <div class="relative bg-white rounded-lg shadow-lg min-w-96 max-w-xl max-h-screen p-6">
             <span
                 class="close absolute top-0 right-2 text-3xl font-semibold text-gray-700 hover:text-gray-900 cursor-pointer ">&times;</span>
             <h2 class="text-xl font-semibold">Instructor Details</h2>
@@ -118,7 +128,7 @@
             } catch (error) {
                 console.error('Authorization error:', error);
                 alert("You are not authorized to view this page.");
-                window.location.href = '/adminlogin'; // Redirect to login if not authorized
+                window.location.href = '/account/adminlogin'; // Redirect to login if not authorized
             }
         });
 

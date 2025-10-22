@@ -20,7 +20,7 @@ let course;
 async function renderProfileInputs(clientId, idCourse, idInstructor) {
   console.log("Fetch req");
   try {
-    const response = await fetch("/api/certificates-completion-tdc", {
+    const response = await fetch("/account/api/certificates-completion-tdc", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({

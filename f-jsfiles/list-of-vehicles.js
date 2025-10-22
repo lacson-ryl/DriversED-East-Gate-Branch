@@ -7,7 +7,7 @@ import {
 import { openFileViewer, applyDownloadBtn } from "../utils/file-helper.js";
 
 async function renderVehicleList() {
-  const response = await fetch("/api/vehicles");
+  const response = await fetch("/account/api/vehicles");
   const result = await response.json();
   const vehicleTable = document.getElementById("vehicle-table");
 
@@ -197,7 +197,7 @@ function allButtons(data) {
           showBtnLoading(vehicleSubmitBtn);
 
           try {
-            const response = await fetch("/api/vehicle/add", {
+            const response = await fetch("/account/api/vehicle/add", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
@@ -287,7 +287,7 @@ function allButtons(data) {
           const vehicleType = document.getElementById("vehicle-type").value;
           showBtnLoading(vehicleSubmitBtn);
           try {
-            const updateResponse = await fetch(`/api/vehicles/${originalId}`, {
+            const updateResponse = await fetch(`/account/api/vehicles/${originalId}`, {
               method: "PUT",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
@@ -351,7 +351,7 @@ function allButtons(data) {
           showBtnLoading(ltoSubmitBtn);
 
           try {
-            const response = await fetch(`/api/vehicles/lto/${rowId}`, {
+            const response = await fetch(`/account/api/vehicles/lto/${rowId}`, {
               method: "POST",
               body: formData,
             });
@@ -443,7 +443,7 @@ function allButtons(data) {
 
           try {
             const response = await fetch(
-              `/api/vehicles/vehicle-photo/${rowId}`,
+              `/account/api/vehicles/vehicle-photo/${rowId}`,
               {
                 method: "POST",
                 body: formData,
@@ -509,7 +509,7 @@ function allButtons(data) {
         async () => {
           showBtnLoading(ltoYes);
           try {
-            const response = await fetch(`/api/vehicles/${rowId}/YES`, {
+            const response = await fetch(`/account/api/vehicles/${rowId}/YES`, {
               method: "PUT",
               headers: { "Content-Type": "application/json" },
             });
@@ -537,7 +537,7 @@ function allButtons(data) {
         async () => {
           showBtnLoading(ltoNo);
           try {
-            const response = await fetch(`/api/vehicles/${rowId}/NO`, {
+            const response = await fetch(`/account/api/vehicles/${rowId}/NO`, {
               method: "PUT",
               headers: { "Content-Type": "application/json" },
             });
@@ -582,10 +582,10 @@ function allButtons(data) {
       modal.style.display = "flex";
 
       const tokenIndicator = document.getElementById("delete-token-indicator");
-      const response = await fetch("/api/delete-token", {
+      const response = await fetch("/account/api/delete-token", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: rowId, path: `/api/vehicles/${rowId}` }),
+        body: JSON.stringify({ id: rowId, path: `/account/api/vehicles/${rowId}` }),
       });
 
       const data = await response.json();
@@ -603,7 +603,7 @@ function allButtons(data) {
           "click",
           async () => {
             try {
-              const deleteResponse = await fetch(`/api/vehicles/${rowId}`, {
+              const deleteResponse = await fetch(`/account/api/vehicles/${rowId}`, {
                 method: "DELETE",
                 headers: {
                   "Content-Type": "application/json",

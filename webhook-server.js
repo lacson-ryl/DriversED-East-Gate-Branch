@@ -11,6 +11,11 @@ const PORT = process.env.WEBHOOK_PORT || 9000;
 const githubSecret = process.env.GITHUB_SECRET;
 const execSecret = process.env.EXEC_SECRET;
 
+app.get('/health-check-docker', (req, res) => {
+  res.sendStatus(200);
+});
+
+
 // Middleware to verify GitHub signature
 function verifyGitHubSignature(req, res, next) {
   const signature = req.headers["x-hub-signature-256"];
@@ -70,6 +75,6 @@ app.post(
   }
 );
 
-app.listen(PORT, () => {
+app.listen(PORT, "0.0.0.0", () => {
   console.log(`Webhook server listening on port ${PORT}`);
 });

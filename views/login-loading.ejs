@@ -61,11 +61,11 @@
                 extraMsg.textContent = "Redirecting to your dashboard...";
                 setTimeout(() => {
                     if (role === "admin" || role === "instructor") {
-                        window.location.href = "/admin-dashboard";
+                        window.location.href = "/account/admin-dashboard";
                     } else if (role === "user") {
-                        window.location.href = "/user-dashboard";
+                        window.location.href = "/account/user-dashboard";
                     } else {
-                        window.location.href = "/user-login";
+                        window.location.href = "/account/user-login";
                     }
                 }, 3000);
             }
@@ -83,11 +83,11 @@
                     extraMsg.textContent = "Redirecting to your dashboard...";
                     setTimeout(() => {
                         if (role === "admin" || role === "instructor") {
-                            window.location.href = "/admin-dashboard";
+                            window.location.href = "/account/admin-dashboard";
                         } else if (role === "user") {
-                            window.location.href = "/user-dashboard";
+                            window.location.href = "/account/user-dashboard";
                         } else {
-                            window.location.href = "/user-login";
+                            window.location.href = "/account/user-login";
                         }
                     }, 3000);
                 }
@@ -100,7 +100,7 @@
                 extraMsg.textContent = "Redirecting to your login page...";
                 alert("Something went wrong during secure setup.");
                 setTimeout(() => {
-                    window.location.href = "/logout";
+                    window.location.href = "/account/logout";
                 }, 5000);
             }
         })();

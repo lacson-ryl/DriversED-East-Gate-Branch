@@ -11,18 +11,18 @@ export function authenticateToken(req, res, next) {
 
   if (!token) {
     console.log("No token found");
-    if (req.originalUrl.startsWith("/user")) {
-      return res.redirect("/user-login?error=token_not_found");
+    if (req.originalUrl.startsWith("/account/user")) {
+      return res.redirect("/account/user-login?error=token_not_found");
     } else {
-      return res.redirect("/adminlogin?error=token_not_found");
+      return res.redirect("/account/adminlogin?error=token_not_found");
     }
   }
 
   jwt.verify(token, secretKey, (error, user) => {
     if (error) {
       console.log("Token verification failed:", error);
-      if (req.originalUrl.startsWith("/user")) {
-        return res.redirect("/user-login?error=invalid_token");
+      if (req.originalUrl.startsWith("/account/user")) {
+        return res.redirect("/account/user-login?error=invalid_token");
       } else {
         return res.redirect("/adminlogi?error=invalid_token");
       }
@@ -36,12 +36,12 @@ export function authenticateToken(req, res, next) {
 export function authorizeRole(roles) {
   return (req, res, next) => {
     if (!roles.includes(req.user.role)) {
-      if (req.originalUrl.startsWith("/admin")) {
+      if (req.originalUrl.startsWith("/account/admin")) {
         res.clearCookie("jwtToken");
-        return res.redirect("/adminlogin?error=invalid_role");
-      } else if (req.originalUrl.startsWith("/user")) {
+        return res.redirect("/account/adminlogin?error=invalid_role");
+      } else if (req.originalUrl.startsWith("/account/user")) {
         res.clearCookie("jwtToken");
-        return res.redirect("/user-login?error=invalid_role");
+        return res.redirect("/account/user-login?error=invalid_role");
       } else {
         return res.status(403).json({ error: "Forbidden" });
       }

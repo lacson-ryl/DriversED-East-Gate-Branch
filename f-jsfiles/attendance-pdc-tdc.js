@@ -3,7 +3,7 @@ const tdcBtn = document.getElementById("tdc-takers-btn");
 let currentType;
 
 async function renderAttendanceTable(type) {
-  const response = await fetch(`/api/attendance/${type}`);
+  const response = await fetch(`/account/api/attendance/${type}`);
   if (!response.ok) return alert("Cant get attendance details for the table.");
 
   if (type == "tdc") {
@@ -227,7 +227,7 @@ function allButtons() {
 
     async function changeStatus(id, status, hoursAttended) {
       try {
-        const response = await fetch(`/api/attendance/status/${id}`, {
+        const response = await fetch(`/account/api/attendance/status/${id}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ status, hoursAttended }), // Send the status in the request body
@@ -279,12 +279,12 @@ function allButtons() {
       modal.style.display = "flex";
 
       const tokenIndicator = document.getElementById("delete-token-indicator");
-      const response = await fetch("/api/delete-token", {
+      const response = await fetch("/account/api/delete-token", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           id,
-          path: `/api/delete-attendance`,
+          path: `/account/api/delete-attendance`,
         }),
       });
 
@@ -303,7 +303,7 @@ function allButtons() {
           "click",
           async () => {
             try {
-              const deleteResponse = await fetch(`/api/delete-attendance`, {
+              const deleteResponse = await fetch(`/account/api/delete-attendance`, {
                 method: "DELETE",
                 headers: {
                   "Content-Type": "application/json",

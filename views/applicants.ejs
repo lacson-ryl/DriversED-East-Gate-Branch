@@ -73,7 +73,7 @@
         <div id="content" class="flex flex-col w-full">
             <div class="flex w-full justify-between pr-4 my-2">
                 <h1 id="announcement" class="text-base ml-4">Announcement</h1>
-                <a id="edit-profile-btn" href="/applicants-list"
+                <a id="edit-profile-btn" href="/account/applicants-list"
                     class="bg-sky-900 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg focus:outline-none focus:shadow-outline"
                     value="edit-profile-request">
                     Applicants List
@@ -207,7 +207,7 @@
             } catch (error) {
                 console.error('Authorization error:', error);
                 alert("You are not authorized to view this page.");
-                window.location.href = '/adminlogin'; // Redirect to login if not authorized
+                window.location.href = '/account/adminlogin'; // Redirect to login if not authorized
             }
         });
 

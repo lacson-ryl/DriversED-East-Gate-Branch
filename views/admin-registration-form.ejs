@@ -59,7 +59,7 @@
             const user_password = document.getElementById('user_password').value;
 
             try {
-                const response = await fetch(`/api/admin-registration`, {
+                const response = await fetch(`/account/api/admin-registration`, {
                     method: "POST",
                     headers: {
                         'Content-Type': 'application/json'
@@ -68,7 +68,7 @@
                 });
                 if (response.ok) {
                     alert("Admin Registered Successfully");
-                    window.location.href = '/admin-login';
+                    window.location.href = '/account/admin-login';
                 } else {
                     const data = await response.json();
                     alert(`Error : ${data.error}`);

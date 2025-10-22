@@ -69,4 +69,6 @@ USER pptruser
 ENV PUPPETEER_SKIP_DOWNLOAD=true
 
 EXPOSE 8000
+
+HEALTHCHECK CMD curl --fail http://localhost:8000 || exit 1
 CMD ["npm", "run", "dev"]

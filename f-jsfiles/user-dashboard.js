@@ -12,7 +12,7 @@ let courseList, programList;
 
 async function renderUserCourseCards() {
   const clientCourseCard = document.querySelector(".swiper1 .swiper-wrapper");
-  const response = await fetch("/api/user-dashboard/client-courses");
+  const response = await fetch("/account/api/user-dashboard/client-courses");
   if (!response.ok) {
     console.error("Failed to fetch client courses");
     clientCourseCard.innerHTML = `
@@ -254,7 +254,7 @@ function allButtons() {
 
 async function renderCourseCards() {
   const programCourseCard = document.querySelector(".swiper2 .swiper-wrapper");
-  const response = await fetch("/api/user-dashboard/program-list");
+  const response = await fetch("/account/api/user-dashboard/program-list");
   if (!response.ok) {
     console.error("Failed to fetch client courses");
     programCourseCard.innerHTML = `

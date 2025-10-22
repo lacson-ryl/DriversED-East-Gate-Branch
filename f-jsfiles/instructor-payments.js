@@ -5,7 +5,7 @@ const titleDetails = document.getElementById("title-details");
 const modalDetails = document.getElementById("modal-details");
 
 async function renderInstructorProfile() {
-  const response = await fetch("/api/instructor-profile");
+  const response = await fetch("/account/api/instructor-profile");
   const data = await response.json();
   const instructorTable = document.getElementById(
     "instructors-current-payroll-table"
@@ -273,7 +273,7 @@ async function renderInstructorProfile() {
 
                 try {
                   const updateResponse = await fetch(
-                    `/api/manage-people/${originalId}`,
+                    `/account/api/manage-people/${originalId}`,
                     {
                       method: "PUT",
                       body: formData,
@@ -330,7 +330,7 @@ weeklyBtn.addEventListener("click", (event) => {
 
 async function fetchWeeklyPayments() {
   try {
-    const response = await fetch("/api/instructor-payments/weekly");
+    const response = await fetch("/account/api/instructor-payments/weekly");
     if (!response.ok) throw new Error("Network response was not ok");
 
     const weeklyData = await response.json();
@@ -522,7 +522,7 @@ function renderCurrentWeekPayTable(data) {
 
 async function fetchMonthlyPayments() {
   try {
-    const response = await fetch("/api/instructor-payments/monthly");
+    const response = await fetch("/account/api/instructor-payments/monthly");
     if (!response.ok) {
       throw new Error("Network response was not ok");
     }

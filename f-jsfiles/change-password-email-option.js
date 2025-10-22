@@ -504,7 +504,7 @@ function renderChangePasswordForm() {
         messageBox.classList.add("text-green-500");
 
         setTimeout(() => {
-          window.location.href = "/user-login"; // Redirect to login page
+          window.location.href = "/account/user-login"; // Redirect to login page
         }, 4000);
         return;
       } else {
@@ -564,7 +564,7 @@ function renderChangePasswordFormWithOTP() {
     }
 
     try {
-      const response = await fetch("/api/change-password-otp", {
+      const response = await fetch("/account/api/change-password-otp", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -578,7 +578,7 @@ function renderChangePasswordFormWithOTP() {
         messageBox.classList.add("text-green-500");
 
         setTimeout(() => {
-          window.location.href = "/user-login"; // Redirect to login page
+          window.location.href = "/account/user-login"; // Redirect to login page
         }, 4000);
         return;
       } else {
@@ -624,7 +624,7 @@ function renderChangeEmailFormWithOTP() {
     const otp = document.getElementById("otp-number").value;
 
     try {
-      const response = await fetch("/api/change-email-otp", {
+      const response = await fetch("/account/api/change-email-otp", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -638,7 +638,7 @@ function renderChangeEmailFormWithOTP() {
         messageBox.classList.add("text-green-500");
 
         setTimeout(() => {
-          window.location.href = "/user-login"; // Redirect to login page
+          window.location.href = "/account/user-login"; // Redirect to login page
         }, 4000);
         return;
       } else {

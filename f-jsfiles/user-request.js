@@ -5,7 +5,7 @@ import {
 
 const fetchUserRequestList = async () => {
   try {
-    const response = await fetch(`/api/user-requests`, {
+    const response = await fetch(`/account/api/user-requests`, {
       headers: { "Content-Type": "application/json" },
     });
     const data = await response.json();
@@ -160,7 +160,7 @@ function allButtons() {
       modal.style.display = "flex";
 
       try {
-        const response = await fetch("/api/submit-request", {
+        const response = await fetch("/account/api/submit-request", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ titleRequest, detailsRequest }),

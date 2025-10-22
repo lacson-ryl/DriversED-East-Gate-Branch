@@ -75,7 +75,7 @@
             const password = document.getElementById('password').value;
 
             try {
-                const response = await fetch(`/api/user-registration`, {
+                const response = await fetch(`/account/api/user-registration`, {
                     method: "POST",
                     headers: {
                         'Content-Type': 'application/json'
@@ -84,7 +84,7 @@
                 });
                 if (response.ok) {
                     alert("User Registered Successfully");
-                    window.location.href = '/user-login';
+                    window.location.href = '/account/user-login';
                 } else {
                     const data = await response.json();
                     alert(`Error : ${data.error}`);

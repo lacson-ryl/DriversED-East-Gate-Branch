@@ -8,7 +8,7 @@ import {
 import { openFileViewer } from "../utils/file-helper.js";
 
 async function renderCompletedCourseList() {
-  const response = await fetch("/api/completed-course");
+  const response = await fetch("/account/api/completed-course");
   if (!response.ok) {
     console.error("Failed to fetch data from the server");
     return;
@@ -201,7 +201,7 @@ function allButtons(data) {
 
           try {
             const response = await fetch(
-              `/api/completed-course/edit-hours/${originalId}`,
+              `/account/api/completed-course/edit-hours/${originalId}`,
               {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
@@ -317,7 +317,7 @@ function allButtons(data) {
 
           try {
             const response = await fetch(
-              `/api/completed-course/certificate-upload/${rowId}`,
+              `/account/api/completed-course/certificate-upload/${rowId}`,
               {
                 method: "POST",
                 body: formData,
@@ -392,7 +392,7 @@ function allButtons(data) {
 
           try {
             const response = await fetch(
-              `/api/completed-course/grade-upload/${rowId}`,
+              `/account/api/completed-course/grade-upload/${rowId}`,
               {
                 method: "POST",
                 body: formData,
@@ -456,12 +456,12 @@ function allButtons(data) {
       modal.style.display = "flex";
 
       const tokenIndicator = document.getElementById("delete-token-indicator");
-      const response = await fetch("/api/delete-token", {
+      const response = await fetch("/account/api/delete-token", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           id: userId,
-          path: `/api/completed-course/${userId}`,
+          path: `/account/api/completed-course/${userId}`,
         }),
       });
 
@@ -481,7 +481,7 @@ function allButtons(data) {
           async () => {
             try {
               const deleteResponse = await fetch(
-                `/api/completed-course/${userId}`,
+                `/account/api/completed-course/${userId}`,
                 {
                   method: "DELETE",
                   headers: {

@@ -8,7 +8,7 @@ import {
 } from "../utils/modal-feedback.js";
 
 async function renderPaymentList() {
-  const response = await fetch("/api/payments");
+  const response = await fetch("/account/api/payments");
 
   if (!response.ok) {
     console.error("Failed to fetch data from the server");
@@ -199,7 +199,7 @@ function allButtons(data) {
           showBtnLoading(paymentSumbitBtn);
 
           try {
-            const response = await fetch("/api/payment/add", {
+            const response = await fetch("/account/api/payment/add", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ encryptedWithEncAesKey: encrypting }),
@@ -259,7 +259,7 @@ function allButtons(data) {
           showBtnLoading(receiptSubmitBtn);
 
           try {
-            const response = await fetch(`/api/payments/receipt/${rowId}`, {
+            const response = await fetch(`/account/api/payments/receipt/${rowId}`, {
               method: "POST",
               body: formData,
             });
@@ -336,7 +336,7 @@ function allButtons(data) {
           const status = this.value;
           const paymentId = rowId;
           showBtnLoading(statusYes);
-          const response = await fetch(`/api/payments`, {
+          const response = await fetch(`/account/api/payments`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ paymentId, status }),
@@ -388,12 +388,12 @@ function allButtons(data) {
       modal.style.display = "flex";
 
       const tokenIndicator = document.getElementById("delete-token-indicator");
-      const response = await fetch("/api/delete-token", {
+      const response = await fetch("/account/api/delete-token", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           id: rowId,
-          path: `/api/payments/delete/${rowId}`,
+          path: `/account/api/payments/delete/${rowId}`,
         }),
       });
 
@@ -412,7 +412,7 @@ function allButtons(data) {
           "click",
           async () => {
             try {
-              const response = await fetch(`/api/payments/delete/${rowId}`, {
+              const response = await fetch(`/account/api/payments/delete/${rowId}`, {
                 method: "DELETE",
                 headers: {
                   "Content-Type": "application/json",

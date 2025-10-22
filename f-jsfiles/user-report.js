@@ -5,7 +5,7 @@ import {
 
 const fetchUserReportList = async () => {
   try {
-    const response = await fetch(`/api/user-reports`, {
+    const response = await fetch(`/account/api/user-reports`, {
       headers: { "Content-Type": "application/json" },
     });
     const data = await response.json();
@@ -161,7 +161,7 @@ function allButtons() {
       modal.style.display = "flex";
 
       try {
-        const response = await fetch("/api/submit-report", {
+        const response = await fetch("/account/api/submit-report", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ titleReport, detailsReport }),

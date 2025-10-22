@@ -20,7 +20,7 @@ import { encryptData, decryptData } from "../utils/f-webCryptoKeys.js";
 let course;
 async function renderProfileInputs(userId, idCourse, idInstructor) {
   try {
-    const response = await fetch("/api/certificates-completion-pdc", {
+    const response = await fetch("/account/api/certificates-completion-pdc", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -237,7 +237,7 @@ async function handleSave(event) {
 
   try {
     const response = await fetch(
-      `/api/certificates-completion-pdc/${btnType}`,
+      `/account/api/certificates-completion-pdc/${btnType}`,
       {
         method: "POST",
         headers: {

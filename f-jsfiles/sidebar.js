@@ -4,66 +4,66 @@ const sidebarContent = `
     <ul class="flex flex-1 flex-col gap-4 font-light text-base">
         <li id="dashboard"
             class="flex flex-row items-center rounded-3xl hover:font-bold py-1 px-2 hover:hover-bg-custom ">
-            <a class="side-nav-link flex flex-row items-center w-full gap-5" href="/admin-dashboard"">
+            <a class="side-nav-link flex flex-row items-center w-full gap-5" href="/account/admin-dashboard"">
                         <img src=" /f-css/solid/white/view-grid.svg" class="side-icons" />
             <span>Dashboard</span>
             </a>
         </li>
         <li id="manage-people"
             class="flex flex-row items-center rounded-3xl hover:font-bold py-1 px-2 hover:hover-bg-custom ">
-            <a class="side-nav-link flex flex-row items-center w-full gap-5" href="/manage-people">
+            <a class="side-nav-link flex flex-row items-center w-full gap-5" href="/account/manage-people">
                 <img src="/f-css/solid/white/user-group.svg" class="side-icons" />
                 <span>Manage People</span>
             </a>
         </li>
         <li id="programs"
             class="flex flex-row items-center rounded-3xl hover:font-bold py-1 px-2 hover:hover-bg-custom">
-            <a class="side-nav-link flex flex-row items-center w-full gap-5" href="/programs">
+            <a class="side-nav-link flex flex-row items-center w-full gap-5" href="/account/programs">
                 <img src="/f-css/solid/white/table.svg" class="side-icons" />
                 <span>Programs</span>
             </a>
         </li>
         <li id="applicants"
             class="flex flex-row items-center rounded-3xl hover:font-bold py-1 px-2 hover:hover-bg-custom">
-            <a class="side-nav-link flex flex-row items-center w-full gap-5" href="/applicants">
+            <a class="side-nav-link flex flex-row items-center w-full gap-5" href="/account/applicants">
                 <img src="/f-css/solid/white/identification.svg" class="side-icons" />
                 <span>Applicants</span>
             </a>
         </li>
         <li id="search" class="flex flex-row items-center rounded-3xl hover:font-bold py-1 px-2 hover:hover-bg-custom">
-            <a class="side-nav-link flex flex-row items-center w-full gap-5" href="/search">
+            <a class="side-nav-link flex flex-row items-center w-full gap-5" href="/account/search">
                 <img src="/f-css/solid/white/search-circle.svg" class="side-icons" />
                 <span>Search</span>
             </a>
         </li>
         <li id="requests"
             class="flex flex-row items-center rounded-3xl hover:font-bold py-1 px-2 hover:hover-bg-custom">
-            <a class="side-nav-link flex flex-row items-center w-full gap-5" href="/requests">
+            <a class="side-nav-link flex flex-row items-center w-full gap-5" href="/account/requests">
                 <img src="/f-css/solid/white/question-mark-circle.svg" class="side-icons" />
                 <span>Requests</span>
             </a>
         </li>
         <li id="certificates"
             class="flex flex-row items-center rounded-3xl hover:font-bold py-1 px-2 hover:hover-bg-custom">
-            <a class="side-nav-link flex flex-row items-center w-full gap-5" href="/certificates">
+            <a class="side-nav-link flex flex-row items-center w-full gap-5" href="/account/certificates">
                 <img src="/f-css/solid/white/star.svg" class="side-icons" />
                 <span>Certificates</span>
             </a>
         </li>
         <li id="reports" class="flex flex-row items-center rounded-3xl hover:font-bold py-1 px-2 hover:hover-bg-custom">
-            <a class="side-nav-link flex flex-row items-center w-full gap-5" href="/payments">
+            <a class="side-nav-link flex flex-row items-center w-full gap-5" href="/account/payments">
                 <img src="/f-css/solid/white/cash.svg" class="side-icons" />
                 <span>Payments</span>
             </a>
         </li>
         <li id="reports" class="flex flex-row items-center rounded-3xl hover:font-bold py-1 px-2 hover:hover-bg-custom">
-            <a class="side-nav-link flex flex-row items-center w-full gap-5" href="/reports">
+            <a class="side-nav-link flex flex-row items-center w-full gap-5" href="/account/reports">
                 <img src="/f-css/solid/white/exclamation-circle.svg" class="side-icons" />
                 <span>Reports</span>
             </a>
         </li>
         <li id="logout" class="flex flex-row items-center rounded-3xl hover:font-bold py-1 px-2 hover:hover-bg-custom">
-            <a class="side-nav-link flex flex-row items-center w-full gap-5" href="/logout">
+            <a class="side-nav-link flex flex-row items-center w-full gap-5" href="/account/logout">
                 <img src="/f-css/solid/white/logout.svg" class="side-icons" />
                 <span>Logout</span>
             </a>
@@ -96,16 +96,16 @@ document.getElementById("sidebar-container").innerHTML = sidebarContent;
 const currentPath = window.location.pathname;
 const navLinks = document.querySelectorAll(".side-nav-link");
 const iconMap = {
-  "/admin-dashboard": "/f-css/solid/black/view-grid.svg",
-  "/manage-people": "/f-css/solid/black/user-group.svg",
-  "/programs": "/f-css/solid/black/table.svg",
-  "/applicants": "/f-css/solid/black/identification.svg",
-  "/search": "/f-css/solid/black/search-circle.svg",
-  "/requests": "/f-css/solid/black/question-mark-circle.svg",
-  "/certificates": "/f-css/solid/black/star.svg",
-  "/payments": "/f-css/solid/black/cash.svg",
-  "/reports": "/f-css/solid/black/exclamation-circle.svg",
-  "/logout": "/f-css/solid/black/logout.svg",
+  "/account/admin-dashboard": "/f-css/solid/black/view-grid.svg",
+  "/account/manage-people": "/f-css/solid/black/user-group.svg",
+  "/account/programs": "/f-css/solid/black/table.svg",
+  "/account/applicants": "/f-css/solid/black/identification.svg",
+  "/account/search": "/f-css/solid/black/search-circle.svg",
+  "/account/requests": "/f-css/solid/black/question-mark-circle.svg",
+  "/account/certificates": "/f-css/solid/black/star.svg",
+  "/account/payments": "/f-css/solid/black/cash.svg",
+  "/account/reports": "/f-css/solid/black/exclamation-circle.svg",
+  "/account/logout": "/f-css/solid/black/logout.svg",
 };
 
 navLinks.forEach((link) => {
@@ -130,7 +130,7 @@ logoutBtn.addEventListener("click", (event) => {
   logoutConfirm.style.display = "block";
 
   document.getElementById("logout-yes").addEventListener("click", () => {
-    window.location.href = "/logout";
+    window.location.href = "/account/logout";
   });
   document.getElementById("logout-no").addEventListener("click", () => {
     logoutConfirm.style.display = "none";
@@ -182,7 +182,7 @@ if (notifBtn && notifDropDown) {
 }
 
 async function renderNotificationsList() {
-  const response = await fetch("/api/notifications");
+  const response = await fetch("/account/api/notifications");
   if (!response.ok) {
     console.error("Failed to fetch notifications");
     return "Failed to fetch notifications.";

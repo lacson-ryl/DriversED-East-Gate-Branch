@@ -14,7 +14,7 @@ const pdcBtn = document.getElementById("pdc-takers-btn");
 const tdcBtn = document.getElementById("tdc-takers-btn");
 let attendanceList, usersProfilePics;
 async function fetchAttendanceList(type) {
-  const response = await fetch(`/api/instructor/attendance-list/${type}`);
+  const response = await fetch(`/account/api/instructor/attendance-list/${type}`);
 
   if (!response.ok) {
     modalDetails.innerText = `Cant fetch attendance list right now`;
@@ -332,7 +332,7 @@ function allButtons(dataList) {
 
     async function changeStatus(id, status, hoursAttended) {
       try {
-        const response = await fetch(`/api/attendance/status/${id}`, {
+        const response = await fetch(`/account/api/attendance/status/${id}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ status, hoursAttended }), // Send the status in the request body
@@ -410,12 +410,12 @@ function allButtons(dataList) {
       modal.style.display = "flex";
 
       const tokenIndicator = document.getElementById("delete-token-indicator");
-      const response = await fetch("/api/delete-token", {
+      const response = await fetch("/account/api/delete-token", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           id,
-          path: `/api/applicant/${id}`,
+          path: `/account/api/applicant/${id}`,
         }),
       });
 
@@ -434,7 +434,7 @@ function allButtons(dataList) {
           "click",
           async () => {
             try {
-              const deleteResponse = await fetch(`/api/applicant/${id}`, {
+              const deleteResponse = await fetch(`/account/api/applicant/${id}`, {
                 method: "DELETE",
                 headers: {
                   "Content-Type": "application/json",
@@ -473,7 +473,7 @@ function allButtons(dataList) {
 
 async function fetchProfile(courseID) {
   const response = await fetch(
-    `/api/instructor-dashboard/trainee-info/${courseID}`
+    `/account/api/instructor-dashboard/trainee-info/${courseID}`
   );
   if (!response.ok) {
     modalDetails.innerText = "Cant fetch trainee info right now";
@@ -640,7 +640,7 @@ function traineesInfo(profile, profilePic) {
 
           try {
             const response = await fetch(
-              `/api/completed-course/grade-upload/${profile.course_id}`,
+              `/account/api/completed-course/grade-upload/${profile.course_id}`,
               {
                 method: "POST",
                 body: formData,

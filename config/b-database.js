@@ -162,21 +162,27 @@ export async function userSearch(id) {
       WHERE creator_id = ? AND created_by= 'user'`,
       [id]
     );
-    const courseAttendance = resultII.map((row) => ({
-      instructor_id: row.instructor_id,
-      attendance_id: row.attendance_id,
-      user_course_id: row.user_course_id,
-      date: row.date
-        ? new Date(row.date).toLocaleString("en-US", {
-            year: "numeric",
-            month: "long",
-            day: "numeric",
-          })
-        : null,
-      slot: row.date_am_pm,
-      status: row.status,
-      hours: row.hours_attended,
-    }));
+    const courseAttendance = await Promise.all(
+      resultII.map(async (row) => ({
+        instructor_id: row.instructor_id,
+        attendance_id: row.attendance_id,
+        user_course_id: row.user_course_id,
+        date: row.date
+          ? new Date(row.date).toLocaleString("en-US", {
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+            })
+          : null,
+        slot: row.date_am_pm,
+        status: row.status,
+        hours: row.hours_attended,
+        certificate_file: await renderBase64File(
+          row.certificate_file,
+          row.certificate_file_type
+        ),
+      }))
+    );
     return { profile, courseList, courseAttendance };
   } catch (error) {
     console.error("Error in searching for user:", error);

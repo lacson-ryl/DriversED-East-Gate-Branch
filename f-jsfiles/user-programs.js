@@ -19,7 +19,7 @@ async function renderForm() {
 
   // Fetch instructors from the server
   try {
-    const response = await fetch("/api/instructors");
+    const response = await fetch("/account/api/instructors");
     const data = await response.json();
     const instructors = data.instructors;
     instructorsInfo = [];
@@ -110,7 +110,7 @@ async function renderForm() {
     showBtnLoading(applyButton);
 
     try {
-      const response = await fetch("/api/user-application/applyTDC", {
+      const response = await fetch("/account/api/user-application/applyTDC", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -200,7 +200,7 @@ async function updateCalendar(instructorId) {
   if (instructorId) {
     try {
       const response = await fetch(
-        `/api/instructors/${instructorId}/availability`
+        `/account/api/instructors/${instructorId}/availability`
       );
       if (response.ok) {
         availability = await response.json();
@@ -328,7 +328,7 @@ async function renderUserApplicationsList() {
   );
 
   // fetch user applications from the server
-  const response = await fetch("/api/applications-list");
+  const response = await fetch("/account/api/applications-list");
   if (!response.ok) {
     tableAnnouncement.innerText = "Sorry! cant fetch data right now";
     console.error("Error fetching user applications:", error);
@@ -497,7 +497,7 @@ async function addContinuationDate() {
     showBtnLoading(continuationSubmitBtn);
 
     try {
-      const response = await fetch("/api/user-application/add-continuation", {
+      const response = await fetch("/account/api/user-application/add-continuation", {
         method: "POST",
         body: formData,
       });

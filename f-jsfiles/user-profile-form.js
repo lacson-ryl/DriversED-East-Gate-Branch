@@ -2,7 +2,7 @@ import { encryptData, decryptData } from "../utils/f-webCryptoKeys.js";
 import { showBtnLoading, showBtnResult } from "../utils/modal-feedback.js";
 
 async function renderDetails() {
-  const response = await fetch(`/api/user-profile`);
+  const response = await fetch(`/account/api/user-profile`);
   const encrypted = await response.json();
   const data = await decryptData(encrypted.encrypted);
   const profileDisplay = document.getElementById("profile-display");
@@ -153,7 +153,7 @@ async function renderDetails() {
         showBtnLoading(profileSubmitBtn);
 
         try {
-          const response = await fetch("/api/user-profile-submit", {
+          const response = await fetch("/account/api/user-profile-submit", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ encryptedWithEncAesKey: encrypted }),
@@ -162,7 +162,7 @@ async function renderDetails() {
             showBtnResult(profileSubmitBtn, true);
             alert("Profile submitted successfully!");
             setTimeout(() => {
-              window.location.href = "/user-profile";
+              window.location.href = "/account/user-profile";
             }, 3000);
           } else {
             showBtnResult(profileSubmitBtn, false);
@@ -343,7 +343,7 @@ async function renderDetails() {
         showBtnLoading(editProfileBtn);
 
         try {
-          const response = await fetch("/api/user-profile-edit", {
+          const response = await fetch("/account/api/user-profile-edit", {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ encryptedWithEncAesKey: encrypted }),
@@ -353,7 +353,7 @@ async function renderDetails() {
             showBtnResult(editProfileBtn, true);
             alert(data.message);
             setTimeout(() => {
-              window.location.href = "/user-profile";
+              window.location.href = "/account/user-profile";
             }, 3000);
           } else {
             showBtnResult(editProfileBtn, false);

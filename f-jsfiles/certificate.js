@@ -2,7 +2,7 @@ import { showBtnLoading, showBtnResult } from "../utils/modal-feedback.js";
 import { openFileViewer } from "../utils/file-helper.js";
 
 async function renderCertificateList() {
-  const response = await fetch("/api/certificates");
+  const response = await fetch("/account/api/certificates");
   if (!response.ok) {
     console.error("Failed to fetch data from the server");
     return;
@@ -139,7 +139,7 @@ function allButtons(data) {
           showBtnLoading(certSubmitBtn);
 
           try {
-            const response = await fetch("/api/certificate/add", {
+            const response = await fetch("/account/api/certificate/add", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ certificateID, certificateName }),
@@ -209,7 +209,7 @@ function allButtons(data) {
 
           try {
             const updateResponse = await fetch(
-              `/api/certificates/${originalId}`,
+              `/account/api/certificates/${originalId}`,
               {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
@@ -277,7 +277,7 @@ function allButtons(data) {
 
           try {
             const response = await fetch(
-              `/api/certificates/template/${rowId}`,
+              `/account/api/certificates/template/${rowId}`,
               {
                 method: "POST",
                 body: formData,
@@ -342,12 +342,12 @@ function allButtons(data) {
       modal.style.display = "flex";
 
       const tokenIndicator = document.getElementById("delete-token-indicator");
-      const response = await fetch("/api/delete-token", {
+      const response = await fetch("/account/api/delete-token", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           id: rowId,
-          path: `/api/certificates/${rowId}`,
+          path: `/account/api/certificates/${rowId}`,
         }),
       });
 
@@ -366,7 +366,7 @@ function allButtons(data) {
           "click",
           async () => {
             try {
-              const deleteResponse = await fetch(`/api/certificates/${rowId}`, {
+              const deleteResponse = await fetch(`/account/api/certificates/${rowId}`, {
                 method: "DELETE",
                 headers: {
                   "Content-Type": "application/json",

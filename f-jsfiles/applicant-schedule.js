@@ -15,7 +15,7 @@ let assignedProgramToInstructor;
 // Fetch instructors from the server
 async function fetchInstructors() {
   try {
-    const response = await fetch("/api/instructors");
+    const response = await fetch("/account/api/instructors");
     const data = await response.json();
     const instructors = data.instructors;
     instructorsList = instructors;
@@ -126,7 +126,7 @@ async function renderForm() {
       modal.style.display = "flex";
 
       try {
-        const response = await fetch("/api/user-application/applyTDC", {
+        const response = await fetch("/account/api/user-application/applyTDC", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -218,7 +218,7 @@ async function renderForm() {
       showBtnLoading(tdcDateBtn);
 
       try {
-        const response = await fetch("/api/user-application/setTdcDate", {
+        const response = await fetch("/account/api/user-application/setTdcDate", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -347,7 +347,7 @@ async function renderForm() {
 
         try {
           const response = await fetch(
-            "/api/user-application/admin-add-continuation",
+            "/account/api/user-application/admin-add-continuation",
             {
               method: "POST",
               body: formData,
@@ -436,7 +436,7 @@ async function updateCalendar(instructorId) {
   if (instructorId) {
     try {
       const response = await fetch(
-        `/api/instructors/${instructorId}/availability`
+        `/account/api/instructors/${instructorId}/availability`
       );
       if (response.ok) {
         availability = await response.json();

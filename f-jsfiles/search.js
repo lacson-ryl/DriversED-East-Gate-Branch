@@ -21,7 +21,7 @@ searchForm.addEventListener("submit", async (event) => {
   showLoadingMessage(modalDetails, "Checking account records for a match");
   modal.style.display = "flex";
 
-  const response = await fetch("/api/user-search", {
+  const response = await fetch("/account/api/user-search", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ encryptedWithEncAesKey: encrypting }),
@@ -95,7 +95,7 @@ searchForm.addEventListener("submit", async (event) => {
 });
 
 async function renderUserInfo(userId) {
-  const response = await fetch(`/api/user-search/${userId}`);
+  const response = await fetch(`/account/api/user-search/${userId}`);
   const data = await response.json();
 
   if (!response.ok) {
@@ -239,10 +239,22 @@ async function renderUserInfo(userId) {
           <div class="text-xs text-gray-700 mt-1">${course.total_hours} / 
           ${course.program_duration} Hours</div>
         </div>
-        <div class="mt-2 text-sm">
-          <span class="font-semibold">Grade:</span> ${course.grade ?? "N/A"}
-          <span class="ml-2 font-semibold">Status:</span> 
-          ${course.grading_status}
+        <div class="mt-2">
+          <div class="flex flex-row justify-between">
+            <div class="mt-2 text-sm">
+              <span class="font-semibold">Grade:</span> ${course.grade ?? "N/A"}
+              <span class="ml-2 font-semibold">Status:</span> 
+              ${course.grading_status}
+            </div>
+            <div class="mt-2 text-sm">
+              <span class="font-semibold">Certificate:</span> 
+                <button class="view-certificate-btn text-blue-600 underline text-xs" 
+                  data-id="${course.course_id}"
+                  ${course.certificate_file ? "" : "disable"}>
+                    ${course.certificate_file ? "View" : "Pending"}
+                </button>
+            </div>
+          </div>
         </div>
         <div class="mt-2">
           <div class="flex flex-row justify-between">
@@ -380,7 +392,7 @@ async function renderUserInfo(userId) {
           showBtnLoading(paymentSubmitBtn);
 
           try {
-            const response = await fetch("/api/payment/add", {
+            const response = await fetch("/account/api/payment/add", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ encryptedWithEncAesKey: encrypting }),
@@ -470,7 +482,7 @@ async function renderUserInfo(userId) {
 
           try {
             const response = await fetch(
-              "/api/user-application/add-continuation",
+              "/account/api/user-application/add-continuation",
               {
                 method: "POST",
                 body: formData,
@@ -492,6 +504,23 @@ async function renderUserInfo(userId) {
             console.error(error); // Log the error to the console for debugging
           }
         });
+    });
+  });
+
+  function filterData(data, filter, id) {
+    return data.filter((arr) => arr[filter] == id);
+  }
+
+  // Add event listeners for "View Grading Sheet" buttons
+  document.querySelectorAll(".view-certificate-btn").forEach((button) => {
+    button.addEventListener("click", function () {
+      const courseId = this.getAttribute("data-id");
+      const filtered = filterData(courses, "course_id", courseId);
+      openFileViewer({
+        fileData: filtered[0].certificate_file,
+        fileType: filtered[0].certificate_file_type,
+        title: `User course #${courseId} certificate`,
+      });
     });
   });
 
@@ -517,12 +546,12 @@ async function renderUserInfo(userId) {
       modal.style.display = "flex";
 
       const tokenIndicator = document.getElementById("delete-token-indicator");
-      const response = await fetch("/api/delete-token", {
+      const response = await fetch("/account/api/delete-token", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           id: courseId,
-          path: `/api/delete-application-by-course`,
+          path: `/account/api/delete-application-by-course`,
         }),
       });
 
@@ -542,7 +571,7 @@ async function renderUserInfo(userId) {
           async () => {
             try {
               const response = await fetch(
-                "/api/delete-application-by-course",
+                "/account/api/delete-application-by-course",
                 {
                   method: "DELETE",
                   headers: {
@@ -645,7 +674,7 @@ async function renderUserInfo(userId) {
 
     async function changeStatus(userId, id, status, hoursAttended) {
       try {
-        const response = await fetch(`/api/attendance/status/${id}`, {
+        const response = await fetch(`/account/api/attendance/status/${id}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ status, hoursAttended }), // Send the status in the request body

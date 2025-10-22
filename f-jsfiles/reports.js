@@ -6,7 +6,7 @@ import {
 } from "../utils/modal-feedback.js";
 
 async function renderReportDetsTable() {
-  const response = await fetch("/api/reports/list");
+  const response = await fetch("/account/api/reports/list");
   const data = await response.json();
   const allReportList = document.getElementById("all-report-list");
 
@@ -194,7 +194,7 @@ function allButtons() {
             showBtnLoading(reportStatusBtn);
 
             try {
-              const response = await fetch("/api/report/change-status", {
+              const response = await fetch("/account/api/report/change-status", {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ status, reason, rowId }),

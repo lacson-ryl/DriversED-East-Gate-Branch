@@ -7,7 +7,7 @@ import {
 } from "../utils/modal-feedback.js";
 
 async function renderProgramList() {
-  const response = await fetch("/api/programs/list");
+  const response = await fetch("/account/api/programs/list");
   const data = await response.json();
   const programTable = document.getElementById("programs-table");
 
@@ -116,7 +116,7 @@ function filterProgramList(data, rowId) {
 }
 
 async function fetchInstructorsName() {
-  const response = await fetch("/api/programs/name-list");
+  const response = await fetch("/account/api/programs/name-list");
   if (!response.ok) {
     const fetchInstructorsNameMessage = "Failed to fetch instructors list";
     return { error: fetchInstructorsNameMessage };
@@ -190,7 +190,7 @@ function allButtons(details) {
           ).value;
           showBtnLoading(programSubmitBtn);
           try {
-            const response = await fetch("/api/program/add", {
+            const response = await fetch("/account/api/program/add", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
@@ -281,7 +281,7 @@ function allButtons(details) {
 
           showBtnLoading(assignProgbtn);
 
-          const response = await fetch("/api/assign-programs", {
+          const response = await fetch("/account/api/assign-programs", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -312,7 +312,7 @@ function allButtons(details) {
       const assignedList = [];
 
       if (assignedList.length === 0) {
-        const response = await fetch("/api/programs/assigned-list");
+        const response = await fetch("/account/api/programs/assigned-list");
 
         if (!response.ok) {
           console.error("Failed to fetch assigned programs");
@@ -367,7 +367,7 @@ function allButtons(details) {
             ).map((input) => input.value);
             showBtnLoading(unassignProgBtn);
 
-            const response = await fetch("/api/unassign-programs", {
+            const response = await fetch("/account/api/unassign-programs", {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
@@ -487,7 +487,7 @@ function allButtons(details) {
           showBtnLoading(editProgBtn);
 
           try {
-            const updateResponse = await fetch(`/api/programs/${originalId}`, {
+            const updateResponse = await fetch(`/account/api/programs/${originalId}`, {
               method: "PUT",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
@@ -556,7 +556,7 @@ function allButtons(details) {
 
           try {
             const response = await fetch(
-              `/api/programs/program-cover/${rowId}`,
+              `/account/api/programs/program-cover/${rowId}`,
               {
                 method: "POST",
                 body: formData,
@@ -616,12 +616,12 @@ function allButtons(details) {
       modal.style.display = "flex";
 
       const tokenIndicator = document.getElementById("delete-token-indicator");
-      const response = await fetch("/api/delete-token", {
+      const response = await fetch("/account/api/delete-token", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ id: rowId, path: `/api/programs/${rowId}` }),
+        body: JSON.stringify({ id: rowId, path: `/account/api/programs/${rowId}` }),
       });
 
       const data = await response.json();
@@ -639,7 +639,7 @@ function allButtons(details) {
           "click",
           async () => {
             try {
-              const deleteResponse = await fetch(`/api/programs/${rowId}`, {
+              const deleteResponse = await fetch(`/account/api/programs/${rowId}`, {
                 method: "DELETE",
                 headers: {
                   "Content-Type": "application/json",

@@ -56,7 +56,7 @@ let chart;
 const fetchMonthYear = async (monthName, currYear) => {
   try {
     const response = await fetch(
-      `/api/admin-dashboard-time/${monthName}/${currYear}`
+      `/account/api/admin-dashboard-time/${monthName}/${currYear}`
     );
     const data = await response.json();
     return data;
@@ -159,7 +159,7 @@ let dashboardDetails;
 
 async function fetchDashboardDetails() {
   try {
-    const response = await fetch("/api/admin-dashboard/dashboard-details");
+    const response = await fetch("/account/api/admin-dashboard/dashboard-details");
     if (!response.ok) {
       const errorData = await response.json();
       console.error("Error fetching dashboard details:", errorData);
@@ -375,7 +375,7 @@ function paymentButtons(methodList) {
           showBtnLoading(methodSubmitBtn);
 
           try {
-            const response = await fetch("/api/payment-methods/add", {
+            const response = await fetch("/account/api/payment-methods/add", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ encryptedWithEncAesKey: encrypting }),
@@ -446,7 +446,7 @@ function paymentButtons(methodList) {
           showBtnLoading(editSumbitBtn);
 
           try {
-            const response = await fetch("/api/payment-method/edit", {
+            const response = await fetch("/account/api/payment-method/edit", {
               method: "PUT",
               headers: { "Content-Type": "application/json" },
               body: { methodName, availability },
@@ -509,7 +509,7 @@ function paymentButtons(methodList) {
           const encrypting = await encryptData(formData);
           showBtnLoading(fileSubmitBtn);
           try {
-            const response = await fetch(`/api/payment-methods/upload`, {
+            const response = await fetch(`/account/api/payment-methods/upload`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ encryptedWithEncAesKey: encrypting }),
@@ -556,12 +556,12 @@ function paymentButtons(methodList) {
       modal.style.display = "flex";
 
       const tokenIndicator = document.getElementById("delete-token-indicator");
-      const response = await fetch("/api/delete-token", {
+      const response = await fetch("/account/api/delete-token", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           id: methodId,
-          path: `/api/payment-methods/${methodId}`,
+          path: `/account/api/payment-methods/${methodId}`,
         }),
       });
       const data = await response.json();
@@ -578,7 +578,7 @@ function paymentButtons(methodList) {
           "click",
           async () => {
             try {
-              const response = await fetch(`/api/payment-methods/${methodId}`, {
+              const response = await fetch(`/account/api/payment-methods/${methodId}`, {
                 method: "DELETE",
                 headers: {
                   "Content-Type": "application/json",

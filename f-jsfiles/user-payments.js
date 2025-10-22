@@ -14,7 +14,7 @@ const modalDetails = document.getElementById("modal-details");
 const titleDetails = document.getElementById("title-details");
 
 async function renderUserPaymentsForm() {
-  const response = await fetch("/api/user-payments/details-list");
+  const response = await fetch("/account/api/user-payments/details-list");
   const paymentMethodSelect = document.getElementById("payment-method");
   const courseSelect = document.getElementById("course-select");
 
@@ -74,7 +74,7 @@ async function renderUserPaymentsForm() {
       const encrypting = await encryptData(formData);
 
       try {
-        const response = await fetch("/api/payment/add", {
+        const response = await fetch("/account/api/payment/add", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ encryptedWithEncAesKey: encrypting }),
@@ -149,7 +149,7 @@ async function renderUserPaymentsList() {
   const userPaymentTable = document.getElementById("user-payments-table");
 
   // fetch user payments from the server
-  const response = await fetch("/api/user-payments/list");
+  const response = await fetch("/account/api/user-payments/list");
   if (!response.ok) {
     tableAnnouncement.innerText = "Sorry! can't fetch data right now";
     return;
@@ -383,7 +383,7 @@ function allButtons(data) {
           showBtnLoading(receiptSubmitbtn);
 
           try {
-            const response = await fetch(`/api/payments/receipt/${rowId}`, {
+            const response = await fetch(`/account/api/payments/receipt/${rowId}`, {
               method: "POST",
               body: formData,
             });

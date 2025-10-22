@@ -12,18 +12,316 @@ const modal = document.getElementById("myModal");
 const span = document.getElementsByClassName("close")[0];
 const modalDetails = document.getElementById("modal-details");
 
+const modalForm = `
+    <form id="add-instructor-form" enctype="multipart/form-data" class="w-96">
+      <div class="mb-4">
+        <h3 class="text-xl font-semibold mb-3">Instructor Name</h3>
+        <input type="text" id="instructor-name" name="name" required
+          class="w-full outline outline-1 outline-gray-300 rounded-md text-lg px-1" placeholder="Enter Instructor Name" />
+      </div>
+      <div class="mb-4 flex flex-row gap-4 ">
+        <div class="1/2">
+          <h3 class="text-xl font-semibold mb-3">Instructor Type</h3>
+          <select id="instructor-type" name="type"
+            class="mt-1 text-lg block w-full outline outline-1 outline-gray-300 rounded-sm px-1">
+            <option value="PDC">PDC</option>
+            <option value="TDC">TDC</option>
+            <option value="(P|T)DC">(P|T)DC</option>
+          </select>
+        </div>
+        <div class="1/2">
+          <h3 class="text-xl font-semibold mb-3">Rate per Hour</h3>
+          <input type="number" id="rate-per-hour" name="rate"
+            class="w-full outline outline-1 outline-gray-300 rounded-md text-lg px-1" placeholder="Enter Rate per Hour" />
+        </div>
+      </div>
+      
+      <div class="flex flex-row gap-4 mb-4">
+        <div class="w-1/3">
+          <h3 class="text-xl font-semibold mb-3">TDC Onsite</h3>
+          <select id="tdc-onsite" name="onsite" required
+            class="mt-1 text-lg block w-full outline outline-1 outline-gray-300 rounded-sm px-1">
+            <option value="0">False</option>
+            <option value="1">True</option>
+          </select>
+        </div>
+        <div class="w-1/3">
+          <h3 class="text-xl font-semibold mb-3">Manual</h3>
+          <select id="is-manual" name="manual" required
+            class="mt-1 text-lg block w-full outline outline-1 outline-gray-300 rounded-sm px-1">
+            <option value="0">False</option>
+            <option value="1">True</option>
+          </select>
+        </div>
+        <div class="w-1/3">
+          <h3 class="text-xl font-semibold mb-3">Automatic</h3>
+          <select id="is-automatic" name="automatic" required
+            class="mt-1 text-lg block w-full outline outline-1 outline-gray-300 rounded-sm px-1">
+            <option value="0">False</option>
+            <option value="1">True</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="flex flex-row gap-4 mb-4">
+        <div class="w-1/3">
+          <h3 class="text-xl font-semibold mb-3">SSS</h3>
+          <input type="number" name="SSS" step="0.01" min="0"
+            class="w-full outline outline-1 outline-gray-300 rounded-md text-lg px-1" placeholder="Ex. 209.78" />
+        </div>
+        <div class="w-1/3">
+          <h3 class="text-xl font-semibold mb-3">Pagibig</h3>
+          <input type="number" name="Pagibig" step="0.01" min="0"
+            class="w-full outline outline-1 outline-gray-300 rounded-md text-lg px-1" placeholder="Ex. 209.78" />
+        </div>
+        <div class="w-1/3">
+          <h3 class="text-xl font-semibold mb-3">Philhealth</h3>
+          <input type="number" name="Philhealth" step="0.01" min="0"
+            class="w-full outline outline-1 outline-gray-300 rounded-md text-lg px-1" placeholder="Ex. 209.78" />
+        </div>
+      </div>
+      
+      <div class="mb-4 flex flex-row gap-4">
+        <div class="mb-4">
+          <h3 class="text-xl font-semibold mb-3">Accreditation Number</h3>
+          <input type="text" id="accreditation-number" name="accreditationNumber"
+            class="w-full outline outline-1 outline-gray-300 rounded-md text-lg px-1" />
+        </div>
+        <div class="mb-4">
+          <h3 class="text-xl font-semibold mb-3">Date Started</h3>
+          <input type="date" id="date-started" name="dateStarted"
+            class="w-full outline outline-1 outline-gray-300 rounded-md text-lg px-1" placeholder="Enter Program Name" />
+        </div>
+      </div>
+      <div class="flex flex-row mb-4 gap-4 items-center">
+        <img id="profile-picture-preview"
+          class="w-36 h-32 rounded-md border-2 content-center border-gray-300 mb-4 object-fill" src=""
+          alt="Profile Picture Preview">
+        <input type="file" id="profile-picture-input" name="profile_picture" accept="image/*" class="text-sm text-gray-600">
+      </div>
+      </div>
+      <button id="instructor-submit-button" type="submit" class="bg-blue-800 text-white rounded-md px-2">Submit</button>
+    </form>
+  `;
+
+// Event listener for add instructor button
+const addButton = document.getElementById("add-instructor-button");
+if (addButton) {
+  addButton.addEventListener("click", (event) => {
+    event.preventDefault();
+    modalDetails.innerHTML = modalForm;
+    modal.style.display = "flex";
+    setupImagePreview();
+
+    const submitBtn = document.getElementById("instructor-submit-button");
+    document.getElementById("add-instructor-form").addEventListener(
+      "submit",
+      async function (event) {
+        event.preventDefault();
+        const formData = new FormData(event.target);
+        const encrypting = await encryptData(formData);
+
+        showBtnLoading(submitBtn);
+
+        try {
+          const response = await fetch("/account/api/manage-people/instructor-add", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ encryptedWithEncAesKey: encrypting }),
+          });
+          if (response.ok) {
+            showBtnResult(submitBtn, true);
+            alert("Successfully add Instructor!");
+            renderInstructorsList();
+          } else {
+            showBtnResult(submitBtn, false);
+            alert("Can't add Instructor right now!");
+          }
+          setTimeout(() => {
+            modalDetails.innerText = "";
+            modal.style.display = "none";
+          }, 3000);
+        } catch (error) {
+          console.error("Internal Server error", error);
+          alert("Internal Server error");
+          modal.style.display = "none";
+        }
+      },
+      { once: true }
+    );
+  });
+}
+
+const showAccBtn = document.getElementById("show-accounts-button");
+if (showAccBtn) {
+  showAccBtn.addEventListener("click", async function (event) {
+    event.preventDefault();
+    modalDetails.innerHTML = ``;
+
+    try {
+      const response = await fetch("/account/api/all-accounts");
+      const encrypted = await response.json();
+
+      if (!response.ok) {
+        modalDetails.innerText = encrypted.error;
+        modal.style.display = "flex";
+        setTimeout(() => {
+          modal.style.display = "none";
+        }, 3000);
+        return;
+      }
+
+      const data = decryptData(encrypted);
+      loadAccountsTable(data);
+    } catch (error) {
+      modalDetails.innerText = "Failed to load accounts.";
+      modal.style.display = "flex";
+      setTimeout(() => {
+        modal.style.display = "none";
+      }, 3000);
+    }
+  });
+}
+
+const instructorTable = document.getElementById("instructors-table");
+const accountTable = document.getElementById("accounts-table");
+
+function loadAccountsTable(data) {
+  accountTable.innerHTML = `
+    <div class="flex justify-between items-center mb-4">
+      <div class="flex flex-row gap-4">
+        <button id="back-admin-button" class="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700">
+        <- Back
+        </button>
+        <button id="add-admin-button" class="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700">
+        + Add Admin
+        </button>
+      </div>
+    </div>
+    <h2 class="text-xl place-self-center font-bold">All Accounts</h2>
+    <table class="w-full border border-gray-300 rounded-md overflow-hidden">
+      <thead class="bg-gray-100">
+        <tr>
+          <th class="px-4 py-2 text-left">ID</th>
+          <th class="px-4 py-2 text-left">Name</th>
+          <th class="px-4 py-2 text-left">Email</th>
+          <th class="px-4 py-2 text-left">Role</th>
+          <th class="px-4 py-2 text-left">Status</th>
+          <th class="px-4 py-2 text-left">Date Created</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${data
+          .map(
+            (account) => `
+          <tr class="border-t">
+            <td class="px-4 py-2">${account.account_id || "—"}</td>
+            <td class="px-4 py-2">${account.admin_name || "—"}</td>
+            <td class="px-4 py-2">${account.user_email}</td>
+            <td class="px-4 py-2">${account.account_role}</td>
+            <td class="px-4 py-2">${
+              account.isVerify === 1 ? "Verified" : "Pending"
+            }</td>
+            <td class="px-4 py-2">${account.date_created}</td>
+          </tr>
+        `
+          )
+          .join("")}
+      </tbody>
+    </table>
+  `;
+
+  accountTable.style.display = "flex";
+  const backAdminBtn = document.getElementById("back-admin-button");
+  if (backAdminBtn) {
+    backAdminBtn.addEventListener("click", () => {
+      console.log("Assign Admin button clicked");
+      accountTable.innerHTML = "";
+      accountTable.style.display = "none";
+      instructorTable.style.display = "flex";
+    });
+  }
+
+  const addAdminBtn = document.getElementById("add-admin-button");
+  if (addAdminBtn) {
+    addAdminBtn.addEventListener("click", () => {
+      modalDetails.innerHTML = "";
+      modalDetails.innerHTML = `
+        <form id="registration-form">
+            <div class="mb-4">
+                <label for="admin_name" class="block text-gray-700 text-sm font-bold mb-2">
+                    NAME
+                </label>
+                <input
+                    class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight hover:border-blue-900 focus:outline-none focus:border-blue-900"
+                    id="admin_name" name="admin_name" type="text" placeholder="Enter your name: Ex. Juan">
+            </div>
+            <div class="mb-4">
+                <label for="user_email" class="block text-gray-700 text-sm font-bold mb-2">
+                    EMAIL
+                </label>
+                <input
+                    class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight hover:border-blue-900 focus:outline-none focus:border-blue-900"
+                    id="user_email" name="user_email" type="text" placeholder="Enter your email: Ex. myemail@mail.my">
+            </div>
+            <div class="mb-6">
+                <label class="block text-gray-700 text-sm font-bold mb-2" for="user_password">
+                    PASSWORD
+                </label>
+                <input
+                    class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 mb-3 leading-tight hover:border-blue-900 focus:outline-none focus:blue-yellow-900"
+                    id="user_password" name="user_password" type="password" placeholder="Enter your password" />
+            </div>
+            <div class="flex items-center justify-center">
+                <button id="register-btn"
+                    class="bg-sky-900 hover:bg-red-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+                    type="submit" value="Register">
+                    Register
+                </button>
+            </div>
+        </form>
+      `;
+      modal.style.display = "flex";
+
+      document
+        .getElementById("registration-form")
+        .addEventListener("submit", async function (event) {
+          event.preventDefault();
+          const formData = new FormData(this.event);
+          const encrypting = encryptData(formData);
+
+          try {
+            const response = await fetch(`/account/api/admin-registration`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ encryptedWithEncAesKey: encrypting }),
+            });
+            if (response.ok) {
+              alert("Admin Registered Successfully");
+            } else {
+              const data = await response.json();
+              alert(`Error : ${data.error}`);
+            }
+          } catch (error) {
+            console.log(error);
+            alert("Internal Server Error");
+          }
+        });
+    });
+  }
+}
+
 async function renderInstructorsList() {
-  const response = await fetch("/api/manage-people/list");
+  const response = await fetch("/account/api/manage-people/list");
   const encrypted = await response.json();
   const data = await decryptData(encrypted.encrypted);
-  console.log('data', data);
-  const instructorTable = document.getElementById(
-    "instructors-payroll-history-table"
-  );
+  console.log("data", data);
 
   if (!response.ok) {
     instructorTable.innerHTML = `
-        <table id="instructors-table" class="mt-3 mb-5 mx-3 text-left justify-items-center table-fixed border-collapse border-2 border-gray-300">
+        <table class="mt-3 mb-5 mx-3 text-left justify-items-center table-fixed border-collapse border-2 border-gray-300">
           <thead>
             <tr>
               <th class="border border-gray-300 px-4 py-2">Failed to render Instructor Table</th>
@@ -33,7 +331,7 @@ async function renderInstructorsList() {
       `;
   } else if (Object.keys(data).length == 0) {
     instructorTable.innerHTML = `
-        <table id="instructors-table" class="mt-3 mb-5 mx-3 text-left justify-items-center table-fixed border-collapse border-2 border-gray-300">
+        <table class="mt-3 mb-5 mx-3 text-left justify-items-center table-fixed border-collapse border-2 border-gray-300">
           <thead>
             <tr>
               <th class="border border-gray-300 px-4 py-2">No Instructor added yet.</th>
@@ -154,145 +452,6 @@ async function renderInstructorsList() {
       `;
 
     allButton(details);
-  }
-  const modalForm = `
-    <form id="add-instructor-form" enctype="multipart/form-data" class="w-96">
-      <div class="mb-4">
-        <h3 class="text-xl font-semibold mb-3">Instructor Name</h3>
-        <input type="text" id="instructor-name" name="name" required
-          class="w-full outline outline-1 outline-gray-300 rounded-md text-lg px-1" placeholder="Enter Instructor Name" />
-      </div>
-      <div class="mb-4 flex flex-row gap-4 ">
-        <div class="1/2">
-          <h3 class="text-xl font-semibold mb-3">Instructor Type</h3>
-          <select id="instructor-type" name="type"
-            class="mt-1 text-lg block w-full outline outline-1 outline-gray-300 rounded-sm px-1">
-            <option value="PDC">PDC</option>
-            <option value="TDC">TDC</option>
-            <option value="(P|T)DC">(P|T)DC</option>
-          </select>
-        </div>
-        <div class="1/2">
-          <h3 class="text-xl font-semibold mb-3">Rate per Hour</h3>
-          <input type="number" id="rate-per-hour" name="rate"
-            class="w-full outline outline-1 outline-gray-300 rounded-md text-lg px-1" placeholder="Enter Rate per Hour" />
-        </div>
-      </div>
-      
-      <div class="flex flex-row gap-4 mb-4">
-        <div class="w-1/3">
-          <h3 class="text-xl font-semibold mb-3">TDC Onsite</h3>
-          <select id="tdc-onsite" name="onsite" required
-            class="mt-1 text-lg block w-full outline outline-1 outline-gray-300 rounded-sm px-1">
-            <option value="0">False</option>
-            <option value="1">True</option>
-          </select>
-        </div>
-        <div class="w-1/3">
-          <h3 class="text-xl font-semibold mb-3">Manual</h3>
-          <select id="is-manual" name="manual" required
-            class="mt-1 text-lg block w-full outline outline-1 outline-gray-300 rounded-sm px-1">
-            <option value="0">False</option>
-            <option value="1">True</option>
-          </select>
-        </div>
-        <div class="w-1/3">
-          <h3 class="text-xl font-semibold mb-3">Automatic</h3>
-          <select id="is-automatic" name="automatic" required
-            class="mt-1 text-lg block w-full outline outline-1 outline-gray-300 rounded-sm px-1">
-            <option value="0">False</option>
-            <option value="1">True</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="flex flex-row gap-4 mb-4">
-        <div class="w-1/3">
-          <h3 class="text-xl font-semibold mb-3">SSS</h3>
-          <input type="number" name="SSS" step="0.01" min="0"
-            class="w-full outline outline-1 outline-gray-300 rounded-md text-lg px-1" placeholder="Ex. 209.78" />
-        </div>
-        <div class="w-1/3">
-          <h3 class="text-xl font-semibold mb-3">Pagibig</h3>
-          <input type="number" name="Pagibig" step="0.01" min="0"
-            class="w-full outline outline-1 outline-gray-300 rounded-md text-lg px-1" placeholder="Ex. 209.78" />
-        </div>
-        <div class="w-1/3">
-          <h3 class="text-xl font-semibold mb-3">Philhealth</h3>
-          <input type="number" name="Philhealth" step="0.01" min="0"
-            class="w-full outline outline-1 outline-gray-300 rounded-md text-lg px-1" placeholder="Ex. 209.78" />
-        </div>
-      </div>
-      
-      <div class="mb-4 flex flex-row gap-4">
-        <div class="mb-4">
-          <h3 class="text-xl font-semibold mb-3">Accreditation Number</h3>
-          <input type="text" id="accreditation-number" name="accreditationNumber"
-            class="w-full outline outline-1 outline-gray-300 rounded-md text-lg px-1" />
-        </div>
-        <div class="mb-4">
-          <h3 class="text-xl font-semibold mb-3">Date Started</h3>
-          <input type="date" id="date-started" name="dateStarted"
-            class="w-full outline outline-1 outline-gray-300 rounded-md text-lg px-1" placeholder="Enter Program Name" />
-        </div>
-      </div>
-      <div class="flex flex-row mb-4 gap-4 items-center">
-        <img id="profile-picture-preview"
-          class="w-36 h-32 rounded-md border-2 content-center border-gray-300 mb-4 object-fill" src=""
-          alt="Profile Picture Preview">
-        <input type="file" id="profile-picture-input" name="profile_picture" accept="image/*" class="text-sm text-gray-600">
-      </div>
-      </div>
-      <button id="instructor-submit-button" type="submit" class="bg-blue-800 text-white rounded-md px-2">Submit</button>
-    </form>
-  `;
-
-  // Event listener for add instructor button
-  const addButton = document.getElementById("add-instructor-button");
-  if (addButton) {
-    addButton.addEventListener("click", (event) => {
-      event.preventDefault();
-      modalDetails.innerHTML = modalForm;
-      modal.style.display = "flex";
-      setupImagePreview();
-
-      const submitBtn = document.getElementById("instructor-submit-button");
-      document.getElementById("add-instructor-form").addEventListener(
-        "submit",
-        async function (event) {
-          event.preventDefault();
-          const formData = new FormData(event.target);
-          const encrypting = await encryptData(formData);
-
-          showBtnLoading(submitBtn);
-
-          try {
-            const response = await fetch("/api/manage-people/instructor-add", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ encryptedWithEncAesKey: encrypting }),
-            });
-            if (response.ok) {
-              showBtnResult(submitBtn, true);
-              alert("Successfully add Instructor!");
-              renderInstructorsList();
-            } else {
-              showBtnResult(submitBtn, false);
-              alert("Can't add Instructor right now!");
-            }
-            setTimeout(() => {
-              modalDetails.innerText = "";
-              modal.style.display = "none";
-            }, 3000);
-          } catch (error) {
-            console.error("Internal Server error", error);
-            alert("Internal Server error");
-            modal.style.display = "none";
-          }
-        },
-        { once: true }
-      );
-    });
   }
 }
 
@@ -416,7 +575,7 @@ function allButton(details) {
 
             try {
               const response = await fetch(
-                `/api/manage-people/assign-account`,
+                `/account/api/manage-people/assign-account`,
                 {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
@@ -594,7 +753,7 @@ function allButton(details) {
 
         try {
           const updateResponse = await fetch(
-            `/api/manage-people/${originalId}`,
+            `/account/api/manage-people/${originalId}`,
             {
               method: "PUT",
               headers: { "Content-Type": "application/json" },
@@ -639,7 +798,7 @@ function allButton(details) {
   document.querySelectorAll(".instructor-payroll-btn").forEach((button) => {
     button.addEventListener("click", async function () {
       const ID = this.getAttribute("data-id");
-      const response = await fetch(`/api/manage-people/payroll/${ID}`);
+      const response = await fetch(`/account/api/manage-people/payroll/${ID}`);
       const data = await response.json();
 
       if (response.ok) {
@@ -699,12 +858,12 @@ function allButton(details) {
       modal.style.display = "flex";
 
       const tokenIndicator = document.getElementById("delete-token-indicator");
-      const response = await fetch("/api/delete-token", {
+      const response = await fetch("/account/api/delete-token", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           id: rowId,
-          path: `/api/manage-people/${rowId}`,
+          path: `/account/api/manage-people/${rowId}`,
         }),
       });
 
@@ -724,7 +883,7 @@ function allButton(details) {
           async () => {
             try {
               const deleteResponse = await fetch(
-                `/api/manage-people/${rowId}`,
+                `/account/api/manage-people/${rowId}`,
                 {
                   method: "DELETE",
                   headers: {
@@ -852,7 +1011,7 @@ function renderMonthlyPayrollTable(data) {
 }
 
 async function renderCurrentPayroll(id) {
-  const response = await fetch(`/api/manage-people/current-payroll/${id}`);
+  const response = await fetch(`/account/api/manage-people/current-payroll/${id}`);
   const data = await response.json();
 
   const currentPayrollTable = document.getElementById(
