@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Registration Form</title>
+    <link href="/account/f-css/output.css" rel="stylesheet">
+</head>
+
+<body class="bg-gradient-to-t from-sky-500 to-sky-900 flex items-center justify-center min-h-screen">
+    <div class="bg-white p-10 rounded-lg shadow-md w-full max-w-sm">
+        <h1 class="text-2xl font-bold mb-5 text-blue-900 text-center">Admin Registration Form</h1>
+        <form id="registration-form">
+            <div class="mb-4">
+                <label for="admin_name" class="block text-gray-700 text-sm font-bold mb-2">
+                    NAME
+                </label>
+                <input
+                    class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight hover:border-blue-900 focus:outline-none focus:border-blue-900"
+                    id="admin_name" name="admin_name" type="text" placeholder="Enter your name: Ex. Juan">
+            </div>
+            <div class="mb-4">
+                <label for="user_email" class="block text-gray-700 text-sm font-bold mb-2">
+                    EMAIL
+                </label>
+                <input
+                    class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight hover:border-blue-900 focus:outline-none focus:border-blue-900"
+                    id="user_email" name="user_email" type="text" placeholder="Enter your email: Ex. myemail@mail.my">
+            </div>
+            <div class="mb-6">
+                <label class="block text-gray-700 text-sm font-bold mb-2" for="user_password">
+                    PASSWORD
+                </label>
+                <input
+                    class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 mb-3 leading-tight hover:border-blue-900 focus:outline-none focus:blue-yellow-900"
+                    id="user_password" name="user_password" type="password" placeholder="Enter your password" />
+            </div>
+            <div class="flex items-center justify-center">
+                <button id="register-btn"
+                    class="bg-sky-900 hover:bg-red-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+                    type="submit" value="Register">
+                    Register
+                </button>
+            </div>
+        </form>
+        <div class="flex items-center justify-center mt-4">
+            <button id="google-login-btn"
+                class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
+                Register with Google
+            </button>
+        </div>
+    </div>
+    <script>
+        document.getElementById('registration-form').addEventListener('submit', async function (event) {
+            event.preventDefault();
+            const admin_name = document.getElementById('admin_name').value;
+            const user_email = document.getElementById('user_email').value;
+            const user_password = document.getElementById('user_password').value;
+
+            try {
+                const response = await fetch(`/account/api/admin-registration`, {
+                    method: "POST",
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ admin_name, user_email, user_password })
+                });
+                if (response.ok) {
+                    alert("Admin Registered Successfully");
+                    window.location.href = '/account/admin-login';
+                } else {
+                    const data = await response.json();
+                    alert(`Error : ${data.error}`);
+                }
+            } catch (error) {
+                console.log(error);
+                alert("Internal Server Error");
+            }
+        });
+
+        document.getElementById('google-login-btn').addEventListener('click', function () {
+            window.location.href = '/auth/google/admin';
+        });
+    </script>
+</body>
+
+</html>

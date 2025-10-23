@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth overflow-x-auto overflow-y-auto">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Instructor Dashboard</title>
+    <link href="/account/f-css/output.css" rel="stylesheet">
+    <script type="module">
+        import Dexie from "https://cdn.jsdelivr.net/npm/dexie@3.2.4/dist/dexie.mjs";
+        window.Dexie = Dexie;
+    </script>
+</head>
+
+<body class="flex flex-row w-full animate-fadeIn">
+    <div id="sidebar-container" class="block"></div>
+    <div id="main-content" class="block ml-ml-64 phone-w-calc md:ml-[160px] space-y-2">
+        <div id="top-bar" class="flex h-15 flex-row w-full sticky shadow-inner bg-white border-b-2 p-4 z-40">
+            <div id="left-side" class="flex flex-row gap-4 relative">
+                <div>
+                    <button id="notif-button" class="relative">
+                        <img id="notif-logo" src="/account/f-assets/solid/bell.svg" class="w-7 h-7 inline-block" />
+                        <div id="notif-new-indicator"
+                            class="h-3 w-3 rounded-full bg-blue-900 absolute top-2 right-2 transform translate-x-1/2 -translate-y-1/2 animate-pulse">
+                        </div>
+                    </button>
+                </div>
+                <img id="company-logo" src="/account/f-assets/solid/drivers_ed_logo-no-bg.png" class="w-20 h-8" />
+            </div>
+            <div id="right-side" class="absolute right-4 text-lg">
+                Applicants
+            </div>
+        </div>
+
+        <div id="content" class="flex flex-col w-full animate-fadeIn">
+            <div class="flex w-full justify-between pr-4 my-2">
+                <h2 class="text-lg ml-4">Manage Applicants</h2>
+                <div class="flex gap-2">
+                    <button id="pdc-takers-btn"
+                        class=" bg-sky-900 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg outline-2 outline-offset-2 outline-sky-800 shadow-outline">
+                        PDC
+                    </button>
+                    <button id="tdc-takers-btn"
+                        class=" bg-sky-900 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg outline-2 outline-offset-2 outline-sky-800 shadow-outline">
+                        TDC
+                    </button>
+                </div>
+            </div>
+
+            <!-- Collapsible Attendance Table -->
+            <div id="attendance-table" class="flex flex-col mt-3 mb-5 mx-3 z-10">
+                <!-- Collapsible sections will be dynamically injected here -->
+            </div>
+
+            <div id="trainee-info-box" style="display: none;" class="mt-3 mb-5 mx-3 max-w-screen-sm min-w-96"></div>
+        </div>
+    </div>
+
+    <div id="myModal" class="fixed inset-0 z-50 items-center justify-center hidden bg-gray-900 bg-opacity-50">
+        <div class="relative bg-white rounded-lg shadow-lg min-w-96 min-w-screen-lg max-w-screen-lg p-6">
+            <span
+                class="close absolute top-0 right-2 text-3xl font-semibold text-gray-700 hover:text-gray-900 cursor-pointer">&times;</span>
+            <h2 id="title-details" class="text-xl font-semibold">Attendance</h2>
+            <div id="modal-details" class="mt-4">The details</div>
+        </div>
+    </div>
+
+    <script type="module" src="/account/utils/f-webCryptoKeys.js"></script>
+    <script type="module" src="/account/utils/f-keyManager.js"></script>
+    <script type="module" src="/account/utils/modal-feedback.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            console.log('Page loaded, checking instructor dashboard access');
+
+            try {
+                // Load sidebar script
+                const sidebarScript = document.createElement('script');
+                sidebarScript.src = '/account/f-jsfiles/instructor-sidebar.js';
+                document.body.appendChild(sidebarScript);
+
+                // Load attendance table script
+                const tablesScript = document.createElement('script');
+                tablesScript.src = '/account/f-jsfiles/instructor-dashboard.js';
+                tablesScript.type = 'module';
+                document.body.appendChild(tablesScript);
+
+            } catch (error) {
+                console.error('Authorization error:', error);
+                alert("You are not authorized to view this page.");
+                window.location.href = '/account/adminlogin'; // Redirect to login if not authorized
+            }
+        });
+    </script>
+</body>
+
+</html>

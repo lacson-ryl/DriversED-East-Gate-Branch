@@ -1,6 +1,23 @@
 version: "3.9" # upgraded to support depends_on.condition
 
 services:
+
+  tailwind-builder:
+    build:
+      context: .
+      dockerfile: Dockerfile.tailwind
+    volumes:
+      - ./shared:/app
+    command: echo "Tailwind CSS built"
+    healthcheck:
+      test: ["CMD", "test", "-f", "/app/f-css/output.css"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+    networks:
+      - app-net
+
   mysql:
     image: mysql:8.0
     ports:
@@ -49,16 +66,20 @@ services:
       - "8000:8000"
     env_file:
       - .env.production
+    restart: unless-stopped
     depends_on:
+      tailwind-builder:
+        condition: service_completed_successfully
       mysql:
         condition: service_healthy
       redis:
         condition: service_healthy
     volumes:
-      - .:/app
-      - app-node-modules:/app/node_modules
+      - ./accounts-site:/app
+      - ./shared:/app/shared
+      - nodeapp-node-modules:/app/node_modules
     working_dir: /app
-    command: npm run dev
+    command: npm run start
     stop_grace_period: 10s
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health-check-docker"]
@@ -77,13 +98,18 @@ services:
       - "8001:8001"
     env_file:
       - .env.production
+    restart: unless-stopped
     depends_on:
+      tailwind-builder:
+        condition: service_completed_successfully
       mysql:
         condition: service_healthy
     volumes:
-      - .:/app
+      - ./public-site:/app
+      - ./shared:/app/shared
+      - public-node-modules:/app/node_modules
     working_dir: /app
-    command: npm run dev
+    command: npm run start
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8001/health-check-docker"]
       interval: 30s
@@ -102,6 +128,8 @@ services:
       - "9000:9000"
     env_file:
       - .env.production
+    restart: unless-stopped
+    command: npm run webhook
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9000/health-check-docker"]
       interval: 30s
@@ -124,7 +152,6 @@ services:
       - ./nginx/conf.d/default.conf:/etc/nginx/conf.d/default.conf
       - ./certs:/etc/nginx/certs
       - /etc/letsencrypt:/etc/letsencrypt:ro
-      - .:/app
     depends_on:
       nodeapp:
         condition: service_healthy
@@ -142,4 +169,5 @@ networks:
 volumes:
   redis-data:
   mysql-data:
-  app-node-modules:
+  nodeapp-node-modules:
+  public-node-modules:

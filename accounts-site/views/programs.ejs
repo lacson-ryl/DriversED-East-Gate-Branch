@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth overflow-x-auto overflow-y-auto">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Manage Programs</title>
+    <link href="/account/f-css/output.css" rel="stylesheet">
+
+</head>
+
+<body class="flex flex-row w-full over">
+    <div id="sidebar-container">
+    </div>
+    <div id="main-content" class="block ml-ml-250 w-calc animate-fadeIn space-y-2">
+        <div id="top-bar" class="flex h-15 flex-row w-full sticky shadow-inner bg-white border-b-2 p-4">
+            <div id="left-side" class="flex flex-row gap-4 relative">
+                <div>
+                    <button id="notif-button" class="relative">
+                        <img id="notif-logo" src="/account/f-assets/solid/bell.svg" class="w-7 h-7 inline-block" />
+                        <div id="notif-new-indicator"
+                            class="h-3 w-3 rounded-full bg-blue-900 absolute top-2 right-2 transform translate-x-1/2 -translate-y-1/2 animate-pulse">
+                        </div>
+                    </button>
+                </div>
+                <img id="company-logo" src="/account/f-assets/solid/drivers_ed_logo-no-bg.png" class="w-20 h-8" />
+            </div>
+            <div id="right-side" class="absolute right-4 text-lg">
+                Programs
+            </div>
+        </div>
+
+        <div id="content" class="flex flex-col w-full">
+            <div class="flex justify-between items-center mr-4 my-2">
+                <h2 class="text-lg ml-4"> Manage Programs</h2>
+                <div class="flex flex-row gap-4">
+                    <button id="add-program-button"
+                        class="bg-blue-700 flex items-center hover:bg-gradient-to-t from-blue-400 to-blue-800 text-white rounded-lg px-2 py-1">
+                        <IMG src="/account/f-assets/solid/white/plus.svg" class="w-7 h-7" />
+                        <span class="inline-block">Add Program</span>
+                    </button>
+
+                    <button id="assign-programs-instructor-button"
+                        class="bg-blue-700 flex items-center hover:bg-gradient-to-t from-blue-400 to-blue-800 text-white rounded-lg px-2 py-1">
+                        <IMG src="/account/f-assets/solid/white/plus.svg" class="w-7 h-7" />
+                        <span class="inline-block">Assign Programs - Instructor</span>
+                    </button>
+                </div>
+            </div>
+            <div id="programs-table" class="mt-3 mb-5 mx-3">
+
+            </div>
+
+
+        </div>
+    </div>
+
+    <div id="myModal" class="fixed inset-0 z-50 items-center justify-center hidden bg-gray-900 bg-opacity-50">
+        <div class="relative bg-white rounded-lg shadow-lg min-w-96 max-w-screen-md p-6">
+            <span
+                class="close absolute top-0 right-2 text-3xl font-semibold text-gray-700 hover:text-gray-900 cursor-pointer ">&times;</span>
+            <h2 class="text-xl font-semibold">Program Details</h2>
+            <p id="modal-details" class="mt-4">the details</p>
+        </div>
+    </div>
+    <script type="module" src="/account/utils/modal-feedback.js"></script>
+    <script>
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            console.log('Page loaded, checking admin dashboard access');
+
+            try {
+                const sidebarScript = document.createElement('script');
+                sidebarScript.src = '/account/f-jsfiles/sidebar.js';
+                document.body.appendChild(sidebarScript);
+
+                const addFormScript = document.createElement('script');
+                addFormScript.src = '/account/f-jsfiles/program.js';
+                addFormScript.type = 'module';
+                document.body.appendChild(addFormScript);
+
+            } catch (error) {
+                console.error('Authorization error:', error);
+                alert("You are not authorized to view this page.");
+                window.location.href = '/adminlogin'; // Redirect to login if not authorized
+            }
+        });
+
+    </script>
+</body>
+
+</html>

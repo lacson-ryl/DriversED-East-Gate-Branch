@@ -3,54 +3,34 @@ FROM node:20 AS builder
 WORKDIR /app
 
 # Install dependencies
-RUN cat <<EOF > package.json
-{
-  "name": "web-pub-server",
-  "version": "1.0.0",
-  "type": "module",
-  "main": "web-pub-server.js",
-  "scripts": {
-    "start": "node web-pub-server.js",
-    "dev": "nodemon web-pub-server.js"
-  },
-  "dependencies": {
-    "bcrypt": "^6.0.0",
-    "body-parser": "^1.20.3",
-    "concurrently": "^9.0.1",
-    "cookie-parser": "^1.4.7",
-    "cors": "^2.8.5",
-    "dotenv": "^16.4.5",
-    "ejs": "^3.1.10",
-    "express": "^4.21.1",
-    "express-rate-limit": "^7.5.0",
-    "express-session": "^1.18.1",
-    "helmet": "^7.0.0",
-    "jsonwebtoken": "^9.0.2",
-    "nodemailer": "^6.10.0",
-    "nodemon": "^3.1.7",
-    "sharp": "^0.34.1",
-    "validator": "^13.15.0"
-  }
-}
-EOF
-
+COPY public-site/package*.json ./
 RUN npm install
 
-# Copy only what's needed for the public site
-COPY ./web-pub-server.js ./f-css ./public ./tailwind.config.js ./f-tailcss ./
+# Copy public-site specific files
+COPY public-site/web-pub-server.js ./
+COPY public-site/views ./views
+COPY public-site/f-jsfiles ./f-jsfiles
+COPY public-site/middleware ./middleware
+COPY public-site/utils ./utils
+COPY public-site/utils-backend ./utils-backend
+COPY public-site/config ./config
+COPY public-site/controllers ./controllers
 
 # Stage 2: Runtime
 FROM node:20-slim
 WORKDIR /app
 
-# Copy app files from builder
+# Copy from builder
 COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/web-pub-server.js ./web-pub-server.js
-COPY --from=builder /app/f-css ./f-css
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/tailwind.config.js ./tailwind.config.js
-COPY --from=builder /app/f-tailcss ./f-tailcss
+COPY --from=builder /app/views ./views
+COPY --from=builder /app/f-jsfiles ./f-jsfiles
+COPY --from=builder /app/middleware ./middleware
+COPY --from=builder /app/utils ./utils
+COPY --from=builder /app/utils-backend ./utils-backend
+COPY --from=builder /app/config ./config
+COPY --from=builder /app/controllers ./controllers
 
 # Install runtime dependencies and global tools
 #RUN npm install -g concurrently tailwindcss nodemon
@@ -58,4 +38,4 @@ COPY --from=builder /app/f-tailcss ./f-tailcss
 EXPOSE 8001
 
 HEALTHCHECK CMD curl --fail http://localhost:8001 || exit 1
-CMD ["node", "web-pub-server.js"]
+CMD ["npm", "run", "start"]

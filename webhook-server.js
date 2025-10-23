@@ -4,20 +4,24 @@ import dotenv from "dotenv";
 import http from "http";
 import { createHmac, timingSafeEqual } from "node:crypto";
 
-dotenv.config();
+dotenv.config({ path: ".env.production" });
 
 const app = express();
 const PORT = process.env.WEBHOOK_PORT || 9000;
 const githubSecret = process.env.GITHUB_SECRET;
 const execSecret = process.env.EXEC_SECRET;
 
-app.get('/health-check-docker', (req, res) => {
+app.get("/health-check-docker", (req, res) => {
   res.sendStatus(200);
 });
 
-
 // Middleware to verify GitHub signature
 function verifyGitHubSignature(req, res, next) {
+  if (!githubSecret) {
+    console.error("Missing GITHUB_SECRET");
+    return res.status(500).send("Server misconfigured");
+  }
+
   const signature = req.headers["x-hub-signature-256"];
   if (!signature) return res.status(401).send("No signature");
 
@@ -25,8 +29,12 @@ function verifyGitHubSignature(req, res, next) {
   hmac.update(req.body); // req.body is a Buffer
   const digest = `sha256=${hmac.digest("hex")}`;
 
-  if (!timingSafeEqual(Buffer.from(signature), Buffer.from(digest))) {
-    return res.status(403).send("Invalid signature");
+  try {
+    if (!timingSafeEqual(Buffer.from(signature), Buffer.from(digest))) {
+      return res.status(403).send("Invalid signature");
+    }
+  } catch (err) {
+    return res.status(400).send("Signature comparison failed");
   }
 
   next();
@@ -47,7 +55,7 @@ app.post(
     if (event === "push") {
       const trigger = http.request(
         {
-          hostname: "localhost",
+          hostname: "nodeapp",
           port: 8000,
           path: "/trigger-rebuild",
           method: "POST",

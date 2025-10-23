@@ -2,7 +2,7 @@
 import mysql from "mysql2";
 import dotenv from "dotenv";
 import bcrypt from "bcrypt";
-dotenv.config();
+dotenv.config({ path: ".env.production" });
 
 async function seedAdmin() {
   const connection = mysql

@@ -2,11 +2,19 @@
 FROM node:20 AS builder
 WORKDIR /app
 
-COPY package*.json ./
+# Install dependencies
+COPY public-site/package*.json ./
 RUN npm install
-RUN npx puppeteer browsers install chrome
 
-COPY ./b-server.js ./f-tailcss ./f-css ./views ./f-jsfiles ./config ./utils ./middleware ./controllers ./tailwind.config.js ./
+# Copy public-site specific files
+COPY public-site/web-pub-server.js ./
+COPY public-site/views ./views
+COPY public-site/f-jsfiles ./f-jsfiles
+COPY public-site/middleware ./middleware
+COPY public-site/utils ./utils
+COPY public-site/utils-backend ./utils-backend
+COPY public-site/config ./config
+COPY public-site/controllers ./controllers
 
 # Stage 2: Runtime
 FROM node:20-slim
@@ -49,13 +57,21 @@ RUN curl -LO https://storage.googleapis.com/chrome-for-testing-public/117.0.5938
   ln -sf /opt/chrome/chrome /usr/bin/google-chrome-stable && \
   rm chrome-linux64.zip
 
+# Copy public-site specific files
+COPY public-site/web-pub-server.js ./
+COPY public-site/views ./views
+COPY public-site/f-jsfiles ./f-jsfiles
+COPY public-site/middleware ./middleware
+COPY public-site/utils ./utils
+COPY public-site/utils-backend ./utils-backend
+COPY public-site/config ./config
+COPY public-site/controllers ./controllers
+
 # Copy app files and Puppeteer browser cache
 COPY --from=builder /root/.cache/puppeteer /root/.cache/puppeteer
-COPY --from=builder /app ./
 
 # Install runtime dependencies and global tools as root
 RUN npm install
-RUN npm install -g concurrently tailwindcss nodemon
 
 # Create non-root user for Puppeteer
 RUN groupadd -r pptruser && useradd -r -g pptruser -G audio,video pptruser && \
@@ -71,4 +87,4 @@ ENV PUPPETEER_SKIP_DOWNLOAD=true
 EXPOSE 8000
 
 HEALTHCHECK CMD curl --fail http://localhost:8000 || exit 1
-CMD ["npm", "run", "dev"]
+CMD ["npm", "run", "start"]

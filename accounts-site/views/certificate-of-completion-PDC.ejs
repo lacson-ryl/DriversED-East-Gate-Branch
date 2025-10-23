@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Certificate</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet" />
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
+  <% if (isPDF) { %>
+    <style>
+      <%= tailwindCSS %>
+    </style>
+    <% } else { %>
+      <link rel="stylesheet" href="/account/f-css/output.css" />
+      <% } %>
+
+        <script type="module">
+          import Dexie from "https://cdn.jsdelivr.net/npm/dexie@3.2.4/dist/dexie.mjs";
+          window.Dexie = Dexie;
+        </script>
+        <style>
+          body {
+            font-family: 'Roboto', sans-serif;
+          }
+
+          /* Hide the button when printing or saving as PDF */
+          @media print {
+            * {
+              color: black !important;
+              /* Ensures legibility */
+            }
+
+            .hide-on-print {
+              display: none !important;
+            }
+          }
+        </style>
+</head>
+
+<body class="bg-white">
+  <div class="fixed">
+    <div class="flex flex-col items-start gap-3 mx-10 pt-5 text-xs">
+      <button id="save-to-pdf" btn-type="pdf" class="hover:underline underline-offset-1 hide-on-print ">
+        Save to PDF</button>
+      <button id="save-to-database" btn-type="database" class="hover:underline underline-offset-1 hide-on-print">
+        Save to Database</button>
+    </div>
+  </div>
+  <div class="w-[780px] h-[932px] mx-auto py-4 text-black text-sm">
+    <!-- Header -->
+    <div class="flex flex-row justify-between items-center px-10">
+      <div class="w-28">
+        <img src="https://www.seekpng.com/png/full/923-9234404_lto-logo-vector-land-transportation-office-logo-png.png"
+          alt="LTO Logo" />
+      </div>
+      <div class="text-center mx-auto">
+        <p class="text-xs mt-1">Republic of the Philippines</p>
+        <p class="text-xs font-semibold">DEPARTMENT OF TRANSPORTATION</p>
+        <p class="text-base font-bold text-black">LAND TRANSPORTATION OFFICE</p>
+        <p class="text-xs">East Avenue, Quezon City</p>
+        <h1 class="text-xl font-bold mt-2">CERTIFICATE OF COMPLETION</h1>
+        <h2 class="text-lg font-bold">PRACTICAL DRIVING COURSE</h2>
+      </div>
+      <div class="w-32 ">
+        <img id="driversEdLogo" alt="Driver's ED Logo" />
+      </div>
+    </div>
+
+    <!-- Student Info -->
+    <div class="border-t border-gray-400 mt-4">
+      <p class="bg-gray-200 px-2 py-1 font-semibold">Student Driver's Details</p>
+      <div class="flex flex-row w-full items-start mt-2 pt-4 pb-3">
+        <div class="flex flex-col text-sm leading-6 w-4/5">
+          <label class="block mb-3">
+            Certificate No:
+            <input type="text" name="certificateNumber" class="ml-2 font-semibold bg-white border px-2 py-1" />
+          </label>
+
+          <div class="flex flex-row w-full space-x-4 mb-3">
+            <label class="w-1/2">
+              LTO Client ID:
+              <input type="text" name="ltoClientId" class="ml-2 font-semibold bg-white border px-2 py-1" />
+            </label>
+            <label class="w-1/2">
+              SP No:
+              <input type="text" name="spNumber" class="ml-2 font-semibold bg-white border px-2 py-1" />
+            </label>
+          </div>
+
+          <label class="flex flex-row mb-3">
+            Name:
+            <input type="text" name="fullName" class="ml-2 font-semibold bg-white border px-2 py-1 w-full" />
+          </label>
+
+          <label class="flex mb-3">
+            Address:
+            <textarea name="address" class="ml-2 font-semibold bg-white border px-2 py-1 w-full"></textarea>
+          </label>
+
+          <div class="flex flex-row w-full space-x-4 mb-3">
+            <label class="w-1/2">
+              Date of Birth:
+              <input type="date" name="birthday" class="ml-2 font-semibold bg-white border px-2 py-1" />
+            </label>
+            <label class="w-1/2">
+              Nationality:
+              <input type="text" name="nationality" class="ml-2 font-semibold bg-white border px-2 py-1" />
+            </label>
+          </div>
+
+          <div class="flex flex-row w-full space-x-4">
+            <label class="flex flex-row w-1/6">
+              Age:
+              <input type="number" name="age" class="ml-1 font-semibold bg-white border px-2 py-1 w-full" />
+            </label>
+            <label class="flex flex-row w-2/6">
+              Gender:
+              <input type="text" name="gender" class="ml-1 font-semibold bg-white border px-2 py-1 w-full" />
+            </label>
+            <label class="flex flex-row w-3/6">
+              Civil Status:
+              <input type="text" name="civilStatus" class="ml-1 font-semibold bg-white border px-2 py-1" />
+            </label>
+          </div>
+        </div>
+
+        <div class="ml-2  flex items-center w-1/5 border h-full">
+          <img id="profilePicture" alt="Photo 2x2"
+            class="object-contain aspect-square border w-full border-black " />
+          <input name="profilePicture" class="hidden" />
+        </div>
+      </div>
+    </div>
+
+    <!-- Training Info -->
+    <div class="mt-4 border-t border-gray-400">
+      <p class="bg-gray-200 px-2 py-1 font-semibold">Driving Course Training Information</p>
+      <div class="flex flex-row justify-between mt-2 pt-4 pb-3 space-x-4">
+        <label class="flex flex-row">
+          Date Started:
+          <input type="date" name="dateStarted" class="ml-1 font-semibold bg-white border px-2 py-1" />
+        </label>
+        <label class="flex flex-row">
+          Date Completed:
+          <input type="date" name="dateFinished" class="ml-1 font-semibold bg-white border px-2 py-1" />
+        </label>
+        <label class="flex flex-row">
+          Total Hours:
+          <input type="number" name="totalHours" class="ml-1 font-semibold bg-white border px-2 py-1" />
+        </label>
+      </div>
+    </div>
+
+
+
+    <div class="flex my-10 px-2 gap-6 text-xs">
+      <!-- Left DL Codes -->
+      <div class="flex-1">
+        <table data-dl="left" class="table-fixed w-full border border-black text-left">
+          <thead>
+            <tr class="bg-gray-100 text-center">
+              <th class="border border-black px-2 py-1 w-7"></th>
+              <th class="border border-black px-2 py-1">DL Code (Vehicle Category)</th>
+              <th class="border border-black px-2 py-1 w-10">MT</th>
+              <th class="border border-black px-2 py-1 w-10">AT</th>
+            </tr>
+          </thead>
+          <tbody id="dlCodesLeftBody">
+            <!-- Rows will be injected via JS -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Right DL Codes -->
+      <div class="flex-1">
+        <table data-dl="right" class="table-fixed w-full border border-black text-left">
+          <thead>
+            <tr class="bg-gray-100">
+              <th class="border border-black px-2 py-1 w-7"></th>
+              <th class="border border-black px-2 py-1">DL Code (Vehicle Category)</th>
+              <th class="border border-black px-2 py-1 w-10">MT</th>
+              <th class="border border-black px-2 py-1 w-10">AT</th>
+            </tr>
+          </thead>
+          <tbody id="dlCodesRightBody">
+            <!-- Rows will be injected via JS -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+
+    <div class="mt-5 text-xs px-2 text-center items-center">
+      <p class="w-[600px] mx-auto">
+        This Certificate With Control Number
+        <input type="text" data-autoresize class="font-bold border-b-2 border-b-black text-center"
+          oninput="this.style.width = (this.value.length + 5) + 'ch'" id="controlNumber" name="controlNumber"></input>
+        <br>has been issued in compliance with the Supplemental IRR of Republic
+        Act No. 10930 and Memorandum <br> Circular No. 2021-2284 of Land
+        Transportation Office.
+      </p>
+
+      <div class="mt-7">
+        <p>
+          Prepared and issued by:
+          <span class="font-bold">DRIVER'S ED EAST GATE BRANCH</span>
+        </p>
+        <p>Accreditation Number: <input type="text" data-autoresize
+            class="font-bold border-b-2 border-b-black text-center"
+            oninput="this.style.width = (this.value.length + 3) + 'ch'" id="accredNumOfBranch"
+            name="accredNumOfBranch"></input></p>
+        <p class="mt-4">
+          Authorized Representative:
+          <input type="text" data-autoresize class="font-bold border-b-2 border-b-black text-center"
+            oninput="this.style.width = (this.value.length + 3) + 'ch'" id="instructorName"
+            name="instructorName"></input>
+        </p>
+        <p>Accreditation Number: <input input type="text" data-autoresize
+            class="font-bold border-b-2 border-b-black text-center"
+            oninput="this.style.width = (this.value.length + 3) + 'ch'" id="accredNumOfInstructor"
+            name="accredNumOfInstructor">
+
+          </input></p>
+      </div>
+    </div>
+
+  </div>
+
+
+  <% if (isPDF) { %>
+    <script>
+      const data = <%- JSON.stringify(typeof payload !== 'undefined' ? payload : null) %>;
+      console.log("data", data);
+
+      async function populateCertificate(data) {
+        const {
+          dlCodesLeft,
+          dlCodesRight,
+          certificateInputs,
+          userProfile,
+          userCourse,
+          instructorProfile,
+          clientId,
+          courseId,
+          instructorId,
+        } = data;
+        const flatData = {
+          ...certificateInputs[0],
+          ...userProfile[0],
+          ...userCourse[0],
+        };
+
+        course = userCourse[0].courseName;
+
+        Object.entries(flatData).forEach(([key, value]) => {
+          const input = document.querySelector(`[name="${key}"]`);
+          if (input) input.value = value ?? "";
+        });
+
+        // Populate image
+        if (userProfile[0].profilePicture) {
+          const img = document.getElementById("profilePicture");
+          if (img) img.src = userProfile[0].profilePicture;
+        }
+
+        // Populate DL Codes (left and right)
+        function renderDLTable(codes, tableBodyId, offset = 0) {
+          const tbody = document.getElementById(tableBodyId);
+          if (!tbody) return;
+
+          tbody.innerHTML = ""; // Clear existing rows
+
+          codes.forEach((dlCode, index) => {
+            const row = document.createElement("tr");
+
+            row.innerHTML = `
+          <td class="border border-black px-2 py-1 text-center">
+            <input type="checkbox" name="dlCodeSelected" value="${dlCode.code
+              }" ${dlCode.mt || dlCode.at ? "checked" : ""}>
+          </td>
+          <td class="border border-black px-2 py-1">${dlCode.code}</td>
+          <td class="border border-black px-2 py-1 text-center">
+            <input type="checkbox" name="mt_${index + offset}" ${dlCode.mt ? "checked" : ""
+              }>
+          </td>
+          <td class="border border-black px-2 py-1 text-center">
+            <input type="checkbox" name="at_${index + offset}" ${dlCode.at ? "checked" : ""
+              }>
+          </td>
+        `;
+
+            tbody.appendChild(row);
+          });
+        }
+
+        renderDLTable(dlCodesLeft, "dlCodesLeftBody", 0);
+        renderDLTable(dlCodesRight, "dlCodesRightBody", dlCodesLeft.length);
+
+        // Populate footer fields
+        document.getElementById("driversEdLogo").src =
+          certificateInputs[0].driversEdLogo;
+
+        document.getElementById("controlNumber").value =
+          certificateInputs[0].controlNumber?.toUpperCase() ?? "123456789";
+
+        document.getElementById("accredNumOfBranch").value =
+          certificateInputs[0].accredNumOfBranch?.toUpperCase() ?? "123456789";
+
+        document.getElementById("instructorName").value =
+          instructorProfile[0].instructorName?.toUpperCase() ?? "Juan Dela Cruz";
+
+        document.getElementById("accredNumOfInstructor").value =
+          instructorProfile[0].accredNumOfInstructor?.toUpperCase() ?? "123456789";
+
+        function autoResizeInput(input) {
+          input.style.width = input.value.length + 5 + "ch";
+        }
+        document.querySelectorAll("input[data-autoresize]").forEach(autoResizeInput);
+
+        const buttons = {
+          savePdf: "save-to-pdf",
+          saveDatabase: "save-to-database",
+        };
+
+        Object.values(buttons).forEach((buttonId) => {
+          const btn = document.getElementById(buttonId);
+          if (btn) {
+            btn.setAttribute("data-user-id", clientId);
+            btn.setAttribute("data-course-id", courseId);
+            btn.setAttribute("data-instructor-id", instructorId);
+          }
+        });
+      }
+
+      (async () => {
+        if (data) {
+          window.fetchedData = data;
+          await populateCertificate(data);
+          window.scriptLoaded = true;
+        }
+      })();
+    </script>
+    <% } else { %>
+      <script type="module" src="/account/utils/f-webCryptoKeys.js"></script>
+      <script type="module" src="/account/utils/f-keyManager.js"></script>
+      <script type="module" src="/account/f-jsfiles/certificate-completion-pdc.js"></script>
+      <% } %>
+
+</body>
+
+</html>

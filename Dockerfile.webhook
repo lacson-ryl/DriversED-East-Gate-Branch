@@ -9,19 +9,23 @@ RUN apt-get update && apt-get install -y \
   && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Create a dedicated package.json for the webhook
-RUN echo '{ \
-  "name": "webhook-server", \
-  "version": "1.0.0", \
-  "type": "module", \
-  "main": "webhook-server.js", \
-  "scripts": { "start": "node webhook-server.js",\
-  "dev": "nodemon webhook-server.js" \
-  }, \
-  "dependencies": { \
-  "express": "^4.21.1", \ 
-  "dotenv": "^16.4.5" \
-  } \
-  }' > package.json
+RUN cat <<EOF > package.json
+{
+  "name": "webhook-server",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "webhook-server.js",
+  "scripts": {
+    "start": "node webhook-server.js",
+    "webhook": "nodemon webhook-server.js"
+  },
+  "dependencies": {
+    "express": "^4.21.1",
+    "dotenv": "^16.4.5",
+    "nodemon": "^3.1.7"
+  }
+}
+EOF
 
 # Install dependencies
 RUN npm install
@@ -34,5 +38,6 @@ COPY .env.production ./
 EXPOSE 9000
 
 HEALTHCHECK CMD curl --fail http://localhost:9000 || exit 1
+
 # Start the webhook server
 CMD ["node", "webhook-server.js"]

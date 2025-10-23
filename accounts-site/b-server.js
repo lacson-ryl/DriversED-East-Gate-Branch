@@ -10,7 +10,6 @@ import bodyParser from "body-parser";
 import multer from "multer";
 import sharp from "sharp";
 import fs from "fs";
-import puppeteer from "puppeteer";
 import session from "express-session";
 import validator from "validator";
 import axios from "axios";
@@ -27,7 +26,7 @@ import {
   decryptData,
   generateKeyPair,
   handlePrivateKey,
-} from "./utils/b-encrypt-decrypt.js";
+} from "./utils-backend/b-encrypt-decrypt.js";
 dotenv.config({ path: ".env.production" });
 
 const PORT = process.env.port;
@@ -39,21 +38,37 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 
+app.get("/health-check-docker", (req, res) => {
+  res.sendStatus(200);
+});
+
 // Body parsing
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 
 // Static assets
-app.use(express.static(__dirname)); // serves root-level files
-app.use("/f-css", express.static(path.join(__dirname, "f-css")));
-app.use("/f-jsfiles", express.static(path.join(__dirname, "f-jsfiles"))); // ✅ this is key
+//app.use(express.static(__dirname)); // serves root-level files
+app.use("/account/f-css", express.static(path.join(process.cwd(), "/shared/f-css")));
+app.use(
+  "/account/f-assets",
+  express.static(path.join(__dirname, "shared", "f-assets"), {
+    maxAge: "1h", // cache for 1 hour
+    etag: false, // disable ETag revalidation
+  })
+);
+app.use(
+  "/account/f-jsfiles",
+  express.static(path.join(__dirname, "f-jsfiles"))
+); // ✅ this is key
+app.use("/account/utils", express.static(path.join(__dirname, "utils")));
 
 // View engine
 app.set("view engine", "ejs");
 //app.set("views", path.join(__dirname, "views"));
 app.set("views", path.join(process.cwd(), "views"));
 
-app.set("trust proxy", "127.0.0.1");
+//app.set("trust proxy", "127.0.0.1");
+app.set("trust proxy", true);
 
 // CORS setup
 const corsOptions = {
@@ -61,6 +76,7 @@ const corsOptions = {
   credentials: true,
 };
 app.use(cors(corsOptions));
+app.disable("x-powered-by");
 
 // Cookie + body parsing
 app.use(cookieParser());
@@ -168,7 +184,9 @@ app.get(
 
 app.get(
   "/auth/google/user/callback",
-  userPassport.authenticate("google", { failureRedirect: "/user-login" }),
+  userPassport.authenticate("google", {
+    failureRedirect: "/account/user-login",
+  }),
   (req, res) => {
     const token = jwt.sign(
       { userId: req.user.user_id, role: req.user.user_role },
@@ -179,6 +197,7 @@ app.get(
     res.cookie("jwtToken", token, {
       maxAge: 3 * 60 * 60 * 1000,
       httpOnly: true,
+      secure: true,
     });
     res.redirect(`/account/login-success`);
   }
@@ -231,32 +250,10 @@ app.get(
         maxAge: 20 * 60 * 1000, // 20 minutes
       });
 
-      res.redirect("/change-password-email-option?success=true");
+      res.redirect("/account/change-password-email-option?success=true");
     })(req, res, next);
   }
 );
-
-app.post("/trigger-rebuild", (req, res) => {
-  try {
-    if (req.headers["x-exec-secret"] !== process.env.EXEC_SECRET) {
-      return res.status(401).send("Invalid Exec Secret");
-    }
-
-    exec(
-      "git pull origin main && docker-compose --env-file .env.production up -d",
-      (err, stdout, stderr) => {
-        if (err) {
-          console.error("Rebuild failed:", stderr);
-          return res.status(500).send("Rebuild failed");
-        }
-        console.log("Rebuild successful:", stdout);
-        res.status(200).send("Rebuild triggered");
-      }
-    );
-  } catch (error) {
-    return res.status(500).send("Trigger Failed");
-  }
-});
 
 const limiter = rateLimit({
   windowMs: 5 * 60 * 1000, // 15 minutes
@@ -382,15 +379,41 @@ import {
   verifyDeleteToken,
 } from "./middleware/b-authenticate.js";
 
-import { renderBase64File } from "./utils/file-converter.js";
+import { renderBase64File } from "./utils-backend/file-converter.js";
 
 import { sendEmail } from "./config/b-email-config.js";
 import { v4 as uuidv4 } from "uuid";
 import redis from "./config/b-redis.js";
 import { fileTypeFromBuffer } from "file-type";
-import { generateCertificatePDF } from "./utils/generateCertPDF.js";
+import { generateCertificatePDF } from "./utils-backend/generateCertPDF.js";
 
-app.post(
+const router = express.Router();
+
+router.post(
+  "/api/public-key/share",
+  authenticateToken,
+  authorizeRole(["user", "instructor", "admin"]),
+  async (req, res) => {
+    try {
+      const clientPublicKey = req.body.clientPublicKey;
+      const { publicKey, privateKey } = generateKeyPair();
+      const { encrypted, iv } = handlePrivateKey(
+        "encrypt",
+        secretKey,
+        privateKey
+      );
+      const { userId, role } = req.user;
+
+      await addPrivKeyForUser(userId, role, encrypted, iv, clientPublicKey);
+      res.status(200).json({ serverPublicKey: publicKey });
+    } catch (error) {
+      console.error("Error sharing public key:", error);
+      res.status(500).json({ error: "Failed to share public key." });
+    }
+  }
+);
+
+router.post(
   "/api/delete-token",
   authenticateToken,
   authorizeRole("admin"),
@@ -425,13 +448,13 @@ app.post(
   }
 );
 
-app.get("/login-success", authenticateToken, (req, res) => {
+router.get("/login-success", authenticateToken, (req, res) => {
   res.render("login-loading", {
     role: req.user.role,
   });
 });
 
-app.get("/user-registration-form", (req, res) => {
+router.get("/user-registration-form", (req, res) => {
   try {
     res.render("user-registration-form");
   } catch (error) {
@@ -441,7 +464,7 @@ app.get("/user-registration-form", (req, res) => {
   }
 });
 
-app.get("/user-profile-form", (req, res) => {
+router.get("/user-profile-form", (req, res) => {
   try {
     res.render("user-profile-form");
   } catch (error) {
@@ -451,7 +474,7 @@ app.get("/user-profile-form", (req, res) => {
   }
 });
 
-app.post(
+router.post(
   "/api/user-profile-submit",
   authenticateToken,
   authorizeRole("user"),
@@ -517,7 +540,7 @@ app.post(
   }
 );
 
-app.put(
+router.put(
   "/api/user-profile-edit",
   authenticateToken,
   authorizeRole("user"),
@@ -624,7 +647,7 @@ app.put(
   }
 );
 
-app.get("/user-profile", authenticateToken, async (req, res) => {
+router.get("/user-profile", authenticateToken, async (req, res) => {
   try {
     res.render("user-profile");
   } catch (error) {
@@ -634,7 +657,7 @@ app.get("/user-profile", authenticateToken, async (req, res) => {
   }
 });
 
-app.get(
+router.get(
   "/api/user-profile",
   authenticateToken,
   authorizeRole("user"),
@@ -689,7 +712,7 @@ app.get(
   }
 );
 
-app.post("/api/user-registration", async (req, res) => {
+router.post("/api/user-registration", async (req, res) => {
   try {
     const { name, email, password } = req.body;
     if (!name || !email || !password) {
@@ -743,7 +766,7 @@ app.post("/api/user-registration", async (req, res) => {
   }
 });
 
-app.get("/user-login", async (req, res) => {
+router.get("/user-login", async (req, res) => {
   try {
     res.render("user-login");
   } catch (error) {
@@ -754,7 +777,7 @@ app.get("/user-login", async (req, res) => {
   }
 });
 
-app.post("/user-login", async (req, res) => {
+router.post("/user-login", async (req, res) => {
   try {
     const { email, password } = req.body;
     if (!email || !password) {
@@ -799,7 +822,7 @@ app.post("/user-login", async (req, res) => {
   }
 });
 
-app.get(
+router.get(
   "/user-dashboard",
   authenticateToken,
   authorizeRole("user"),
@@ -815,7 +838,7 @@ app.get(
   }
 );
 
-app.get(
+router.get(
   "/api/user-dashboard/client-courses",
   authenticateToken,
   authorizeRole("user"),
@@ -835,7 +858,7 @@ app.get(
   }
 );
 
-app.get("/api/user-dashboard/program-list", async (req, res) => {
+router.get("/api/user-dashboard/program-list", async (req, res) => {
   try {
     const programs = await getProgramsWithInstructors();
 
@@ -886,7 +909,7 @@ app.get("/api/user-dashboard/program-list", async (req, res) => {
   }
 });
 
-app.post(
+router.post(
   "/api/user-application/applyTDC",
   authenticateToken,
   async (req, res) => {
@@ -944,7 +967,7 @@ app.post(
   }
 );
 
-app.post(
+router.post(
   "/api/user-application/setTdcDate",
   authenticateToken,
   async (req, res) => {
@@ -975,7 +998,7 @@ app.post(
   }
 );
 
-app.post(
+router.post(
   "/api/user-application/add-continuation",
   authenticateToken,
   upload.none(),
@@ -1030,7 +1053,7 @@ app.post(
   }
 );
 
-app.post(
+router.post(
   "/api/user-application/admin-add-continuation",
   authenticateToken,
   authorizeRole("admin"),
@@ -1067,7 +1090,7 @@ app.post(
 );
 
 // Get Instructor Availability Endpoint
-app.get("/api/instructors/:id/availability", async (req, res) => {
+router.get("/api/instructors/:id/availability", async (req, res) => {
   try {
     const instructorId = req.params.id;
     const rows = await checkInstructorAvailability(instructorId);
@@ -1090,7 +1113,7 @@ app.get("/api/instructors/:id/availability", async (req, res) => {
   }
 });
 
-app.get(
+router.get(
   "/user-programs",
   authenticateToken,
   authorizeRole("user"),
@@ -1106,7 +1129,7 @@ app.get(
   }
 );
 
-app.get(
+router.get(
   "/api/applications-list",
   authenticateToken,
   authorizeRole("user"),
@@ -1128,7 +1151,7 @@ app.get(
   }
 );
 
-app.get("/search", authenticateToken, async (req, res) => {
+router.get("/search", authenticateToken, async (req, res) => {
   try {
     res.render("search");
   } catch (error) {
@@ -1139,7 +1162,7 @@ app.get("/search", authenticateToken, async (req, res) => {
   }
 });
 
-app.post(
+router.post(
   "/api/user-search",
   authenticateToken,
   authorizeRole("admin"),
@@ -1164,7 +1187,7 @@ app.post(
   }
 );
 
-app.get(
+router.get(
   "/api/user-search/:id",
   authenticateToken,
   authorizeRole("admin"),
@@ -1184,7 +1207,7 @@ app.get(
   }
 );
 
-app.get(
+router.get(
   "/user-requests",
   authenticateToken,
   authorizeRole("user"),
@@ -1200,7 +1223,7 @@ app.get(
   }
 );
 
-app.post("/api/submit-request", authenticateToken, async (req, res) => {
+router.post("/api/submit-request", authenticateToken, async (req, res) => {
   try {
     const { userId, role } = req.user;
     const { titleRequest, detailsRequest } = req.body;
@@ -1228,7 +1251,7 @@ app.post("/api/submit-request", authenticateToken, async (req, res) => {
   }
 });
 
-app.get("/api/user-requests", authenticateToken, async (req, res) => {
+router.get("/api/user-requests", authenticateToken, async (req, res) => {
   try {
     const id = req.user.userId;
     const data = await getUserRequest(id);
@@ -1239,7 +1262,7 @@ app.get("/api/user-requests", authenticateToken, async (req, res) => {
   }
 });
 
-app.get(
+router.get(
   "/api/user-requests/:requestId",
   authenticateToken,
   async (req, res) => {
@@ -1254,7 +1277,7 @@ app.get(
   }
 );
 
-app.get(
+router.get(
   "/user-reports",
   authenticateToken,
   authorizeRole("user"),
@@ -1270,7 +1293,7 @@ app.get(
   }
 );
 
-app.post("/api/submit-report", authenticateToken, async (req, res) => {
+router.post("/api/submit-report", authenticateToken, async (req, res) => {
   try {
     const { userId, role } = req.user;
     const { titleReport, detailsReport } = req.body;
@@ -1297,7 +1320,7 @@ app.post("/api/submit-report", authenticateToken, async (req, res) => {
   }
 });
 
-app.get("/api/user-reports", authenticateToken, async (req, res) => {
+router.get("/api/user-reports", authenticateToken, async (req, res) => {
   try {
     const id = req.user.userId;
     const data = await getUserReport(id);
@@ -1308,18 +1331,22 @@ app.get("/api/user-reports", authenticateToken, async (req, res) => {
   }
 });
 
-app.get("/api/user-reports/:reportId", authenticateToken, async (req, res) => {
-  try {
-    const reportId = req.params.reportId;
-    const data = await getUserDetailReport(reportId);
-    res.json(data);
-  } catch (err) {
-    console.log("Error fetching data: ", err);
-    res.status(500).json({ error: "Internal Server Error" });
+router.get(
+  "/api/user-reports/:reportId",
+  authenticateToken,
+  async (req, res) => {
+    try {
+      const reportId = req.params.reportId;
+      const data = await getUserDetailReport(reportId);
+      res.json(data);
+    } catch (err) {
+      console.log("Error fetching data: ", err);
+      res.status(500).json({ error: "Internal Server Error" });
+    }
   }
-});
+);
 
-app.get("/user-payments", authenticateToken, (req, res) => {
+router.get("/user-payments", authenticateToken, (req, res) => {
   try {
     res.render("user-payment");
   } catch (error) {
@@ -1329,7 +1356,7 @@ app.get("/user-payments", authenticateToken, (req, res) => {
   }
 });
 
-app.get(
+router.get(
   "/api/user-payments/list",
   authenticateToken,
   authorizeRole("user"),
@@ -1344,7 +1371,7 @@ app.get(
   }
 );
 
-app.get(
+router.get(
   "/api/user-payments/details-list",
   authenticateToken,
   async (req, res) => {
@@ -1381,7 +1408,7 @@ app.get(
   }
 );
 
-app.get(
+router.get(
   "/admin-registration",
   authenticateToken,
   authorizeRole("admin"),
@@ -1396,7 +1423,7 @@ app.get(
   }
 );
 
-app.post(
+router.post(
   "/api/admin-registration",
   authenticateToken,
   authorizeRole("admin"),
@@ -1462,10 +1489,9 @@ app.post(
   }
 );
 
-app.get("/account/adminlogin", (req, res) => {
+router.get("/adminlogin", (req, res) => {
   try {
-    const error = req.query.error;
-    res.render("adminlogin", { error });
+    res.render("adminlogin", { error: false });
   } catch (error) {
     console.error("Internal Server Error", error);
     res.render("error-500", {
@@ -1474,7 +1500,7 @@ app.get("/account/adminlogin", (req, res) => {
   }
 });
 
-app.post("/account/adminlogin", async (req, res) => {
+router.post("/adminlogin", async (req, res) => {
   try {
     const { email, password } = req.body;
     if (!email || !password) {
@@ -1522,7 +1548,7 @@ app.post("/account/adminlogin", async (req, res) => {
   }
 });
 
-app.get(
+router.get(
   "/admin-dashboard",
   authenticateToken,
   authorizeRole(["admin", "instructor"]),
@@ -1548,7 +1574,7 @@ app.get(
   }
 );
 
-app.get("/api/admin-dashboard-time/:month/:year", async (req, res) => {
+router.get("/api/admin-dashboard-time/:month/:year", async (req, res) => {
   try {
     const month = req.params.month;
     const year = parseInt(req.params.year, 10);
@@ -1560,7 +1586,7 @@ app.get("/api/admin-dashboard-time/:month/:year", async (req, res) => {
   }
 });
 
-app.get(
+router.get(
   "/api/admin-dashboard/dashboard-details",
   authenticateToken,
   async (req, res) => {
@@ -1584,7 +1610,7 @@ app.get(
   }
 );
 
-app.post(
+router.post(
   "/api/payment-methods/add",
   authenticateToken,
   authorizeRole("admin"),
@@ -1614,7 +1640,7 @@ app.post(
 );
 
 // Edit Payment Method
-app.put(
+router.put(
   "/api/payment-method/edit",
   authenticateToken,
   authorizeRole("admin"),
@@ -1630,7 +1656,7 @@ app.put(
   }
 );
 
-app.post(
+router.post(
   "/api/payment-methods/upload",
   authenticateToken,
   authorizeRole("admin"),
@@ -1672,7 +1698,7 @@ app.post(
 );
 
 // Delete Payment Method
-app.delete(
+router.delete(
   "/api/payment-methods/:methodId",
   authenticateToken,
   verifyDeleteToken,
@@ -1698,7 +1724,7 @@ app.delete(
   }
 );
 
-app.get(
+router.get(
   "/api/instructor/attendance-list/:type",
   authenticateToken,
   authorizeRole("instructor"),
@@ -1729,7 +1755,7 @@ app.get(
   }
 );
 
-app.get(
+router.get(
   "/api/instructor-dashboard/trainee-info/:courseID",
   async (req, res) => {
     try {
@@ -1761,7 +1787,7 @@ app.get(
   }
 );
 
-app.get(
+router.get(
   "/attendance",
   authenticateToken,
   authorizeRole("admin"),
@@ -1776,7 +1802,7 @@ app.get(
   }
 );
 
-app.get(
+router.get(
   "/api/attendance/:type",
   authenticateToken,
   authorizeRole("admin"),
@@ -1792,7 +1818,7 @@ app.get(
   }
 );
 
-app.put(
+router.put(
   "/api/attendance/status/:id",
   authenticateToken,
   authorizeRole(["admin", "instructor"]),
@@ -1832,7 +1858,7 @@ app.put(
   }
 );
 
-app.delete(
+router.delete(
   "/api/delete-attendance",
   authenticateToken,
   verifyDeleteToken,
@@ -1872,7 +1898,7 @@ app.delete(
   }
 );
 
-app.get(
+router.get(
   "/applicants",
   authenticateToken,
   authorizeRole("admin"),
@@ -1888,7 +1914,7 @@ app.get(
   }
 );
 
-app.get(
+router.get(
   "/applicants-list",
   authenticateToken,
   authorizeRole("admin"),
@@ -1902,7 +1928,7 @@ app.get(
   }
 );
 
-app.get(
+router.get(
   "/api/applicants/list",
   authenticateToken,
   authorizeRole("admin"),
@@ -1917,7 +1943,7 @@ app.get(
   }
 );
 
-app.delete(
+router.delete(
   "/api/delete-application-by-course",
   authenticateToken,
   verifyDeleteToken,
@@ -1950,7 +1976,7 @@ app.delete(
   }
 );
 
-app.delete(
+router.delete(
   "/api/applicant/:id",
   authenticateToken,
   verifyDeleteToken,
@@ -1983,7 +2009,7 @@ app.delete(
   }
 );
 
-app.get(
+router.get(
   "/manage-people",
   authenticateToken,
   authorizeRole("admin"),
@@ -1999,7 +2025,7 @@ app.get(
   }
 );
 
-app.get(
+router.get(
   "/api/manage-people/list",
   authenticateToken,
   authorizeRole("admin"),
@@ -2018,7 +2044,7 @@ app.get(
   }
 );
 
-app.post(
+router.post(
   "/api/manage-people/instructor-add",
   authenticateToken,
   async (req, res) => {
@@ -2072,7 +2098,7 @@ app.post(
   }
 );
 
-app.post(
+router.post(
   "/api/manage-people/assign-account",
   authenticateToken,
   authorizeRole("admin"),
@@ -2141,7 +2167,7 @@ app.post(
   }
 );
 
-app.put(
+router.put(
   "/api/manage-people/:id",
   authenticateToken,
   upload.none(),
@@ -2253,7 +2279,7 @@ app.put(
   }
 );
 
-app.get(
+router.get(
   "/api/manage-people/payroll/:ID",
   authenticateToken,
   authorizeRole("admin"),
@@ -2268,7 +2294,7 @@ app.get(
   }
 );
 
-app.get(
+router.get(
   "/api/manage-people/current-payroll/:id",
   authenticateToken,
   authorizeRole("admin"),
@@ -2292,7 +2318,7 @@ app.get(
   }
 );
 
-app.get("/api/instructor-profile", authenticateToken, async (req, res) => {
+router.get("/api/instructor-profile", authenticateToken, async (req, res) => {
   try {
     const id = req.user.userId;
     const instructor = await getInstructorWithAccountId(id);
@@ -2303,7 +2329,7 @@ app.get("/api/instructor-profile", authenticateToken, async (req, res) => {
   }
 });
 
-app.get(
+router.get(
   "/api/instructor-payments/monthly",
   authenticateToken,
   authorizeRole("instructor"),
@@ -2319,7 +2345,7 @@ app.get(
   }
 );
 
-app.get(
+router.get(
   "/api/instructor-payments/weekly",
   authenticateToken,
   authorizeRole("instructor"),
@@ -2345,7 +2371,7 @@ app.get(
   }
 );
 
-app.delete(
+router.delete(
   "/api/manage-people/:rowID",
   authenticateToken,
   verifyDeleteToken,
@@ -2369,7 +2395,7 @@ app.delete(
   }
 );
 
-app.get(
+router.get(
   "/programs",
   authenticateToken,
   authorizeRole("admin"),
@@ -2384,7 +2410,7 @@ app.get(
   }
 );
 
-app.get(
+router.get(
   "/api/programs/list",
   authenticateToken,
   authorizeRole(["admin", "user"]),
@@ -2398,7 +2424,7 @@ app.get(
   }
 );
 
-app.post("/api/program/add", authenticateToken, async (req, res) => {
+router.post("/api/program/add", authenticateToken, async (req, res) => {
   try {
     const { userId, role } = req.user;
     const {
@@ -2431,7 +2457,7 @@ app.post("/api/program/add", authenticateToken, async (req, res) => {
   }
 });
 
-app.put("/api/programs/:id", authenticateToken, async (req, res) => {
+router.put("/api/programs/:id", authenticateToken, async (req, res) => {
   try {
     const { id, name, availability, duration, fee, description } = req.body;
     const cloneId = req.params.id;
@@ -2451,7 +2477,7 @@ app.put("/api/programs/:id", authenticateToken, async (req, res) => {
   }
 });
 
-app.post(
+router.post(
   "/api/programs/program-cover/:id",
   authenticateToken,
   authorizeRole("admin"),
@@ -2475,7 +2501,7 @@ app.post(
   }
 );
 
-app.get("/api/programs/name-list", authenticateToken, async (req, res) => {
+router.get("/api/programs/name-list", authenticateToken, async (req, res) => {
   try {
     const instructorList = await getInstructors();
     const instructorsNameList = instructorList.map((instructor) => ({
@@ -2490,7 +2516,7 @@ app.get("/api/programs/name-list", authenticateToken, async (req, res) => {
   }
 });
 
-app.post("/api/assign-programs", authenticateToken, async (req, res) => {
+router.post("/api/assign-programs", authenticateToken, async (req, res) => {
   const { userId, role } = req.user;
   const { instructor_id, program_ids } = req.body;
   console.log("program_ids", program_ids);
@@ -2521,7 +2547,7 @@ app.post("/api/assign-programs", authenticateToken, async (req, res) => {
   }
 });
 
-app.get(
+router.get(
   "/api/programs/assigned-list",
   authenticateToken,
   authorizeRole("admin"),
@@ -2537,7 +2563,7 @@ app.get(
 );
 
 //Unassigning programs from instructos
-app.post("/api/unassign-programs", async (req, res) => {
+router.post("/api/unassign-programs", async (req, res) => {
   const { instructor_id, program_ids } = req.body;
 
   if (
@@ -2557,7 +2583,7 @@ app.post("/api/unassign-programs", async (req, res) => {
   }
 });
 
-app.delete(
+router.delete(
   "/api/programs/:rowID",
   authenticateToken,
   verifyDeleteToken,
@@ -2582,7 +2608,7 @@ app.delete(
   }
 );
 
-app.get(
+router.get(
   "/requests",
   authenticateToken,
   authorizeRole("admin"),
@@ -2597,7 +2623,7 @@ app.get(
   }
 );
 
-app.get("/api/requests/list", authenticateToken, async (req, res) => {
+router.get("/api/requests/list", authenticateToken, async (req, res) => {
   try {
     const requestlist = await getAllRequests();
     return res.status(200).json({ requestlist });
@@ -2607,7 +2633,7 @@ app.get("/api/requests/list", authenticateToken, async (req, res) => {
   }
 });
 
-app.get(
+router.get(
   "/request/:id",
   authenticateToken,
   authorizeRole("admin"),
@@ -2623,7 +2649,7 @@ app.get(
   }
 );
 
-app.put(
+router.put(
   "/api/request/change-status",
   authenticateToken,
   authorizeRole("admin"),
@@ -2658,7 +2684,7 @@ app.put(
   }
 );
 
-app.get(
+router.get(
   "/certificates",
   authenticateToken,
   authorizeRole("admin"),
@@ -2673,7 +2699,7 @@ app.get(
   }
 );
 
-app.get("/api/certificates", authenticateToken, async (req, res) => {
+router.get("/api/certificates", authenticateToken, async (req, res) => {
   try {
     const allCert = await getAllCert();
     const certList = await Promise.all(
@@ -2691,7 +2717,7 @@ app.get("/api/certificates", authenticateToken, async (req, res) => {
   }
 });
 
-app.post("/api/certificate/add", authenticateToken, async (req, res) => {
+router.post("/api/certificate/add", authenticateToken, async (req, res) => {
   try {
     const { userId, role } = req.user;
     const { certificateID, certificateName } = req.body;
@@ -2717,7 +2743,7 @@ app.post("/api/certificate/add", authenticateToken, async (req, res) => {
   }
 });
 
-app.post(
+router.post(
   "/api/certificates/template/:id",
   authenticateToken,
   authorizeRole("admin"),
@@ -2739,7 +2765,7 @@ app.post(
   }
 );
 
-app.put("/api/certificates/:id", authenticateToken, async (req, res) => {
+router.put("/api/certificates/:id", authenticateToken, async (req, res) => {
   try {
     const { id, name } = req.body;
     const certificate = await editOneCertificate(id, name);
@@ -2750,7 +2776,7 @@ app.put("/api/certificates/:id", authenticateToken, async (req, res) => {
   }
 });
 
-app.delete(
+router.delete(
   "/api/certificates/:rowID",
   authenticateToken,
   verifyDeleteToken,
@@ -2775,7 +2801,7 @@ app.delete(
   }
 );
 
-app.get(
+router.get(
   "/reports",
   authenticateToken,
   authorizeRole("admin"),
@@ -2790,7 +2816,7 @@ app.get(
   }
 );
 
-app.get("/report/:id", authenticateToken, async (req, res) => {
+router.get("/report/:id", authenticateToken, async (req, res) => {
   try {
     const id = req.params.id;
     const report = await getOneReport(id);
@@ -2801,7 +2827,7 @@ app.get("/report/:id", authenticateToken, async (req, res) => {
   }
 });
 
-app.get("/api/reports/list", authenticateToken, async (req, res) => {
+router.get("/api/reports/list", authenticateToken, async (req, res) => {
   try {
     const reportlist = await getAllReports();
     return res.status(200).json({ reportlist });
@@ -2811,7 +2837,7 @@ app.get("/api/reports/list", authenticateToken, async (req, res) => {
   }
 });
 
-app.put(
+router.put(
   "/api/report/change-status",
   authenticateToken,
   authorizeRole("admin"),
@@ -2845,7 +2871,7 @@ app.put(
   }
 );
 
-app.get(
+router.get(
   "/payments",
   authenticateToken,
   authorizeRole(["admin", "instructor"]),
@@ -2865,7 +2891,7 @@ app.get(
   }
 );
 
-app.get(
+router.get(
   "/api/payments",
   authenticateToken,
   authorizeRole("admin"),
@@ -2879,7 +2905,7 @@ app.get(
   }
 );
 
-app.post(
+router.post(
   "/api/payment/add",
   authenticateToken,
   authorizeRole(["admin", "user"]),
@@ -2955,7 +2981,7 @@ app.post(
   }
 );
 
-app.post(
+router.post(
   "/api/payments/receipt/:id",
   authenticateToken,
   authorizeRole(["admin", "user"]),
@@ -2979,7 +3005,7 @@ app.post(
   }
 );
 
-app.put(
+router.put(
   "/api/payments",
   authenticateToken,
   authorizeRole("admin"),
@@ -3004,7 +3030,7 @@ app.put(
   }
 );
 
-app.delete(
+router.delete(
   "/api/payments/delete/:rowId",
   authenticateToken,
   verifyDeleteToken,
@@ -3030,7 +3056,7 @@ app.delete(
   }
 );
 
-app.get("/api/instructors", async (req, res) => {
+router.get("/api/instructors", async (req, res) => {
   try {
     const instructors = await getInstructorDetailsForApplicants();
     const assignedPrograms = await getAssignedPrograms();
@@ -3048,7 +3074,7 @@ app.get("/api/instructors", async (req, res) => {
   }
 });
 
-app.get(
+router.get(
   "/completed-course",
   authenticateToken,
   authorizeRole("admin"),
@@ -3063,7 +3089,7 @@ app.get(
   }
 );
 
-app.get(
+router.get(
   "/api/completed-course",
   authenticateToken,
   authorizeRole("admin"),
@@ -3081,7 +3107,7 @@ app.get(
   }
 );
 
-app.put(
+router.put(
   "/api/completed-course/edit-hours/:id",
   authenticateToken,
   authorizeRole("admin"),
@@ -3099,7 +3125,7 @@ app.put(
   }
 );
 
-app.post(
+router.post(
   "/api/completed-course/certificate-upload/:id",
   authenticateToken,
   authorizeRole("admin"),
@@ -3121,7 +3147,7 @@ app.post(
   }
 );
 
-app.post(
+router.post(
   "/api/completed-course/grade-upload/:id",
   authenticateToken,
   authorizeRole(["admin", "instructor"]),
@@ -3149,7 +3175,7 @@ app.post(
   }
 );
 
-app.delete(
+router.delete(
   "/api/completed-course/:id",
   authenticateToken,
   verifyDeleteToken,
@@ -3183,7 +3209,7 @@ app.delete(
   }
 );
 
-app.get(
+router.get(
   "/vehicles",
   authenticateToken,
   authorizeRole("admin"),
@@ -3198,7 +3224,7 @@ app.get(
   }
 );
 
-app.get("/api/vehicles", authenticateToken, async (req, res) => {
+router.get("/api/vehicles", authenticateToken, async (req, res) => {
   try {
     const vehicleList = await getAllVehicle();
     return res.json({ vehicleList });
@@ -3207,7 +3233,7 @@ app.get("/api/vehicles", authenticateToken, async (req, res) => {
   }
 });
 
-app.post(
+router.post(
   "/api/vehicle/add",
   authenticateToken,
   authorizeRole("admin"),
@@ -3243,7 +3269,7 @@ app.post(
   }
 );
 
-app.put(
+router.put(
   "/api/vehicles/:rowID/:status",
   authenticateToken,
   authorizeRole("admin"),
@@ -3262,7 +3288,7 @@ app.put(
   }
 );
 
-app.post(
+router.post(
   "/api/vehicles/lto/:id",
   authenticateToken,
   authorizeRole("admin"),
@@ -3286,7 +3312,7 @@ app.post(
   }
 );
 
-app.post(
+router.post(
   "/api/vehicles/vehicle-photo/:id",
   authenticateToken,
   authorizeRole("admin"),
@@ -3313,7 +3339,7 @@ app.post(
   }
 );
 
-app.put("/api/vehicles/:id", authenticateToken, async (req, res) => {
+router.put("/api/vehicles/:id", authenticateToken, async (req, res) => {
   try {
     const vehicleID = req.params.id;
     const { plateNumber, vehicleModel, year, vehicleType } = req.body;
@@ -3331,7 +3357,7 @@ app.put("/api/vehicles/:id", authenticateToken, async (req, res) => {
   }
 });
 
-app.delete(
+router.delete(
   "/api/vehicles/:rowID",
   authenticateToken,
   verifyDeleteToken,
@@ -3357,7 +3383,7 @@ app.delete(
   }
 );
 
-app.get(
+router.get(
   "/api/notifications",
   authenticateToken,
   authorizeRole(["user", "admin", "instructor"]),
@@ -3374,7 +3400,7 @@ app.get(
   }
 );
 
-app.get(
+router.get(
   "/instructor-payment",
   authenticateToken,
   authorizeRole("instructor"),
@@ -3389,7 +3415,7 @@ app.get(
   }
 );
 
-app.get("/change-password-email-option", async (req, res) => {
+router.get("/change-password-email-option", async (req, res) => {
   try {
     const captchaSiteKey = process.env.RECAPTCHA_SITE_KEY;
     res.render("change-password-email-option", {
@@ -3401,7 +3427,7 @@ app.get("/change-password-email-option", async (req, res) => {
 });
 
 // Endpoint for email or PRN search
-app.post(
+router.post(
   "/api/change-password-email-option/email-search/:type",
   async (req, res) => {
     const { prn, email, recaptchaToken } = req.body;
@@ -3495,7 +3521,7 @@ app.post(
   }
 );
 
-app.post(
+router.post(
   "/api/change-password",
   authenticateTokenForChangingCredentials,
   async (req, res) => {
@@ -3542,7 +3568,7 @@ app.post(
   }
 );
 
-app.post(
+router.post(
   "/api/change-password-otp",
   authenticateTokenForChangingCredentials,
   async (req, res) => {
@@ -3596,7 +3622,7 @@ app.post(
   }
 );
 
-app.post(
+router.post(
   "/api/change-email-otp",
   authenticateTokenForChangingCredentials,
   async (req, res) => {
@@ -3640,7 +3666,7 @@ app.post(
   }
 );
 
-app.post("/api/change-password-email-option/send-code", async (req, res) => {
+router.post("/api/change-password-email-option/send-code", async (req, res) => {
   try {
     const { id, email, type } = req.body;
     const userType = !req.user?.role ? "user" : req.user.role;
@@ -3660,7 +3686,7 @@ app.post("/api/change-password-email-option/send-code", async (req, res) => {
   }
 });
 
-app.get(
+router.get(
   "/logout",
   authenticateToken,
   authorizeRole(["admin", "user", "instructor"]),
@@ -3668,9 +3694,10 @@ app.get(
     const role = req.user.role;
     if (!role) {
       console.error("No user role found");
-      return res.redirect("/user-login");
+      return res.redirect("/account/user-login");
     }
-    const logoutLink = role === "user" ? "/user-login" : "/account/adminlogin";
+    const logoutLink =
+      role === "user" ? "/account/user-login" : "/account/adminlogin";
 
     if (req.session) {
       req.session.destroy((err) => {
@@ -3695,115 +3722,7 @@ app.get(
   }
 );
 
-app.get(
-  "sample-certificates-completion",
-  authenticateToken,
-  authorizeRole("user"),
-  async (req, res) => {
-    try {
-      const { userId, role } = req.user;
-
-      const logoPath = path.join(
-        __dirname,
-        "./f-assets/solid/drivers_ed_logo-no-bg.png"
-      );
-      const driversEdLogo = `data:image/png;base64,${fs.readFileSync(
-        logoPath,
-        "base64"
-      )}`;
-
-      // Example data to pass to the EJS template
-      const dlCodesLeft = [
-        { code: "A (L1,L2,L3)", mt: false, at: false },
-        { code: "A1 (L4,L5,L6,L7)", mt: false, at: false },
-        { code: "B (M1)", mt: false, at: false },
-        { code: "B1 (M2)", mt: false, at: false },
-        { code: "B2 (N1)", mt: false, at: false },
-      ];
-
-      const dlCodesRight = [
-        { code: "BE (01, 02)", mt: false, at: false },
-        { code: "C (N2, N3)", mt: false, at: false },
-        { code: "CE (03, 04)", mt: false, at: false },
-        { code: "D (M3)", mt: false, at: false },
-      ];
-      const user = await getProfilewithUserId(userId);
-
-      const certificateInputs = [
-        {
-          controlNumber: "SAMPLESAMPLESAMPLE",
-          certificateNumber: "SAMPLESAMPLESAMPLE",
-          accredNumOfBranch: "SAMPLESAMPLESAMPLE",
-          driversEdLogo: driversEdLogo,
-        },
-      ];
-      const fullName = `${user.last_name.toUpperCase()} ${user.first_name.toUpperCase()} ${user.middle_name.toUpperCase()}`;
-      const userProfile = [
-        {
-          fullName: fullName || null,
-          address: user.address,
-          ltoClientId: "SAMPLESAMPLESAMPLE",
-          birthday: user.birth_date,
-          gender: user.gender,
-          civilStatus: user.civil_status,
-          nationality: user.nationality,
-        },
-      ];
-
-      // Calculate the age after defining the userProfile
-      userProfile[0].age = user.birth_date
-        ? Math.floor(
-            (new Date() - new Date(user.birth_date)) /
-              (1000 * 60 * 60 * 24 * 365.25)
-          )
-        : null;
-
-      userProfile[0].profilePicture = await renderBase64File(
-        user.profile_picture
-      );
-
-      const userCourse = [
-        {
-          courseName: "SAMPLESAMPLE",
-          dateStarted: "01/01/2001",
-          dateFinished: "01/01/2001",
-          totalHours: 10,
-        },
-      ];
-
-      const instructorProfile = [
-        {
-          instructorName: "SAMPLESAMPLE",
-          accredNumOfInstructor: "SAMPLESAMPLE",
-        },
-      ];
-
-      const encrypted = await encryptData(
-        {
-          dlCodesLeft,
-          dlCodesRight,
-          certificateInputs,
-          userProfile,
-          userCourse,
-          instructorProfile,
-          clientId,
-          courseId,
-          instructorId,
-        },
-        userId,
-        role
-      );
-      res.status(200).render("sample", {
-        encrypted,
-      });
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: "Internal Server Error" });
-    }
-  }
-);
-
-app.get(
+router.get(
   "/certificates-completion-pdc",
   authenticateToken,
   authorizeRole("admin"),
@@ -3814,7 +3733,7 @@ app.get(
   }
 );
 
-app.post(
+router.post(
   "/api/certificates-completion-pdc",
   authenticateToken,
   authorizeRole("admin"),
@@ -3926,6 +3845,122 @@ app.post(
     }
   }
 );
+
+router.get(
+  "/certificates-completion-tdc",
+  authenticateToken,
+  authorizeRole("admin"),
+  async (req, res) => {
+    try {
+      res.render("certificate-of-completion-TDC", {
+        isPDF: false,
+      });
+    } catch (error) {
+      res.render("error-500", {
+        error,
+      });
+    }
+  }
+);
+
+router.post(
+  "/api/certificates-completion-tdc",
+  authenticateToken,
+  authorizeRole("admin"),
+  async (req, res) => {
+    try {
+      const { userId, role } = req.user;
+      const { clientId, courseId, instructorId } = req.body;
+      console.log("tdc", clientId, courseId, instructorId);
+
+      const instructor = await getInstructorwithId(instructorId);
+      const user = await getProfilewithUserId(clientId);
+      const trainee_course = await getTraineeCourseInfo(courseId);
+
+      const logoPath = path.join(
+        __dirname,
+        "./f-assets/solid/drivers_ed_logo-no-bg.png"
+      );
+      const driversEdLogo = `data:image/png;base64,${fs.readFileSync(
+        logoPath,
+        "base64"
+      )}`;
+      const genControlNumber = generateTemporaryPassword(32); // Re-use a random generator
+      const genCertificateNumber = generateTemporaryPassword(14);
+
+      const certificateInputs = [
+        {
+          controlNumber: genControlNumber,
+          certificateNumber: genCertificateNumber,
+          accredNumOfBranch: "123456789",
+          driversEdLogo: driversEdLogo,
+        },
+      ];
+      const userProfile = [
+        {
+          firstName: user.first_name.toUpperCase(),
+          lastName: user.last_name.toUpperCase(),
+          middleName: user.middle_name.toUpperCase(),
+          address: user.address,
+          ltoClientId: user.lto_client_id,
+          birthday: user.birth_date,
+          gender: user.gender,
+          civilStatus: user.civil_status,
+          nationality: user.nationality,
+        },
+      ];
+
+      // Calculate the age after defining the userProfile
+      userProfile[0].age = user.birth_date
+        ? Math.floor(
+            (new Date() - new Date(user.birth_date)) /
+              (1000 * 60 * 60 * 24 * 365.25)
+          )
+        : null;
+
+      userProfile[0].profilePicture = await renderBase64File(
+        user.profile_picture
+      );
+
+      const userCourse = [
+        {
+          courseName: trainee_course[0].program_name,
+          dateStarted: trainee_course[0].date_started,
+          dateFinished: trainee_course[0].date_completed,
+          totalHours: trainee_course[0].total_hours,
+        },
+      ];
+
+      const instructorProfile = [
+        {
+          name: instructor.instructor_name,
+          accredNumOfInstructor: instructor.accreditation_number,
+        },
+      ];
+
+      const encrypted = await encryptData(
+        {
+          certificateInputs,
+          userProfile,
+          userCourse,
+          instructorProfile,
+          userId: clientId,
+          courseId,
+          instructorId,
+        },
+        userId,
+        role
+      );
+
+      res.status(200).json(encrypted);
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: "Internal Server Error" });
+    }
+  }
+);
+
+app.use("/account", router);
 
 app.post(
   "/api/certificates-completion-pdc/:type",
@@ -4074,120 +4109,6 @@ app.post(
   }
 );
 
-app.get(
-  "/certificates-completion-tdc",
-  authenticateToken,
-  authorizeRole("admin"),
-  async (req, res) => {
-    try {
-      res.render("certificate-of-completion-TDC", {
-        isPDF: false,
-      });
-    } catch (error) {
-      res.render("error-500", {
-        error,
-      });
-    }
-  }
-);
-
-app.post(
-  "/api/certificates-completion-tdc",
-  authenticateToken,
-  authorizeRole("admin"),
-  async (req, res) => {
-    try {
-      const { userId, role } = req.user;
-      const { clientId, courseId, instructorId } = req.body;
-      console.log("tdc", clientId, courseId, instructorId);
-
-      const instructor = await getInstructorwithId(instructorId);
-      const user = await getProfilewithUserId(clientId);
-      const trainee_course = await getTraineeCourseInfo(courseId);
-
-      const logoPath = path.join(
-        __dirname,
-        "./f-assets/solid/drivers_ed_logo-no-bg.png"
-      );
-      const driversEdLogo = `data:image/png;base64,${fs.readFileSync(
-        logoPath,
-        "base64"
-      )}`;
-      const genControlNumber = generateTemporaryPassword(32); // Re-use a random generator
-      const genCertificateNumber = generateTemporaryPassword(14);
-
-      const certificateInputs = [
-        {
-          controlNumber: genControlNumber,
-          certificateNumber: genCertificateNumber,
-          accredNumOfBranch: "123456789",
-          driversEdLogo: driversEdLogo,
-        },
-      ];
-      const userProfile = [
-        {
-          firstName: user.first_name.toUpperCase(),
-          lastName: user.last_name.toUpperCase(),
-          middleName: user.middle_name.toUpperCase(),
-          address: user.address,
-          ltoClientId: user.lto_client_id,
-          birthday: user.birth_date,
-          gender: user.gender,
-          civilStatus: user.civil_status,
-          nationality: user.nationality,
-        },
-      ];
-
-      // Calculate the age after defining the userProfile
-      userProfile[0].age = user.birth_date
-        ? Math.floor(
-            (new Date() - new Date(user.birth_date)) /
-              (1000 * 60 * 60 * 24 * 365.25)
-          )
-        : null;
-
-      userProfile[0].profilePicture = await renderBase64File(
-        user.profile_picture
-      );
-
-      const userCourse = [
-        {
-          courseName: trainee_course[0].program_name,
-          dateStarted: trainee_course[0].date_started,
-          dateFinished: trainee_course[0].date_completed,
-          totalHours: trainee_course[0].total_hours,
-        },
-      ];
-
-      const instructorProfile = [
-        {
-          name: instructor.instructor_name,
-          accredNumOfInstructor: instructor.accreditation_number,
-        },
-      ];
-
-      const encrypted = await encryptData(
-        {
-          certificateInputs,
-          userProfile,
-          userCourse,
-          instructorProfile,
-          userId: clientId,
-          courseId,
-          instructorId,
-        },
-        userId,
-        role
-      );
-
-      res.status(200).json(encrypted);
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: "Internal Server Error" });
-    }
-  }
-);
-
 app.post(
   "/certificates-completion-tdc/:type",
   authenticateToken,
@@ -4281,12 +4202,12 @@ app.post(
           Buffer.from(pdfBuffer),
           "application/pdf"
         );
-        /*
+
         await sendEmail("completion-certificate", user.email, {
           name: user.first_name,
           certificate: Buffer.from(pdfBuffer),
         });
-        */
+
         await addNotification(
           userId,
           "user",
@@ -4313,20 +4234,6 @@ app.post(
     } catch (error) {
       console.error("Error generating PDF:", error);
       res.status(500)({ error: "An error occurred while generating the PDF." });
-    }
-  }
-);
-
-app.get(
-  "/sample",
-  authenticateToken,
-  authorizeRole(["user", "admin"]),
-  (req, res) => {
-    try {
-      res.render("sample");
-    } catch (err) {
-      console.error(err);
-      res.status(500).json({ error: "failed to load page", err });
     }
   }
 );
