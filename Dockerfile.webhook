@@ -32,12 +32,11 @@ RUN npm install
 
 # Copy only what's needed
 COPY webhook-server.js ./
-COPY .env.production ./
 
 # Expose the webhook port
 EXPOSE 9000
 
-HEALTHCHECK CMD curl --fail http://localhost:9000 || exit 1
+HEALTHCHECK CMD curl --fail http://localhost:9000/health-check-docker || exit 1
 
 # Start the webhook server
 CMD ["node", "webhook-server.js"]

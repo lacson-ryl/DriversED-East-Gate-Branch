@@ -4,38 +4,37 @@ WORKDIR /app
 
 # Install dependencies
 COPY public-site/package*.json ./
-RUN npm install
+RUN npm install --include=optional && npm cache clean --force
 
-# Copy public-site specific files
-COPY public-site/web-pub-server.js ./
-COPY public-site/views ./views
-COPY public-site/f-jsfiles ./f-jsfiles
-COPY public-site/middleware ./middleware
-COPY public-site/utils ./utils
-COPY public-site/utils-backend ./utils-backend
-COPY public-site/config ./config
-COPY public-site/controllers ./controllers
+# Copy app files
+COPY public-site/ ./
 
 # Stage 2: Runtime
 FROM node:20-slim
 WORKDIR /app
 
-# Copy from builder
-COPY --from=builder /app/package.json ./package.json
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/web-pub-server.js ./web-pub-server.js
-COPY --from=builder /app/views ./views
-COPY --from=builder /app/f-jsfiles ./f-jsfiles
-COPY --from=builder /app/middleware ./middleware
-COPY --from=builder /app/utils ./utils
-COPY --from=builder /app/utils-backend ./utils-backend
-COPY --from=builder /app/config ./config
-COPY --from=builder /app/controllers ./controllers
+# Install system dependencies for sharp and curl for healthcheck
+RUN apt-get update && apt-get install -y \
+  curl \
+  libvips \
+  libvips-dev \
+  --no-install-recommends && \
+  apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Install runtime dependencies and global tools
-#RUN npm install -g concurrently tailwindcss nodemon
+# Copy package.json and package-lock.json to allow sharp installation
+COPY --from=builder /app/package*.json /app/
 
+# Copy app files from builder (excluding node_modules)
+COPY --from=builder /app /app
+
+# Install sharp in runtime stage
+RUN npm install --include=optional sharp
+
+# Expose port
 EXPOSE 8001
 
-HEALTHCHECK CMD curl --fail http://localhost:8001 || exit 1
+# Healthcheck
+HEALTHCHECK CMD curl --fail http://localhost:8001/health-check-docker || exit 1
+
+# Start the app
 CMD ["npm", "run", "start"]

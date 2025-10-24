@@ -1,17 +1,13 @@
-# Stage 1: Tailwind Builder
-FROM node:20 AS builder
+FROM node:20
 WORKDIR /app
 
 # Create minimal package.json
 RUN npm init -y
 
-# Install PostCSS CLI and plugins locally
+# Install PostCSS CLI and plugins
 RUN npm install postcss postcss-cli tailwindcss autoprefixer @tailwindcss/postcss
 
-# Copy Tailwind input and config
-COPY shared/f-tailcss ./f-tailcss
-COPY shared/tailwind.config.js ./tailwind.config.js
-COPY shared/postcss.config.js ./postcss.config.js
-
-# Build Tailwind output using PostCSS
-RUN npx postcss ./f-tailcss/main.css -o ./shared/f-css/output.css --env production
+# Copy shared folder into image
+COPY shared/f-tailcss /app/f-tailcss/
+COPY shared/postcss.config.js /app/postcss.config.js
+COPY shared/tailwind.config.js /app/tailwind.config.js

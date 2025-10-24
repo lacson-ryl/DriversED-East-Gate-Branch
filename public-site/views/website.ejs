@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>DriveRight Driving School</title>
+  <link rel="stylesheet" href="/public/f-css/output.css" />
+</head>
+
+<body class="bg-slate-50 text-slate-900 antialiased">
+
+  <!-- TopBar -->
+  <header id="navbar" class="fixed top-0 left-0 w-full bg-slate-900  bg-opacity-50 transition-all duration-300 z-50 h-32">
+    <div class="w-full px-4 py-4 flex items-center text-white content-center h-full justify-between">
+      <div class="flex items-center gap-4">
+        <img src="f-assets/solid/drivers_ed_logo-no-bg.png" alt="DriveRight logo" class="h-10 w-auto" />
+        <div>
+          <h1 class="text-lg font-semibold">DriveRight Driving School</h1>
+          <div class="text-sm text-slate-300">Safe. Confident. Licensed.</div>
+        </div>
+      </div>
+
+      <nav class="flex items-center gap-4 text-sm">
+        <a href="/public/" class="hover:underline">Home</a>
+        <a href="/public/courses" class="hover:underline">Courses</a>
+        <a href="/public/instructors" class="hover:underline">Instructors</a>
+        <a href="/public/locations" class="hover:underline">Locations</a>
+        <a href="/account/login" class="ml-4 px-3 py-2 bg-emerald-500 rounded-md text-white">My Account</a>
+      </nav>
+    </div>
+  </header>
+
+
+  <!-- Hero -->
+  <main class="max-w-6xl mx-auto px-4 py-12 mt-30">
+    <section class="grid lg:grid-cols-2 gap-10 items-center">
+      <div class="flex flex-col w-screen h-screen text-center content-center">
+        <div class=" my-24 w-full px-24">
+          <h2 class="text-3xl font-extrabold leading-tight mb-4">Learn to drive with calm confidence</h2>
+          <p class="text-slate-600 mb-6">
+            Turn nervous starts into confident journeys. Our patient instructors, modern vehicles, and flexible
+            schedules
+            make getting your license simple and safe. Book a free trial lesson today and feel the difference.
+          </p>
+          <div class="flex gap-3">
+            <a href="/public/courses" class="inline-block px-5 py-3 bg-emerald-500 text-white rounded-md shadow">View
+              Courses</a>
+            <a href="/public/contact"
+              class="inline-block px-5 py-3 border border-slate-200 rounded-md text-slate-700">Contact Us</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+        <img src="/public/assets/hero-car.jpg" alt="Driving lesson" class="w-full h-64 object-cover" />
+        <div class="p-6">
+          <div class="text-lg font-semibold">Start today — free consultation</div>
+          <p class="text-slate-500 mt-2">Flexible schedules, tailored lessons, and friendly instructors.</p>
+          <div class="mt-4 flex items-center gap-3">
+            <a href="/public/book" class="px-4 py-2 bg-emerald-500 text-white rounded">Book a Trial</a>
+            <span class="text-sm text-slate-500">or call (012) 345-6789</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <hr class="my-12 border-slate-200" />
+
+    <!-- Services Carousel -->
+    <section>
+      <h3 class="text-xl font-semibold mb-4">Our Services</h3>
+      <div class="relative">
+        <div id="services-carousel" class="flex gap-4 overflow-hidden" aria-label="Services carousel"></div>
+
+        <div class="mt-4 flex justify-between">
+          <button id="prev-services" class="px-3 py-2 bg-slate-200 rounded">Prev</button>
+          <button id="next-services" class="px-3 py-2 bg-slate-200 rounded">Next</button>
+        </div>
+      </div>
+    </section>
+
+    <hr class="my-12 border-slate-200" />
+
+    <!-- Instructors Carousel -->
+    <section>
+      <h3 class="text-xl font-semibold mb-4">Meet Our Instructors</h3>
+      <div class="relative">
+        <div id="instructors-carousel" class="flex gap-4 overflow-hidden" aria-label="Instructors carousel">
+        </div>
+
+        <div class="mt-4 flex justify-between">
+          <button id="prev-instructors" class="px-3 py-2 bg-slate-200 rounded">Prev</button>
+          <button id="next-instructors" class="px-3 py-2 bg-slate-200 rounded">Next</button>
+        </div>
+      </div>
+    </section>
+
+    <hr class="my-12 border-slate-200" />
+
+    <!-- Locations -->
+    <section>
+      <h3 class="text-xl font-semibold mb-4">Other Locations</h3>
+      <div id="locations-grid" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="bg-slate-900 text-slate-200">
+    <div class="max-w-6xl mx-auto px-4 py-8 grid sm:grid-cols-3 gap-6">
+      <div>
+        <div class="text-white font-semibold">DriveRight Driving School</div>
+        <div class="text-sm mt-2">123 Main St, Cityname</div>
+        <div class="text-sm">Phone: (012) 345-6789</div>
+      </div>
+
+      <div>
+        <div class="text-white font-semibold">Quick Links</div>
+        <ul class="text-sm mt-2 space-y-1">
+          <li><a href="/public/courses" class="hover:underline">Courses</a></li>
+          <li><a href="/public/instructors" class="hover:underline">Instructors</a></li>
+          <li><a href="/public/locations" class="hover:underline">Locations</a></li>
+        </ul>
+      </div>
+
+      <div>
+        <div class="text-white font-semibold">Business</div>
+        <div class="text-sm mt-2">License No: 001234</div>
+        <div class="text-sm">Open: Mon–Sat, 8:00–18:00</div>
+      </div>
+    </div>
+    <div class="border-t border-slate-800 py-4 text-center text-sm text-slate-500">© <span id="year"></span>
+      DriveRight Driving School</div>
+  </footer>
+
+  <!-- Client JS (kept inline per request; move to external file if desired) -->
+  <script>
+
+  </script>
+</body>
+
+</html>

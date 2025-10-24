@@ -50,7 +50,7 @@ app.use("/public/utils", express.static(path.join(__dirname, "utils")));
 // View engine
 app.set("view engine", "ejs");
 //app.set("views", path.join(__dirname, "views"));
-app.set("views", path.join(process.cwd(), "website"));
+app.set("views", path.join(process.cwd(), "views"));
 
 //app.set("trust proxy", "127.0.0.1");
 app.set("trust proxy", true);

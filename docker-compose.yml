@@ -1,22 +1,14 @@
-version: "3.9" # upgraded to support depends_on.condition
-
 services:
-
+  # Tailwind Builder: One-off service to generate static CSS.
+  # This should not be a long-running service.
   tailwind-builder:
     build:
       context: .
       dockerfile: Dockerfile.tailwind
     volumes:
-      - ./shared:/app
-    command: echo "Tailwind CSS built"
-    healthcheck:
-      test: ["CMD", "test", "-f", "/app/f-css/output.css"]
-      interval: 5s
-      timeout: 3s
-      retries: 5
-      start_period: 5s
-    networks:
-      - app-net
+      - tailwind-cache:/app/f-css
+    command: /bin/sh -c "npx postcss /app/f-tailcss/main.css -o /app/f-css/output.css --env production"
+    profiles: ["build-assets"]
 
   mysql:
     image: mysql:8.0
@@ -61,23 +53,26 @@ services:
   nodeapp:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.accounts-site
     ports:
       - "8000:8000"
     env_file:
       - .env.production
     restart: unless-stopped
     depends_on:
-      tailwind-builder:
-        condition: service_completed_successfully
       mysql:
         condition: service_healthy
       redis:
         condition: service_healthy
     volumes:
+      # Mount the tailwind-cache volume to access the generated CSS.
+      # It is best to avoid mounting the entire app directory
+      # to ensure the build environment is controlled and consistent.
+      # Bind mounts can hide files needed for the final image.
+      # Use multi-stage builds to copy files from the builder stage.
       - ./accounts-site:/app
       - ./shared:/app/shared
-      - nodeapp-node-modules:/app/node_modules
+      - tailwind-cache:/app/shared/f-css
     working_dir: /app
     command: npm run start
     stop_grace_period: 10s
@@ -100,14 +95,14 @@ services:
       - .env.production
     restart: unless-stopped
     depends_on:
-      tailwind-builder:
-        condition: service_completed_successfully
       mysql:
         condition: service_healthy
     volumes:
+      # Mount the tailwind-cache volume for the generated CSS.
+      # Avoid bind mounts for consistency.
       - ./public-site:/app
       - ./shared:/app/shared
-      - public-node-modules:/app/node_modules
+      - tailwind-cache:/app/shared/f-css
     working_dir: /app
     command: npm run start
     healthcheck:
@@ -116,7 +111,7 @@ services:
       timeout: 10s
       retries: 3
       start_period: 20s
-    stop_grace_period: 10s
+    stop_grace_period: 30s
     networks:
       - app-net
 
@@ -169,5 +164,4 @@ networks:
 volumes:
   redis-data:
   mysql-data:
-  nodeapp-node-modules:
-  public-node-modules:
+  tailwind-cache: # Changed name for clarity
