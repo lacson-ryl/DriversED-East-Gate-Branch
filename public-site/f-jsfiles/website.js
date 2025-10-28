@@ -89,31 +89,32 @@ function updatePromo(index) {
   promoteOutput.classList.add("animate-fadeOut-public");
 
   void promoteOutput.offsetWidth;
+  setTimeout(() => {
+    // Preload image
+    const tempImg = new Image();
+    tempImg.src = data[index].imageBackground;
 
-  // Preload image
-  const tempImg = new Image();
-  tempImg.src = data[index].imageBackground;
+    tempImg.onload = () => {
+      imgBg.src = tempImg.src;
+      promoteOutput.classList.remove("animate-fadeOut-public");
+      promoteOutput.classList.add("animate-fadeIn-public");
 
-  tempImg.onload = () => {
-    imgBg.src = tempImg.src;
-    promoteOutput.classList.remove("animate-fadeOut-public");
-    promoteOutput.classList.add("animate-fadeIn-public");
+      // Update content
+      tagLine.textContent = data[index].tagLine.trim();
+      tagPrgph.textContent = data[index].tagParagraph.trim();
+      updateIndicators(index);
 
-    // Update content
-    tagLine.textContent = data[index].tagLine.trim();
-    tagPrgph.textContent = data[index].tagParagraph.trim();
-    updateIndicators(index);
-
-    // Start countdown only after image is ready
-    if (sliderStarted) {
-      clearInterval(countdownTimer);
-    }
-    sliderStarted = true;
-    startCountdown();
-  };
-  let nextIndex = (index + 1) % data.length;
-  const preloadImg = new Image();
-  preloadImg.src = data[nextIndex].imageBackground;
+      // Start countdown only after image is ready
+      if (sliderStarted) {
+        clearInterval(countdownTimer);
+      }
+      sliderStarted = true;
+      startCountdown();
+    };
+    let nextIndex = (index + 1) % data.length;
+    const preloadImg = new Image();
+    preloadImg.src = data[nextIndex].imageBackground;
+  }, 1000);
 }
 
 function startCountdown() {

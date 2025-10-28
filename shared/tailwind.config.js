@@ -25,7 +25,7 @@ module.exports = {
         fadeIn: "fadeIn 1s ease-in-out forwards",
         fadeOut: "fadeOut 1s ease-in-out forwards",
         "fadeIn-public": "fadeIn 2s ease-in-out forwards",
-        "fadeOut-public": "fadeOut 2s ease-in-out forwards",
+        "fadeOut-public": "fadeOut 1s ease-in-out forwards",
         "spin-slow": "spin 2s linear infinite",
       },
       keyframes: {
