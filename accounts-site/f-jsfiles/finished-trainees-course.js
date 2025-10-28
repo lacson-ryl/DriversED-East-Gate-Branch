@@ -24,9 +24,9 @@ async function renderCompletedCourseList() {
                 <tr>
                     <th class="border border-gray-300 px-4 py-2 w-12">ID</th>
                     <th class="border border-gray-300 px-4 py-2">User ID - Name</th>
-                    <th class="border border-gray-300 px-4 py-2 ">Instructor ID - Name</th>
+                    <th class="border border-gray-300 px-4 py-2">Instructor ID - Name</th>
                     <th class="border border-gray-300 px-4 py-2">Program ID - Name</th>
-                    <th class="border border-gray-300 px-4 py-2">Date</th>
+                    <th class="border border-gray-300 px-4 py-2 w-32">Date</th>
                     <th class="border border-gray-300 px-3 py-2 w-16">Hours</th>
                     <th class="border border-gray-300 px-4 py-2 w-32">Grade</th>
                     <th class="border border-gray-300 px-4 py-2 w-32">Certificate</th>
@@ -42,10 +42,10 @@ async function renderCompletedCourseList() {
                         <td class="text-xs font-semibold border border-gray-300 px-4 py-2">
                              ${arr.course_id} 
                         </td>
-                        <td class="border border-gray-300 px-4 py-2">
+                        <td class="border border-gray-300 px-4 py-2 truncate">
                              ${arr.user_id}- ${arr.user_name}
                         </td>
-                        <td class="border border-gray-300 px-4 py-2">
+                        <td class="border border-gray-300 px-4 py-2 truncate">
                              ${arr.instructor_id}- ${arr.instructor_name}
                         </td>
                         <td class="border border-gray-300 px-4 py-2">
@@ -254,7 +254,7 @@ function allButtons(data) {
 
       // Add event listeners for the TDC and PDC buttons
       document.getElementById("tdc").addEventListener("click", function () {
-        const url = `/certificates-completion-tdc?userId=${encodeURIComponent(
+        const url = `/account/certificates-completion-tdc?userId=${encodeURIComponent(
           userId
         )}&courseId=${encodeURIComponent(
           courseId
@@ -264,7 +264,7 @@ function allButtons(data) {
       });
 
       document.getElementById("pdc").addEventListener("click", function () {
-        const url = `/certificates-completion-pdc?userId=${encodeURIComponent(
+        const url = `/account/certificates-completion-pdc?userId=${encodeURIComponent(
           userId
         )}&courseId=${encodeURIComponent(
           courseId

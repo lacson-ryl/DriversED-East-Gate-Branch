@@ -1,10 +1,11 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   content: [
-    "../accounts-site/f-jsfiles/**/*.js",
-    "../accounts-site/views/**/*.ejs",
-    "../public-site/f-jsfiles/**/*.js",
-    "../public-site/views/**/*.ejs",
+    "./public-site/views/**/*.ejs",
+    "./public-site/f-jsfiles/**/*.js",
+    "./accounts-site/views/**/*.ejs",
+    "./accounts-site/f-jsfiles/**/*.js",
+    "./shared/**/*.js",
   ],
   theme: {
     extend: {
@@ -21,8 +22,10 @@ module.exports = {
         "ml-64": "64px", // For phone main content width considering sidebar
       },
       animation: {
-        fadeIn: "fadeIn 0.5s ease-in-out forwards",
-        fadeOut: "fadeOut 0.5s ease-in-out forwards",
+        fadeIn: "fadeIn 1s ease-in-out forwards",
+        fadeOut: "fadeOut 1s ease-in-out forwards",
+        "fadeIn-public": "fadeIn 4s ease-in-out forwards",
+        "fadeOut-public": "fadeOut 4s ease-in-out forwards",
         "spin-slow": "spin 2s linear infinite",
       },
       keyframes: {

@@ -74,19 +74,19 @@
 
             <div class="grid grid-rows-1 md:grid-cols-3 gap-4 ">
                 <!-- Application Form -->
-                <div class="col-span-1 space-y-3 ">
+                <div class="col-span-1 space-y-3 w-full ">
                     <h1 id="announcement" class="ml-4">Announcement</h1>
-                    <form id="applicationForm" class="bg-gray-200 ml-4 p-2 shadow-md">
+                    <form id="applicationForm" class="bg-gray-50 ml-4 p-2 shadow-md">
                         <div class="mb-4">
                             <label for="instructor" class="block text-base font-medium text-gray-700">Instructor</label>
-                            <select id="instructor" name="instructor" class="instructor" required>
+                            <select id="instructor" name="instructor" class="instructor shadow-md w-full" required>
                                 <option value="">Select an Instructor</option>
 
                             </select>
                         </div>
                         <div class="mb-4">
                             <label for="program" class="block text-base font-medium text-gray-700">Program</label>
-                            <select id="program" name="program" required>
+                            <select id="program" name="program" class="shadow-md w-full" required>
                                 <option value="">Select a program</option>
                             </select>
                         </div>
@@ -95,7 +95,7 @@
                                 half)</label>
                             <input type="date" id="startDate" name="startDate" required
                                 class="date-input mt-1 block w-full outline outline-1 outline-gray-500 hover:outline-yellow-500 focus:outline-yellow-500 px-1">
-                            <select id="startDateAMPM" name="startDateAMPM" required class="mt-1 block w-full">
+                            <select id="startDateAMPM" name="startDateAMPM" required class="mt-1 block w-full shadow-md">
                                 <option value="AM">AM</option>
                                 <option value="PM">PM</option>
                             </select>
@@ -105,7 +105,7 @@
                                 (second half)</label>
                             <input type="date" id="continuation" name="continuation" required
                                 class="date-input mt-1 block w-full outline outline-1 outline-gray-500 hover:outline-yellow-500 focus:outline-yellow-500 px-1">
-                            <select id="continuationAMPM" name="continuationAMPM" required class="mt-1 block w-full">
+                            <select id="continuationAMPM" name="continuationAMPM" required class="mt-1 block shadow-md w-full">
                                 <option value="AM">AM</option>
                                 <option value="PM">PM</option>
                             </select>
@@ -113,15 +113,15 @@
                         <div class="mb-4">
                             <label for="transmission"
                                 class="block text-sm font-medium text-gray-700">Transmission</label>
-                            <select id="transmission" name="transmission" required class="mt-1 block w-full">
+                            <select id="transmission" name="transmission" required class="mt-1 shadow-md block w-full">
                                 <option value="manual">Manual</option>
                                 <option value="automatic">Automatic</option>
                             </select>
                         </div>
 
                         <div class="flex flex-row justify-between">
-                            <button id="apply-button" type="submit" class="bg-blue-500 text-white px-4 py-2 mt-4">Submit</button>
-                            <a id="add-continuation" class="bg-blue-500 text-white px-4 py-2 mt-4 hover:cursor-pointer">
+                            <button id="apply-button" type="submit" class="bg-blue-500 text-sm md:text-base text-white px-4 py-2 mt-4">Submit</button>
+                            <a id="add-continuation" class="bg-blue-500 text-sm md:text-base text-white px-4 py-2 mt-4 hover:cursor-pointer">
                                 Add continuation
                             </a>
                         </div>
@@ -129,7 +129,7 @@
                 </div>
                 <!-- Calendar -->
                 <div class="col-span-2 bg-white shadow-md">
-                    <div id="color-stamps-instructions" class="place-content-center flex flex-row gap-4 ml-4">
+                    <div id="color-stamps-instructions" class="md:place-content-center flex flex-col md:flex-row gap-4 ml-4 mb-4 text-sm md:text-base">
                         <div class="flex flex-row gap-3">
                             <div class="circle available-am place-self-center">AM</div>
                             <div class="circle available-pm place-self-center">PM</div>
@@ -147,10 +147,10 @@
 
                     <div class="flex justify-between items-center mb-4 px-3">
                         <button id="prevMonth"
-                            class="w-24 text-center bg-blue-500 text-white px-4 py-2 rounded-ss-3xl">Previous</button>
-                        <div id="monthLabel" class="text-xl font-bold"></div>
+                            class="w-16 md:w-20  text-center bg-blue-500 text-white px-4 py-2 rounded-ss-3xl">Prev</button>
+                        <div id="monthLabel" class="text-lg md:text-xl font-bold"></div>
                         <button id="nextMonth"
-                            class="w-20 text center bg-blue-500 text-white px-4 py-2 rounded-tr-3xl">Next</button>
+                            class="w-16 md:w-20 text center bg-blue-500 text-white px-4 py-2 rounded-tr-3xl">Next</button>
                     </div>
                     <div class="grid grid-cols-7 mt-4 text-center">
                         <div class="pl-1 text-sm">Mon</div>

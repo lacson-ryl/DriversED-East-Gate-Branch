@@ -6,8 +6,26 @@ services:
       context: .
       dockerfile: Dockerfile.tailwind
     volumes:
+      - ./shared/f-css:/app/f-css
       - tailwind-cache:/app/f-css
+      #temporary for design
+      # Mount your actual content files so Tailwind can scan them live
+      #- ./public-site/views:/app/public-site/views
+      #- ./public-site/f-jsfiles:/app/public-site/f-jsfiles
+      #- ./accounts-site/views:/app/accounts-site/views
+      #- ./accounts-site/f-jsfiles:/app/accounts-site/f-jsfiles
+      #- ./shared:/app/shared
+
+    # Shared volume for output.css
+    #- tailwind-cache:/app/f-css
+    #temporary
+    #command: /bin/sh -c "npx tailwindcss -i /app/f-tailcss/main.css -o /app/f-css/output.css --watch"
+    #for deployment
     command: /bin/sh -c "npx postcss /app/f-tailcss/main.css -o /app/f-css/output.css --env production"
+    #for final stage of development
+    #command: /bin/sh -c "npx postcss /app/f-tailcss/main.css -o /app/f-css/output.css"
+
+    #temporary
     profiles: ["build-assets"]
 
   mysql:
@@ -71,10 +89,11 @@ services:
       # Bind mounts can hide files needed for the final image.
       # Use multi-stage builds to copy files from the builder stage.
       - ./accounts-site:/app
+      - /app/node_modules
       - ./shared:/app/shared
       - tailwind-cache:/app/shared/f-css
     working_dir: /app
-    command: npm run start
+    command: npm run dev
     stop_grace_period: 10s
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health-check-docker"]
@@ -101,10 +120,11 @@ services:
       # Mount the tailwind-cache volume for the generated CSS.
       # Avoid bind mounts for consistency.
       - ./public-site:/app
+      - /app/node_modules
       - ./shared:/app/shared
       - tailwind-cache:/app/shared/f-css
     working_dir: /app
-    command: npm run start
+    command: npm run dev
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8001/health-check-docker"]
       interval: 30s

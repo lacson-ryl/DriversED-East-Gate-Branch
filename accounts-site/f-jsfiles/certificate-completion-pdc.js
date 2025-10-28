@@ -237,7 +237,7 @@ async function handleSave(event) {
 
   try {
     const response = await fetch(
-      `/account/api/certificates-completion-pdc/${btnType}`,
+      `/api/certificates-completion-pdc/${btnType}`,
       {
         method: "POST",
         headers: {

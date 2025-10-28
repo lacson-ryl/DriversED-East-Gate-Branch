@@ -90,7 +90,7 @@ function renderAttendanceTable(dataList) {
                   trainee.hours_attended
                 }</td>
                 <td class="text-center border border-gray-300 px-4 py-2">
-                  <button class="request-status-btn hover:outline outline-2 outline-gray-500 rounded-md px-1" data-id="${
+                  <button class="request-status-btn outline outline-2 outline-gray-500 hover:outline-gray-800 rounded-md px-1" data-id="${
                     trainee.attendance_id
                   }">
                     ${

@@ -30,19 +30,14 @@ RUN curl -LO https://storage.googleapis.com/chrome-for-testing-public/117.0.5938
 
 COPY --from=builder /root/.cache/puppeteer /root/.cache/puppeteer
 
-# Copy only package files first
+# Copy package files first
 COPY --from=builder /app/package*.json /app/
 
-RUN node -e "console.log('Platform:', process.platform, '| Arch:', process.arch)"
+# Install dependencies
+RUN npm install --include=optional --force
 
-# Install all dependencies fresh (including sharp)
-RUN npm install --include=optional && \
-    node -e "console.log('sharp version:', require('sharp').version)" || exit 1
-
-# Then copy the rest of the app (excluding node_modules)
-COPY --from=builder /app/. /app
-
-RUN node -e "console.log('sharp version:', require('sharp').version)" || exit 1
+# Then copy the rest of the app
+COPY --from=builder /app /app
 
 # Create non-root user for Puppeteer
 RUN groupadd -r pptruser && useradd -r -g pptruser -G audio,video pptruser && \
@@ -56,4 +51,4 @@ ENV PUPPETEER_SKIP_DOWNLOAD=true
 EXPOSE 8000
 
 HEALTHCHECK CMD curl --fail http://localhost:8000/health-check-docker || exit 1
-CMD ["npm", "run", "start"]
+CMD ["npm", "run", "dev"]

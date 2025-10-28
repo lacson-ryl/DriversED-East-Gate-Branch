@@ -39,11 +39,6 @@
                     <h1 class="text-2xl text-center mb-5 font-bold text-blue-900">User Payment</h1>
                     <form id="payment-form" class="mx-4">
                         <div class="flex flex-col md:flex-row mb-4 gap-3">
-                            <div class="w-full">
-                                <label>Account Name</label>
-                                <input id="account-name" name="accountName" type="text" required
-                                    class="shadow-md bg-white appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight hover:border-blue-900 focus:outline-none focus:border-blue-900" />
-                            </div>
                             <div class="">
                                 <label>Payment Method</label>
                                 <select id="payment-method" name="paymentMethod" required
@@ -51,8 +46,13 @@
                                     <option value="" disabled selected>Select payment option</option>
                                 </select>
                                 <input id="Other-payment-method" name="Other-payment-method" style="min-height: 2rem;"
-                                    type="text"
+                                    type="text" 
                                     class="hidden mt-4 shadow-md bg-white appearance-none border rounded w-full py-1 px-2 text-gray-700 leading-tight hover:border-blue-900 focus:outline-none focus:border-blue-900" />
+                            </div>
+                            <div class="w-full">
+                                <label>Account Name</label>
+                                <input id="account-name" name="accountName" type="text" required
+                                    class="shadow-md bg-white appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight hover:border-blue-900 focus:outline-none focus:border-blue-900" />
                             </div>
                         </div>
                         <div class="mb-4">
@@ -88,7 +88,7 @@
                         </button>
                     </form>
                 </div>
-                <div id="method-preview" class=" my-2 ">
+                <div id="method-preview" class="px-4 my-2  ">
                     <div class="flex flex-row gap-5 mb-3">
                         <p class="text-left ">Payment Method</p>
                         <button id="download-image"

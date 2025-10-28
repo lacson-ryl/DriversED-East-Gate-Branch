@@ -377,14 +377,14 @@ export async function getUserAccountById(id) {
 }
 
 export async function saveAdminAccount(newUser) {
-  const { name, email, password, account_role, isVerify } = newUser;
+  const { admin_name, user_email, user_password, account_role, isVerify } = newUser;
   try {
     const [result] = await pool.query(
       `
       INSERT INTO admin_account ( user_email, user_password, account_role, admin_name, isVerify)
       VALUES (?, ?, ?, ?, ?)
       `,
-      [email, password, account_role, name, isVerify]
+      [user_email, user_password, account_role, admin_name, isVerify]
     );
     return result.insertId;
   } catch (error) {
@@ -2612,6 +2612,22 @@ export async function getInstructors() {
   }
 }
 
+export async function getAllAccounts() {
+  try {
+    const [result] = await pool.query(
+      `SELECT *, 
+       NULL AS user_password ,
+       DATE_FORMAT(date_created, '%Y-%m-%d %H:%i:%s') AS date_created
+       FROM admin_account`
+    );
+
+    return result;
+  } catch (error) {
+    console.error("Failed fetching accounts!", error);
+    throw error;
+  }
+}
+
 export async function getInstructorwithId(id) {
   try {
     const [result] = await pool.query(
@@ -3372,3 +3388,6 @@ export async function saveCertificateToDatabase(courseId, pdfBuffer, fileType) {
     throw error;
   }
 }
+
+// request for the public website.
+

@@ -180,9 +180,9 @@ function getMonthDays(monthIndex, year) {
   }
 }
 
+const calendar = document.getElementById("calendar");
 async function updateCalendar(instructorId) {
   const monthLabel = document.getElementById("monthLabel");
-  const calendar = document.getElementById("calendar");
 
   const daysInMonth = getMonthDays(currentMonthIndex, currentYear);
   monthLabel.textContent = `${monthNames[currentMonthIndex]} ${currentYear}`;
@@ -314,7 +314,19 @@ document.getElementById("nextMonth").addEventListener("click", () => {
 });
 
 document.getElementById("instructor").addEventListener("change", (event) => {
-  updateCalendar(event.target.value);
+  if (event.target.value) {
+    updateCalendar(event.target.value);
+    if (window.innerWidth < 768) {
+      setTimeout(() => {
+        calendar.scrollIntoView({
+          behavior: "smooth",
+          block: "end",
+        });
+        calendar.classList.add("animate-pulse");
+        setTimeout(() => calendar.classList.remove("animate-pulse"), 2000);
+      }, 500);
+    }
+  }
 });
 
 // Initialize calendar with the current month and no instructor selected
@@ -497,10 +509,13 @@ async function addContinuationDate() {
     showBtnLoading(continuationSubmitBtn);
 
     try {
-      const response = await fetch("/account/api/user-application/add-continuation", {
-        method: "POST",
-        body: formData,
-      });
+      const response = await fetch(
+        "/account/api/user-application/add-continuation",
+        {
+          method: "POST",
+          body: formData,
+        }
+      );
       const data = await response.json();
 
       if (!response.ok) {

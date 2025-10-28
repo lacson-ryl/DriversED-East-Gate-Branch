@@ -187,7 +187,7 @@ async function handleSave(event) {
   button.disabled = true;
 
   try {
-    const response = await fetch(`/certificates-completion-tdc/${type}`, {
+    const response = await fetch(`/api/certificates-completion-tdc/${type}`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

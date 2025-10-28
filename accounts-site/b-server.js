@@ -48,7 +48,10 @@ app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 
 // Static assets
 //app.use(express.static(__dirname)); // serves root-level files
-app.use("/account/f-css", express.static(path.join(process.cwd(), "/shared/f-css")));
+app.use(
+  "/account/f-css",
+  express.static(path.join(process.cwd(), "/shared/f-css"))
+);
 app.use(
   "/account/f-assets",
   express.static(path.join(__dirname, "shared", "f-assets"), {
@@ -369,6 +372,7 @@ import {
   saveCertificateToDatabase,
   setTdcDate,
   deleteTraineeAttendance,
+  getAllAccounts,
 } from "./config/b-database.js";
 
 import {
@@ -1429,12 +1433,12 @@ router.post(
   authorizeRole("admin"),
   async (req, res) => {
     try {
+      const adminId = req.user.userId;
+      const role = req.user.role;
       const { encryptedWithEncAesKey } = req.body;
-      const { admin_name, user_email, user_password } = encryptData(
-        encryptedWithEncAesKey,
-        req.user.userId,
-        req.user.role
-      );
+      const data = await decryptData(encryptedWithEncAesKey, adminId, role);
+      const { admin_name, user_email, user_password } = data;
+
       if (!admin_name || !user_email || !user_password) {
         return res.status(400).json({ error: "Please provide all fields." });
       }
@@ -1466,7 +1470,7 @@ router.post(
       };
       const userId = await saveAdminAccount(newUser);
 
-      await sendEmail("new-account", email, {
+      await sendEmail("new-account", user_email, {
         name: admin_name,
         email: user_email,
         generatedPassword: user_password,
@@ -2044,6 +2048,25 @@ router.get(
   }
 );
 
+router.get(
+  "/api/all-accounts",
+  authenticateToken,
+  authorizeRole("admin"),
+  async (req, res) => {
+    try {
+      const { userId, role } = req.user;
+      const accountList = await getAllAccounts();
+      const encrypted = await encryptData(accountList, userId, role);
+      return res.status(200).json({ encrypted: encrypted });
+    } catch (error) {
+      console.error("Error fetching Instructors Data:", error);
+      res
+        .status(500)
+        .json({ error: "Error fetching Instructors Data: " + error.message });
+    }
+  }
+);
+
 router.post(
   "/api/manage-people/instructor-add",
   authenticateToken,
@@ -2127,9 +2150,9 @@ router.post(
 
       // Save the new user to the database
       const newUser = {
-        name: userName,
-        email: userEmail,
-        password: hashedPassword,
+        admin_name: userName,
+        user_email: userEmail,
+        user_password: hashedPassword,
         account_role: accountRole,
         isVerify: false,
       };
@@ -3745,7 +3768,7 @@ router.post(
 
       const logoPath = path.join(
         __dirname,
-        "./f-assets/solid/drivers_ed_logo-no-bg.png"
+        "./shared/f-assets/solid/drivers_ed_logo-no-bg.png"
       );
       const driversEdLogo = `data:image/png;base64,${fs.readFileSync(
         logoPath,
@@ -3879,7 +3902,7 @@ router.post(
 
       const logoPath = path.join(
         __dirname,
-        "./f-assets/solid/drivers_ed_logo-no-bg.png"
+        "./shared/f-assets/solid/drivers_ed_logo-no-bg.png"
       );
       const driversEdLogo = `data:image/png;base64,${fs.readFileSync(
         logoPath,
@@ -3989,7 +4012,7 @@ app.post(
 
       const logoPath = path.join(
         __dirname,
-        "/f-assets/solid/drivers_ed_logo-no-bg.png"
+        "./shared/f-assets/solid/drivers_ed_logo-no-bg.png"
       );
       const driversEdLogo = `data:image/png;base64,${fs.readFileSync(
         logoPath,
@@ -4062,6 +4085,7 @@ app.post(
       console.log("pdfBuffer size:", convertedPdfBuff.length);
 
       if (type == "database") {
+        const user = await getProfilewithUserId(userId);
         try {
           await saveCertificateToDatabase(
             courseId,
@@ -4071,12 +4095,12 @@ app.post(
         } catch (error) {
           throw new Error("Cant upload certificate to the database.");
         }
-        /*
+
         await sendEmail("completion-certificate", user.email, {
           name: user.first_name,
           certificate: Buffer.from(pdfBuffer),
         });
-        */
+
         await addNotification(
           userId,
           "user",
@@ -4110,7 +4134,7 @@ app.post(
 );
 
 app.post(
-  "/certificates-completion-tdc/:type",
+  "/api/certificates-completion-tdc/:type",
   authenticateToken,
   authorizeRole("admin"),
   async (req, res) => {
@@ -4129,7 +4153,7 @@ app.post(
 
       const logoPath = path.join(
         __dirname,
-        "/f-assets/solid/drivers_ed_logo-no-bg.png"
+        "./shared/f-assets/solid/drivers_ed_logo-no-bg.png"
       );
       const driversEdLogo = `data:image/png;base64,${fs.readFileSync(
         logoPath,
@@ -4197,6 +4221,8 @@ app.post(
       const name = `${profileInputs.lastName.toUpperCase()} ${profileInputs.firstName.toUpperCase()} ${profileInputs.middleName.toUpperCase()}`;
 
       if (type === "database") {
+        const user = await getProfilewithUserId(userId);
+
         await saveCertificateToDatabase(
           courseId,
           Buffer.from(pdfBuffer),
@@ -4204,7 +4230,7 @@ app.post(
         );
 
         await sendEmail("completion-certificate", user.email, {
-          name: user.first_name,
+          name: name,
           certificate: Buffer.from(pdfBuffer),
         });
 
@@ -4233,10 +4259,94 @@ app.post(
       res.status(200).end(Buffer.from(pdfBuffer));
     } catch (error) {
       console.error("Error generating PDF:", error);
-      res.status(500)({ error: "An error occurred while generating the PDF." });
+      res
+        .status(500)
+        .json({ error: "An error occurred while generating the PDF." });
     }
   }
 );
+
+// request for public website
+app.get("/public/request/web-infos", async (req, res) => {
+  try {
+    const programs = await getProgramsWithInstructors();
+    const instructors = await getInstructors();
+
+    let programList = {};
+    let instructorList = {};
+
+    // Handle instructors
+    if (instructors) {
+      instructorList.data = instructors.map((instructor) => ({
+        instructor_id: instructor.instructor_id,
+        instructor_name: instructor.instructor_name,
+        instructor_type: instructor.instructor_type,
+        date_started: instructor.date_started,
+        instructor_profile_picture: instructor.instructor_profile_picture,
+        isManual: instructor.isManual,
+        isAutomatic: instructor.isAutomatic,
+        isTdcOnsite: instructor.isTdcOnsite,
+      }));
+    } else {
+      instructorList.data = [];
+      instructorList.error =
+        "Can't find instructors right now...\nOur team will fix this issue.";
+    }
+
+    // Handle programs
+    if (programs) {
+      const programMap = new Map();
+
+      for (const row of programs) {
+        const existing = programMap.get(row.program_id);
+
+        if (existing) {
+          if (row.instructor_id) {
+            existing.instructors.push({
+              instructor_id: row.instructor_id,
+              instructor_name: row.instructor_name,
+            });
+          }
+        } else {
+          const cover = await renderBase64File(
+            row.program_cover,
+            row.program_cover_file_type
+          );
+
+          programMap.set(row.program_id, {
+            program_id: row.program_id,
+            program_name: row.program_name,
+            program_description: row.program_description,
+            program_duration: row.program_duration,
+            program_fee: row.program_fee,
+            program_cover: cover,
+            program_cover_file_type: row.program_cover_file_type,
+            availability: row.availability,
+            instructors: row.instructor_id
+              ? [
+                  {
+                    instructor_id: row.instructor_id,
+                    instructor_name: row.instructor_name,
+                  },
+                ]
+              : [],
+          });
+        }
+      }
+
+      programList.data = Array.from(programMap.values());
+    } else {
+      programList.data = [];
+      programList.error =
+        "Can't find programs right now...\nOur team will fix this issue.";
+    }
+
+    res.status(200).json({ programList, instructorList });
+  } catch (error) {
+    console.error("Failed to fetch details!", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
 
 async function shutdown(signal) {
   console.log(`🛑 ${signal} received. Shutting down...`);

@@ -98,7 +98,7 @@ function renderChangePasswordEmailOption() {
 
     try {
       const response = await fetch(
-        `/api/change-password-email-option/email-search/${type}`,
+        `/account/api/change-password-email-option/email-search/${type}`,
         {
           method: "POST",
           headers: {
@@ -282,7 +282,7 @@ function renderChangePasswordEmailForms(profile, type) {
         modalDetails.innerText = `Sending the verification code to your email`;
         modal.style.display = "flex";
         const response = await fetch(
-          "/api/change-password-email-option/send-code",
+          "/account/api/change-password-email-option/send-code",
           {
             method: "POST",
             headers: {
@@ -346,7 +346,7 @@ function renderChangePasswordEmailForms(profile, type) {
 
       try {
         const response = await fetch(
-          "/api/change-password-email-option/send-code",
+          "/account/api/change-password-email-option/send-code",
           {
             method: "POST",
             headers: {
@@ -384,7 +384,7 @@ function renderChangePasswordEmailForms(profile, type) {
 
             try {
               const resendResponse = await fetch(
-                "/api/change-password-email-option/send-code",
+                "/account/api/change-password-email-option/send-code",
                 {
                   method: "POST",
                   headers: {
@@ -490,7 +490,7 @@ function renderChangePasswordForm() {
     }
 
     try {
-      const response = await fetch("/api/change-password", {
+      const response = await fetch("/account/api/change-password", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

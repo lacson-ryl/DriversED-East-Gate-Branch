@@ -21,14 +21,11 @@ RUN apt-get update && apt-get install -y \
   --no-install-recommends && \
   apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Copy package.json and package-lock.json to allow sharp installation
-COPY --from=builder /app/package*.json /app/
+# Copy node_modules from builder
+COPY --from=builder /app/node_modules /app/node_modules
 
-# Copy app files from builder (excluding node_modules)
+# Copy app files
 COPY --from=builder /app /app
-
-# Install sharp in runtime stage
-RUN npm install --include=optional sharp
 
 # Expose port
 EXPOSE 8001
@@ -37,4 +34,4 @@ EXPOSE 8001
 HEALTHCHECK CMD curl --fail http://localhost:8001/health-check-docker || exit 1
 
 # Start the app
-CMD ["npm", "run", "start"]
+CMD ["npm", "run", "dev"]

@@ -117,9 +117,24 @@ async function renderUserPaymentsForm() {
     const name = selectedOption.value;
     if (file) {
       // If file is a base64 string or URL, set it directly
-      document.getElementById("payment-method-preview").src = file;
-      document.getElementById("payment-method-preview").style.display = "flex";
+      const payMethodPrev = document.getElementById("payment-method-preview");
+      payMethodPrev.src = file;
+      payMethodPrev.style.display = "flex";
       applyDownloadBtn(downloadBtn, file, "image/jpeg", name);
+
+      if (window.innerWidth < 768) {
+        setTimeout(() => {
+          payMethodPrev.scrollIntoView({
+            behavior: "smooth",
+            block: "center",
+          });
+          payMethodPrev.classList.add("animate-pulse");
+          setTimeout(
+            () => payMethodPrev.classList.remove("animate-pulse"),
+            2000
+          );
+        }, 500);
+      }
     } else {
       document.getElementById("payment-method-preview").src = "";
     }
@@ -383,10 +398,13 @@ function allButtons(data) {
           showBtnLoading(receiptSubmitbtn);
 
           try {
-            const response = await fetch(`/account/api/payments/receipt/${rowId}`, {
-              method: "POST",
-              body: formData,
-            });
+            const response = await fetch(
+              `/account/api/payments/receipt/${rowId}`,
+              {
+                method: "POST",
+                body: formData,
+              }
+            );
             const responseData = await response.json();
             const notification = document.getElementById("notification");
             if (response.ok) {

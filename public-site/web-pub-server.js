@@ -29,13 +29,30 @@ app.get("/health-check-docker", (req, res) => {
   res.sendStatus(200);
 });
 
-app.use(helmet());
+// ✅ Helmet must come before routes
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'", "https://unpkg.com", "https://cdn.jsdelivr.net"],
+        styleSrc: ["'self'", "https://unpkg.com", "'unsafe-inline'"],
+        connectSrc: ["'self'", "https://unpkg.com"],
+        imgSrc: ["'self'", "data:"],
+        fontSrc: ["'self'", "https://fonts.gstatic.com"],
+      },
+    },
+  })
+);
 // Body parsing
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 
 // Static assets
-app.use("/public/f-css", express.static(path.join(process.cwd(), "/shared/f-css")));
+app.use(
+  "/public/f-css",
+  express.static(path.join(process.cwd(), "/shared/f-css"))
+);
 console.log("Serving from:", path.join(__dirname, "/shared/f-css"));
 app.use(
   "/public/f-assets",
@@ -44,7 +61,7 @@ app.use(
     etag: false, // disable ETag revalidation
   })
 );
-app.use("/public/js", express.static(path.join(__dirname, "js")));
+app.use("/public/f-jsfiles", express.static(path.join(__dirname, "f-jsfiles")));
 app.use("/public/utils", express.static(path.join(__dirname, "utils")));
 
 // View engine
@@ -84,14 +101,6 @@ app.use((req, res, next) => {
   sessionMiddleware(req, res, next);
 });
 
-app.use((req, res, next) => {
-  res.setHeader(
-    "Content-Security-Policy",
-    "default-src 'self'; img-src 'self' data:; script-src 'self'"
-  );
-  next();
-});
-
 // Logging
 app.use((req, res, next) => {
   console.log("Request received:", req.method, req.url);
@@ -106,12 +115,11 @@ const limiter = rateLimit({
 
 app.use(limiter); // Apply to all routes
 
-
 const router = express.Router();
 
 router.get("/", async (req, res) => {
   try {
-    res.render("website", { error: false});
+    res.render("website", { error: false });
   } catch (error) {
     res.render("error-500", {
       error,

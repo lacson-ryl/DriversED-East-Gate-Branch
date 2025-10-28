@@ -338,7 +338,7 @@ async function renderCourseCards() {
                           <img src="/account/f-assets/solid/icons_for_buttons/minus-circle.svg" class="opacity-70 scale-150 hover:opacity-100 md:hidden" />
                         </div>
                       <h2 class="text-xl font-bold">${program.program_name}</h2>
-                      <p class="font-Montserrat max-w-full text-clip overflow-y-auto custom-scrollbar">${
+                      <p class="font-Montserrat max-w-full text-clip leading-relaxed text-left overflow-y-auto custom-scrollbar whitespace-pre-line">${
                         program.program_description
                       }</p>
                     </div>

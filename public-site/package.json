@@ -4,7 +4,8 @@
   "type": "module",
   "main": "web-pub-server.js",
   "scripts": {
-    "start": "nodemon web-pub-server.js"
+    "dev": "npx nodemon web-pub-server.js",
+    "prod": "node web-pub-server.js"
   },
   "dependencies": {
     "bcrypt": "^6.0.0",

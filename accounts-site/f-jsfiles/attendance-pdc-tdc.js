@@ -232,16 +232,16 @@ function allButtons() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ status, hoursAttended }), // Send the status in the request body
         });
+        modalDetails.innerHTML = "";
         if (response.ok) {
           modalDetails.innerHTML = "<p>Successfully change status</p>";
-          setTimeout(() => {
-            modal.style.display = "none";
-          }, 3000);
           renderAttendanceTable(currentType);
         } else {
-          alert(`Can't change status of ID no. ${id}`);
+          modalDetails.innerHTML = `<p>Can't change status of ID no. ${id}</p>`;
         }
-        modal.style.display = "none";
+        setTimeout(() => {
+          modal.style.display = "none";
+        }, 3000);
       } catch (error) {
         console.error("Error changing status.", error);
         modalDetails.innerHTML =
@@ -303,14 +303,17 @@ function allButtons() {
           "click",
           async () => {
             try {
-              const deleteResponse = await fetch(`/account/api/delete-attendance`, {
-                method: "DELETE",
-                headers: {
-                  "Content-Type": "application/json",
-                  "x-delete-token": data.deleteToken,
-                },
-                body: JSON.stringify({ id, creatorId, createdBy, courseId }),
-              });
+              const deleteResponse = await fetch(
+                `/account/api/delete-attendance`,
+                {
+                  method: "DELETE",
+                  headers: {
+                    "Content-Type": "application/json",
+                    "x-delete-token": data.deleteToken,
+                  },
+                  body: JSON.stringify({ id, creatorId, createdBy, courseId }),
+                }
+              );
               const dataDelRes = await deleteResponse.json();
               if (deleteResponse.ok) {
                 tokenIndicator.innerText = dataDelRes.message;

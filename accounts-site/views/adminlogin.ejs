@@ -9,7 +9,7 @@
 </head>
 
 <body class="bg-gradient-to-t from-sky-500 to-sky-900 flex items-center justify-center min-h-screen">
-    <div class="bg-slate-900 p-10 rounded-lg shadow-md w-full max-w-sm">
+    <div class="bg-white p-10 rounded-lg shadow-md w-full max-w-sm">
         <h1 class="text-2xl font-bold mb-5 text-blue-900 text-center">Drivers Ed Admin Login</h1>
         <% if (error) { %>
             <div id="error-message"
@@ -20,7 +20,7 @@
                 </span>
             </div>
             <% } %>
-                <form id="adminLoginForm">
+                <form id="adminLoginForm" class="w-full">
                     <div class="mb-4">
                         <label for="email" class="block text-gray-700 text-sm font-bold mb-2 ">
                             EMAIL
@@ -44,12 +44,9 @@
                             LOGIN
                         </button>
                         <div class="text-sm mt-2 space-x-3">
-                            <a href="/account/user-register"
+                            <a href="/account/change-password-email-option"
                                 class="text-blue-900 hover:text-blue-600 hover:underline underline-offset-2 hover:font-semibold">Forgot
                                 Password?</a>
-                            <a href="/account/admin-registration"
-                                class="text-blue-900 hover:text-blue-600 hover:underline underline-offset-2 hover:font-semibold">Register
-                                New Admin</a>
                         </div>
                     </div>
                 </form>

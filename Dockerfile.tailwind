@@ -5,9 +5,17 @@ WORKDIR /app
 RUN npm init -y
 
 # Install PostCSS CLI and plugins
-RUN npm install postcss postcss-cli tailwindcss autoprefixer @tailwindcss/postcss
+RUN npm install tailwindcss@3 postcss postcss-cli autoprefixer
 
 # Copy shared folder into image
+COPY public-site/views /app/public-site/views
+COPY public-site/f-jsfiles /app/public-site/f-jsfiles
+COPY accounts-site/views /app/accounts-site/views
+COPY accounts-site/f-jsfiles /app/accounts-site/f-jsfiles
 COPY shared/f-tailcss /app/f-tailcss/
 COPY shared/postcss.config.js /app/postcss.config.js
 COPY shared/tailwind.config.js /app/tailwind.config.js
+
+# ⬇️ TEMPORARY: Copy local output.css into container for volume use
+# (this replaces dynamic generation during design phase)
+COPY shared/f-css/output.css /app/f-css/output.css

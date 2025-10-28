@@ -32,7 +32,7 @@ export async function generateCertificatePDF({ type, payload }) {
     );
 
     const tailwindCSS = fs.readFileSync(
-      path.join(__dirname, "../f-css", "output.css"),
+      path.join(__dirname, "../shared/f-css", "output.css"),
       "utf-8"
     );
 

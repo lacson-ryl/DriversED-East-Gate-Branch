@@ -124,11 +124,14 @@ if (addButton) {
         showBtnLoading(submitBtn);
 
         try {
-          const response = await fetch("/account/api/manage-people/instructor-add", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ encryptedWithEncAesKey: encrypting }),
-          });
+          const response = await fetch(
+            "/account/api/manage-people/instructor-add",
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ encryptedWithEncAesKey: encrypting }),
+            }
+          );
           if (response.ok) {
             showBtnResult(submitBtn, true);
             alert("Successfully add Instructor!");
@@ -156,86 +159,92 @@ const showAccBtn = document.getElementById("show-accounts-button");
 if (showAccBtn) {
   showAccBtn.addEventListener("click", async function (event) {
     event.preventDefault();
+    await getAllAccounts();
+  });
+}
+
+async function getAllAccounts() {
+  try {
+    const response = await fetch("/account/api/all-accounts");
+    const encrypted = await response.json();
     modalDetails.innerHTML = ``;
 
-    try {
-      const response = await fetch("/account/api/all-accounts");
-      const encrypted = await response.json();
-
-      if (!response.ok) {
-        modalDetails.innerText = encrypted.error;
-        modal.style.display = "flex";
-        setTimeout(() => {
-          modal.style.display = "none";
-        }, 3000);
-        return;
-      }
-
-      const data = decryptData(encrypted);
-      loadAccountsTable(data);
-    } catch (error) {
-      modalDetails.innerText = "Failed to load accounts.";
+    if (!response.ok) {
+      modalDetails.innerText = encrypted.error;
       modal.style.display = "flex";
       setTimeout(() => {
         modal.style.display = "none";
       }, 3000);
+      return;
     }
-  });
+
+    const data = await decryptData(encrypted.encrypted);
+    loadAccountsTable(data);
+  } catch (error) {
+    modalDetails.innerText = "Failed to load accounts.";
+    modal.style.display = "flex";
+    setTimeout(() => {
+      modal.style.display = "none";
+    }, 3000);
+  }
 }
 
 const instructorTable = document.getElementById("instructors-table");
 const accountTable = document.getElementById("accounts-table");
 
 function loadAccountsTable(data) {
+  accountTable.innerHTML = "";
   accountTable.innerHTML = `
-    <div class="flex justify-between items-center mb-4">
-      <div class="flex flex-row gap-4">
-        <button id="back-admin-button" class="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700">
-        <- Back
-        </button>
-        <button id="add-admin-button" class="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700">
-        + Add Admin
-        </button>
+    <div class="flex flex-col w-full">
+      <div class="flex justify-between items-center mb-4">
+        <div class="flex flex-row gap-4">
+          <button id="back-admin-button" class="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700">
+          <- Back
+          </button>
+          <button id="add-admin-button" class="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700">
+          + Add Admin
+          </button>
+        </div>
       </div>
-    </div>
-    <h2 class="text-xl place-self-center font-bold">All Accounts</h2>
-    <table class="w-full border border-gray-300 rounded-md overflow-hidden">
-      <thead class="bg-gray-100">
-        <tr>
-          <th class="px-4 py-2 text-left">ID</th>
-          <th class="px-4 py-2 text-left">Name</th>
-          <th class="px-4 py-2 text-left">Email</th>
-          <th class="px-4 py-2 text-left">Role</th>
-          <th class="px-4 py-2 text-left">Status</th>
-          <th class="px-4 py-2 text-left">Date Created</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${data
-          .map(
-            (account) => `
-          <tr class="border-t">
-            <td class="px-4 py-2">${account.account_id || "—"}</td>
-            <td class="px-4 py-2">${account.admin_name || "—"}</td>
-            <td class="px-4 py-2">${account.user_email}</td>
-            <td class="px-4 py-2">${account.account_role}</td>
-            <td class="px-4 py-2">${
-              account.isVerify === 1 ? "Verified" : "Pending"
-            }</td>
-            <td class="px-4 py-2">${account.date_created}</td>
+      <h2 class="text-xl place-self-center font-bold">All Accounts</h2>
+      <table class="w-full border border-gray-300 rounded-md overflow-hidden">
+        <thead class="bg-gray-100">
+          <tr>
+            <th class="px-4 py-2 text-left">ID</th>
+            <th class="px-4 py-2 text-left">Name</th>
+            <th class="px-4 py-2 text-left">Email</th>
+            <th class="px-4 py-2 text-left">Role</th>
+            <th class="px-4 py-2 text-left">Status</th>
+            <th class="px-4 py-2 text-left">Date Created</th>
           </tr>
-        `
-          )
-          .join("")}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          ${data
+            .map(
+              (account) => `
+            <tr class="hover:border-r-8 hover:border-l-8 border-r-rose-400/50 border-l-rose-400/50 ">
+              <td class="px-4 py-2">${account.account_id || "—"}</td>
+              <td class="px-4 py-2">${account.admin_name || "—"}</td>
+              <td class="px-4 py-2">${account.user_email}</td>
+              <td class="px-4 py-2">${account.account_role}</td>
+              <td class="px-4 py-2">${
+                account.isVerify === 1 ? "Verified" : "Pending"
+              }</td>
+              <td class="px-4 py-2">${account.date_created}</td>
+            </tr>
+          `
+            )
+            .join("")}
+        </tbody>
+      </table>
+    </div>
   `;
 
   accountTable.style.display = "flex";
+  instructorTable.style.display = "none";
   const backAdminBtn = document.getElementById("back-admin-button");
   if (backAdminBtn) {
     backAdminBtn.addEventListener("click", () => {
-      console.log("Assign Admin button clicked");
       accountTable.innerHTML = "";
       accountTable.style.display = "none";
       instructorTable.style.display = "flex";
@@ -283,32 +292,38 @@ function loadAccountsTable(data) {
       `;
       modal.style.display = "flex";
 
-      document
-        .getElementById("registration-form")
-        .addEventListener("submit", async function (event) {
-          event.preventDefault();
-          const formData = new FormData(this.event);
-          const encrypting = encryptData(formData);
-
-          try {
-            const response = await fetch(`/account/api/admin-registration`, {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({ encryptedWithEncAesKey: encrypting }),
-            });
-            if (response.ok) {
-              alert("Admin Registered Successfully");
-            } else {
-              const data = await response.json();
-              alert(`Error : ${data.error}`);
-            }
-          } catch (error) {
-            console.log(error);
-            alert("Internal Server Error");
+      const registerForm = document.getElementById("registration-form");
+      registerForm.addEventListener("submit", async function (event) {
+        event.preventDefault();
+        const formData = new FormData(registerForm);
+        const encrypting = await encryptData(formData);
+        const regBtn = document.getElementById("register-btn");
+        showBtnLoading(regBtn);
+        try {
+          const response = await fetch(`/account/api/admin-registration`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ encryptedWithEncAesKey: encrypting }),
+          });
+          if (response.ok) {
+            showBtnResult(regBtn, true);
+            alert("Admin Registered Successfully");
+          } else {
+            const data = await response.json();
+            alert(`Error : ${data.error}`);
+            showBtnResult(regBtn, false);
           }
-        });
+          setTimeout(() => {
+            modalDetails = "";
+            modal.style.display = "none";
+          }, 3000);
+        } catch (error) {
+          console.error(error);
+          alert("Internal Server Error");
+        }
+      });
     });
   }
 }
@@ -317,7 +332,6 @@ async function renderInstructorsList() {
   const response = await fetch("/account/api/manage-people/list");
   const encrypted = await response.json();
   const data = await decryptData(encrypted.encrypted);
-  console.log("data", data);
 
   if (!response.ok) {
     instructorTable.innerHTML = `
@@ -341,7 +355,6 @@ async function renderInstructorsList() {
       `;
   } else {
     const details = data;
-    console.log("details", details);
     let tableRows = details
       .map(
         (arr) => `
@@ -542,7 +555,6 @@ function allButton(details) {
               <select id="account_role" name="accountRole"
                 class="mt-1 text-lg block w-full outline outline-1 outline-gray-300 rounded-sm px-1">
                 <option value="instructor">Instructor</option>
-                <option value="admin">Admin</option>
               </select>
             </div>
             <div class="mb-4">
@@ -1011,7 +1023,9 @@ function renderMonthlyPayrollTable(data) {
 }
 
 async function renderCurrentPayroll(id) {
-  const response = await fetch(`/account/api/manage-people/current-payroll/${id}`);
+  const response = await fetch(
+    `/account/api/manage-people/current-payroll/${id}`
+  );
   const data = await response.json();
 
   const currentPayrollTable = document.getElementById(
