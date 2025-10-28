@@ -18,4 +18,4 @@ COPY shared/tailwind.config.js /app/tailwind.config.js
 
 # ⬇️ TEMPORARY: Copy local output.css into container for volume use
 # (this replaces dynamic generation during design phase)
-COPY shared/f-css/output.css /app/f-css/output.css
+#COPY shared/f-css/output.css /app/f-css/output.css
