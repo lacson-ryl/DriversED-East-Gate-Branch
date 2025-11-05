@@ -40,6 +40,11 @@ app.use(
         connectSrc: ["'self'", "https://unpkg.com"],
         imgSrc: ["'self'", "data:"],
         fontSrc: ["'self'", "https://fonts.gstatic.com"],
+        frameSrc: [
+          "'self'",
+          "https://www.google.com",
+          "https://maps.google.com",
+        ],  
       },
     },
   })
@@ -53,7 +58,6 @@ app.use(
   "/public/f-css",
   express.static(path.join(process.cwd(), "/shared/f-css"))
 );
-console.log("Serving from:", path.join(__dirname, "/shared/f-css"));
 app.use(
   "/public/f-assets",
   express.static(path.join(__dirname, "shared", "f-assets"), {

@@ -39,7 +39,7 @@ window.addEventListener("scroll", () => {
 
 const data = [
   {
-    imageBackground: "/public/f-assets/public/learn-drive.jpg",
+    imageBackground: "/public/f-assets/public/behind-wheels.jpg",
     tagLine: "Learn to Drive with Calm Confidence",
     tagParagraph:
       "We turn nervous starts into confident journeys with patient guidance and real-world practice.",
@@ -63,8 +63,8 @@ const data = [
       "  From first-time drivers to road-ready pros, we guide every step with patience, clarity, and care.",
   },
   {
-    imageBackground: "/public/f-assets/public/stay-strong.jpg",
-    tagLine: "  Start Strong. Stay Safe.",
+    imageBackground: "/public/f-assets/public/with-many-students.jpg",
+    tagLine: "Start Strong. Stay Safe.",
     tagParagraph:
       "  Our driving school blends safety, skill, and support to prepare you for every road ahead.",
   },
@@ -171,6 +171,7 @@ document.getElementById("year").textContent = new Date().getFullYear();
 //let instructorList = {};
 const servicesSection = document.getElementById("services-section");
 const instructorSection = document.getElementById("instructor-section");
+const branchSection = document.getElementById("branch-section");
 
 let progList = null;
 let instructorList = null;
@@ -189,6 +190,9 @@ const observer = new IntersectionObserver(
           fetchAndRender("instructors");
         }
 
+        if (id === "branch-section") {
+          renderBranchList(branches);
+        }
         observer.unobserve(entry.target); // ✅ Only load once
       }
     });
@@ -201,6 +205,7 @@ const observer = new IntersectionObserver(
 
 observer.observe(servicesSection);
 observer.observe(instructorSection);
+observer.observe(branchSection);
 
 async function fetchAndRender(type) {
   try {
@@ -405,3 +410,85 @@ async function renderInstructorCards(instructorList) {
     grabcursor: true,
   });
 }
+
+const branches = {
+  "angeles-main-branch": {
+    btnLink: "https://maps.app.goo.gl/LZG51dCHF4WsS6QG9",
+    url: "https://www.google.com/maps/embed?pb=!4v1762235954441!6m8!1m7!1snHE4-5PztpOnUhKts2W4tQ!2m2!1d15.15643087035654!2d120.5921486086023!3f267.8495817779502!4f12.623341564853504!5f0.7820865974627469",
+  },
+  "eastgate-branch": {
+    btnLink: "https://maps.app.goo.gl/QaAkHneJHnFmcGgWA",
+    url: "https://www.google.com/maps/embed?pb=!4v1762235847381!6m8!1m7!1s6gAkdKhJgnUgYKUz3FKZjw!2m2!1d15.05123750174312!2d120.6998031090464!3f182.6934393147122!4f-1.9056633710793989!5f0.7820865974627469",
+  },
+  "dolores-branch": {
+    btnLink: "https://maps.app.goo.gl/4s2c5s7hUrtXr9CK8",
+    url: "https://www.google.com/maps/embed?pb=!4v1762241771939!6m8!1m7!1sqzvwPNS0HShEavWxOzopxg!2m2!1d15.04088570856366!2d120.6784731074185!3f224.3755277692336!4f6.373291495671893!5f2.8817405446463433",
+  },
+  "guagua-branch": {
+    btnLink: "https://maps.app.goo.gl/4NZzYgUw3VMhxUP29",
+    url: "https://www.google.com/maps/embed?pb=!4v1762240563555!6m8!1m7!1scqGSoik6O80eoicwzLAAow!2m2!1d14.97642689291459!2d120.6185375557932!3f105.53580737924926!4f-14.18445355597963!5f0.7820865974627469",
+  },
+};
+const branchButtons = {};
+
+
+function renderBranchList(branches) {
+  const branchList = document.getElementById("branch-list");
+  branchList.innerHTML = "";
+
+  Object.entries(branches).forEach(([key, data]) => {
+    const label = formatBranchLabel(key);
+
+    const li = document.createElement("li");
+    li.className =
+      "flex items-center justify-between rounded-xl hover:bg-red-100 py-2 px-4 transition";
+
+    const labelSpan = document.createElement("span");
+    labelSpan.className = "text-base font-medium text-gray-700 cursor-pointer";
+    labelSpan.textContent = label;
+    labelSpan.onclick = () => setMap(key);
+
+    const button = document.createElement("button");
+    button.className = "hidden ml-4 text-sm text-blue-600 hover:underline";
+    button.textContent = "Open in Maps";
+    button.addEventListener("click", () => {
+      window.open(data.btnLink, "_blank");
+    });
+
+    // Store reference for later
+    branchButtons[key] = button;
+
+    const div = document.createElement("div");
+    div.className = "flex items-center gap-3 w-full";
+    div.appendChild(labelSpan);
+
+    li.appendChild(div);
+    li.appendChild(button);
+    branchList.appendChild(li);
+  });
+}
+
+
+function formatBranchLabel(key) {
+  return key
+    .replace(/-/g, " ")
+    .replace(/branch/i, "Branch")
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+function setMap(branchKey) {
+  const mapFrame = document.getElementById("mapFrame");
+  mapFrame.src = branches[branchKey].url;
+
+  // Hide all buttons first
+  Object.values(branchButtons).forEach((btn) => {
+    btn.classList.add("hidden");
+  });
+
+  // Show the selected branch's button
+  const selectedButton = branchButtons[branchKey];
+  if (selectedButton) {
+    selectedButton.classList.remove("hidden");
+  }
+}
+

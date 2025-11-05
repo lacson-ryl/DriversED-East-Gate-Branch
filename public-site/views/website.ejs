@@ -118,17 +118,19 @@
         <a href="/public/courses" class="hover:underline">Courses</a>
         <a href="/public/instructors" class="hover:underline">Instructors</a>
         <a href="/public/locations" class="hover:underline">Locations</a>
-        <a href="/account/user-login" class="px-3 py-2 bg-amber-300 hover:bg-amber-500 rounded-md text-white">My Account</a>
+        <a href="/account/user-login" class="px-3 py-2 bg-amber-300 hover:bg-amber-500 rounded-md text-white">My
+          Account</a>
       </nav>
 
     </div>
   </header>
 
-  <section id="automate-slider-section" class="min-h-[calc(100vh+1px)] bg-black w-full grid lg:grid-cols-1 gap-10 items-center">
+  <section id="automate-slider-section"
+    class="min-h-[calc(100vh+1px)] bg-black w-full grid lg:grid-cols-1 gap-10 items-center">
     <div id="promotional-output"
       class="relative flex flex-col bg-black w-full h-full items-center content-center overflow-hidden animate-fadeIn-public">
       <!-- Background image layer -->
-      <img id="image-background" src="" alt="" class="absolute inset-0 w-full h-full object-cover -z-10" />
+      <img id="image-background" src="" alt="" class="absolute inset-0 w-full h-full object-cover -z-0" />
       <div class="absolute inset-0 w-full h-full object-cover z-0 bg-black opacity-50"></div>
       <!-- Foreground content -->
       <div id="promote-container" class="absolute w-full h-full">
@@ -243,30 +245,19 @@
   <hr class="my-12 border-slate-200" />
 
   <!-- Locations -->
-  <section class="px-7 md:px-24 mb-10">
+  <section id="branch-section" class="px-7 md:px-24 mb-10 w-full">
     <h3 class="text-xl font-semibold mb-4">You can find us in these locations</h3>
-    <div class="mb-7 place-self-center">
-      <p>Main Branch</p>
-      <img src="/public/f-assets/public/balibalgo-angeles-branch-location.jpg" class="object-cover aspect-auto max-h-[400px]"
-        alt="Main branch">
-    </div>
+    <div class="w-full flex flex-col md:flex-row">
+      <div class="w-full md:w-1/3">
+        <ul id="branch-list" class="w-full flex flex-col">
 
-    <h3 class="text-xl font-semibold mb-4">Other Locations</h3>
-    <div id="locations-grid" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 min-h-96">
-      <div>
-        <p>Dolores Branch</p>
-        <img src="/public/f-assets/public/dolores-branch-location.jpg" class="object-cover aspect-auto min-w-96" alt="">
+        </ul>
       </div>
-      <div>
-        <p>East Gate Branch</p>
-        <img src="/public/f-assets/public/east-gate-branch-location.jpg" class="object-cover aspect-auto min-w-96"
-          alt="">
+      <div class="w-full h-96 md:h-[500px] md:w-2/3">
+        <iframe id="mapFrame" src="" width="100%" height="100%" style="border:0;" allowfullscreen="" loading="lazy"
+          referrerpolicy="no-referrer-when-downgrade" class="rounded shadow"></iframe>
       </div>
-      <div>
-        <p>Mabalacat Branch</p>
-        <img src="/public/f-assets/public/mabalacat-branch-location.jpg" class="object-cover aspect-auto min-w-96"
-          alt="">
-      </div>
+    </div>
 
     </div>
   </section>
