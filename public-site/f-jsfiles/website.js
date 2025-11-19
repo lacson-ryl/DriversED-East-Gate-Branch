@@ -192,6 +192,7 @@ const observer = new IntersectionObserver(
 
         if (id === "branch-section") {
           renderBranchList(branches);
+          setMap("angeles-main-branch");
         }
         observer.unobserve(entry.target); // ✅ Only load once
       }
@@ -337,6 +338,11 @@ async function renderCourseCards(programList) {
     slidesPerView: 1,
     centeredSlides: true,
     spaceBetween: 30,
+    loop: true, // enables infinite looping
+    autoplay: {
+      delay: 3000, // time in ms between slides (3 seconds)
+      disableOnInteraction: false, // keeps autoplay running even after user interaction
+    },
     pagination: {
       el: ".swiper-pagination1",
       clickable: true,
@@ -399,6 +405,11 @@ async function renderInstructorCards(instructorList) {
     slidesPerView: 1,
     centeredSlides: true,
     spaceBetween: 10,
+    loop: true, // enables infinite looping
+    autoplay: {
+      delay: 3000, // time in ms between slides (3 seconds)
+      disableOnInteraction: false, // keeps autoplay running even after user interaction
+    },
     pagination: {
       el: ".swiper-pagination2",
       clickable: true,
@@ -430,7 +441,6 @@ const branches = {
   },
 };
 const branchButtons = {};
-
 
 function renderBranchList(branches) {
   const branchList = document.getElementById("branch-list");
@@ -468,7 +478,6 @@ function renderBranchList(branches) {
   });
 }
 
-
 function formatBranchLabel(key) {
   return key
     .replace(/-/g, " ")
@@ -491,4 +500,3 @@ function setMap(branchKey) {
     selectedButton.classList.remove("hidden");
   }
 }
-

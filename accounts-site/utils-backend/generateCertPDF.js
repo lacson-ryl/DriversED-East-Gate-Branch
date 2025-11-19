@@ -45,13 +45,13 @@ export async function generateCertificatePDF({ type, payload }) {
     // 3. Use page.setContent to directly load the HTML
     await page.setContent(html, {
       waitUntil: "networkidle0",
-      timeout: 60000,
+      timeout: 30000,
     });
 
     // 4. Wait for your module script logic to execute
     try {
       await page.waitForFunction(() => window.scriptLoaded === true, {
-        timeout: 60000,
+        timeout: 30000,
       });
     } catch (err) {
       const html = await page.content();

@@ -377,7 +377,8 @@ export async function getUserAccountById(id) {
 }
 
 export async function saveAdminAccount(newUser) {
-  const { admin_name, user_email, user_password, account_role, isVerify } = newUser;
+  const { admin_name, user_email, user_password, account_role, isVerify } =
+    newUser;
   try {
     const [result] = await pool.query(
       `
@@ -3165,15 +3166,24 @@ export async function deleteTraineeCourseInfo(
   dateStarted,
   continuation
 ) {
-  const [applicationID] = await pool.query(
-    `SELECT application_id FROM applications WHERE user_id = ? AND start_date = ? AND continuation = ?`,
+  console.log(
+    `userId,
+  dateStarted,
+  continuation`,
+    userId,
+    dateStarted,
+    continuation
+  );
+  const [result] = await pool.query(
+    `SELECT application_id FROM applications WHERE creator_id = ? AND start_date = ? AND continuation = ?`,
     [userId, dateStarted, continuation]
   );
+  console.log("result", result);
   try {
-    await deleteApplication(applicationID[0].application_id);
+    await deleteApplication(result[0].application_id);
     return { message: "Course deleted successfully" };
   } catch (error) {
-    console.error("Error Deleting Vehicle", error);
+    console.error("Error Deleting Course", error);
     throw error;
   }
 }
@@ -3196,21 +3206,45 @@ export async function deleteTraineeAttendance(creatorId, createdBy, courseId) {
 // Function for vehicle list
 
 export async function getAllVehicle() {
-  const [result] = await pool.query(
-    `
-    SELECT *
-    FROM vehicle_list
-    `
-  );
+  const [vehicles] = await pool.query(`SELECT * FROM vehicle_list`);
+
   const formattedResult = await Promise.all(
-    result.map(async (row) => ({
-      ...row,
-      car_picture: await renderBase64File(row.car_picture),
-      lto_document: await renderBase64File(
-        row.lto_document,
-        row.lto_document_type
-      ),
-    }))
+    vehicles.map(async (vehicle) => {
+      try {
+        const [repairs] = await pool.query(
+          `
+        SELECT status
+        FROM vehicle_repairs
+        WHERE vehicle_id = ?
+        ORDER BY repair_date DESC
+        LIMIT 1
+        `,
+          [vehicle.vehicle_id]
+        );
+
+        let repairStatus = "Ready for Use";
+        if (repairs.length > 0) {
+          const status = repairs[0].status;
+          if (status === "Maintenance" || status === "Partially Repaired") {
+            repairStatus = status;
+          }
+        }
+
+        return {
+          ...vehicle,
+          car_picture: (await renderBase64File(vehicle.car_picture)) || null,
+          lto_document:
+            (await renderBase64File(
+              vehicle.lto_document,
+              vehicle.lto_document_type
+            )) || null,
+          status: repairStatus,
+        };
+      } catch (err) {
+        console.error("Error processing vehicle:", vehicle.vehicle_id, err);
+        return null; // or handle differently
+      }
+    })
   );
   return formattedResult;
 }
@@ -3292,6 +3326,114 @@ export async function uploadVehiclePhoto(vehicleId, fileBuffer) {
     await pool.query(query, [fileBuffer, vehicleId]);
   } catch (error) {
     console.error("Error updating database:", error);
+    throw error;
+  }
+}
+
+export async function getVehicleRepairs(vehicleId) {
+  const [result] = await pool.query(
+    `
+    SELECT *
+    FROM vehicle_repairs
+    WHERE vehicle_id = ?
+    `,
+    [vehicleId]
+  );
+  const formattedResult = result.map((row) => ({
+    ...row,
+    created_at: row.created_at
+      ? new Date(row.created_at).toLocaleString("en-US", {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+        })
+      : null,
+    updated_at: row.updated_at
+      ? new Date(row.updated_at).toLocaleString("en-US", {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+        })
+      : null,
+  }));
+  return formattedResult;
+}
+
+export async function getRepairById(repairId) {
+  try {
+    const [result] = await pool.query(
+      `
+      SELECT *
+      FROM vehicle_repairs
+      WHERE repair_id = ?
+      `,
+      [repairId]
+    );
+    return result[0];
+  } catch (error) {
+    console.error("Error fetching vehicle repair by ID", error);
+    throw error;
+  }
+}
+
+export async function addVehicleRepair(vehicleId, repairDetails) {
+  try {
+    // Include vehicle_id in the insert
+    const fullDetails = { vehicle_id: vehicleId, ...repairDetails };
+
+    const fields = Object.keys(fullDetails);
+    const placeholders = fields.map(() => "?").join(", ");
+    const values = Object.values(fullDetails);
+
+    const [result] = await pool.query(
+      `
+      INSERT INTO vehicle_repairs (${fields.join(", ")})
+      VALUES (${placeholders})
+      `,
+      values
+    );
+
+    return result.insertId;
+  } catch (error) {
+    console.error("Error adding vehicle repair", error);
+    throw error;
+  }
+}
+
+export async function updateVehicleRepair(repairId, updatedDetails) {
+  const setClause = Object.keys(updatedDetails)
+    .map((field) => `${field} = ?`)
+    .join(", ");
+  const values = Object.values(updatedDetails);
+  values.push(repairId);
+
+  const [result] = await pool.query(
+    `UPDATE vehicle_repairs 
+    SET ${setClause} 
+    WHERE repair_id = ?`,
+    values
+  );
+  return result;
+}
+
+export async function deleteVehicleRepair(rowID) {
+  try {
+    const [result] = await pool.query(
+      `
+      DELETE FROM vehicle_repairs
+      WHERE repair_id = ?
+      `,
+      [rowID]
+    );
+    return result;
+  } catch (error) {
+    console.error("Error Deleting Vehicle", error);
     throw error;
   }
 }
@@ -3390,4 +3532,3 @@ export async function saveCertificateToDatabase(courseId, pdfBuffer, fileType) {
 }
 
 // request for the public website.
-

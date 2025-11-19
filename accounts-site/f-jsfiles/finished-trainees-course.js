@@ -119,13 +119,13 @@ async function renderCompletedCourseList() {
                           </div>
                         </td>
                         <td class="border border-gray-300">
-                            <button data-id=" ${arr.course_id}  "
+                            <button data-id="${arr.course_id}"
                                 class="trainees-info-edit-btn bg-blue-700 hover:bg-gradient-to-t from-sky-400 to-sky-800 text-white rounded-md px-2">
                                 <img src="/account/f-assets/solid/icons_for_buttons/pencil.svg" class="w-6 h-6 reverse-color" />  
                               </button>
-                            <button data-user-id=" ${arr.user_id} " 
-                              data-date-started=" ${arr.date_started} " 
-                              date-continuation=" ${arr.date_completed} "
+                            <button data-user-id="${arr.user_id}" 
+                              data-date-started="${arr.date_started}" 
+                              date-continuation=" ${arr.date_completed}"
                               class="trainees-info-delete-btn bg-rose-700 hover:bg-gradient-to-t from-rose-400 to-rose-800 text-white rounded-md px-2">
                               <img src="/account/f-assets/solid/icons_for_buttons/trash.svg" class="w-6 h-6 reverse-color" />
                             </button>
@@ -248,6 +248,7 @@ function allButtons(data) {
         <div class="flex justify-around">
           <button id="tdc" class="bg-blue-700 hover:bg-gradient-to-t from-sky-400 to-sky-800 text-white text-lg rounded-md px-2">TDC</button>
           <button id="pdc" class="bg-rose-700 hover:bg-gradient-to-t from-rose-400 to-rose-800 text-white text-lg rounded-md px-2">PDC</button>
+          <button id="create" class="bg-amber-700 hover:bg-gradient-to-t from-amber-400 to-amber-800 text-white text-lg rounded-md px-2">CREATE</button>
         </div>
       `;
       modal.style.display = "flex";
@@ -265,6 +266,16 @@ function allButtons(data) {
 
       document.getElementById("pdc").addEventListener("click", function () {
         const url = `/account/certificates-completion-pdc?userId=${encodeURIComponent(
+          userId
+        )}&courseId=${encodeURIComponent(
+          courseId
+        )}&instructorId=${encodeURIComponent(instructorId)}`;
+        window.open(url, "_blank");
+        modal.style.display = "none";
+      });
+
+      document.getElementById("create").addEventListener("click", function () {
+        const url = `/account/certificates-completion/pdc-tdc?userId=${encodeURIComponent(
           userId
         )}&courseId=${encodeURIComponent(
           courseId

@@ -257,6 +257,26 @@ CREATE TABLE
     );
 
 CREATE TABLE
+    vehicle_repairs (
+        repair_id INT AUTO_INCREMENT PRIMARY KEY,
+        vehicle_id INT NOT NULL,
+        repair_date DATE NOT NULL,
+        description_before_repair TEXT NOT NULL,
+        status ENUM (
+            'Maintenance',
+            'Partially Repaired',
+            'Ready for Use'
+        ) DEFAULT 'Maintenance',
+        mechanic_name VARCHAR(100),
+        cost DECIMAL(10, 2),
+        updates TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        is_resolved BOOLEAN DEFAULT FALSE,
+        FOREIGN KEY (vehicle_id) REFERENCES vehicle_list (vehicle_id) ON DELETE CASCADE
+    );
+
+CREATE TABLE
     change_password_or_email (
         reset_id INT AUTO_INCREMENT PRIMARY KEY,
         user_id INT,

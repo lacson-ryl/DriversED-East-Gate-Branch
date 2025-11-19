@@ -44,8 +44,6 @@
     <div class="flex flex-col items-start gap-3 mx-10 pt-5 text-xs">
       <button id="save-to-pdf" class="hover:underline underline-offset-1 hide-on-print ">Save to
         PDF</button>
-      <button id="save-to-database" class="hover:underline underline-offset-1 hide-on-print">Save to
-        Database</button>
     </div>
   </div>
   <div class="w-[780px] h-[932px] mx-auto py-4 text-black text-sm">
@@ -223,7 +221,7 @@
 
   <% if (isPDF) { %>
     <script>
-      const data = <%- JSON.stringify(typeof payload !== 'undefined' ? payload : null) %>;
+      const data = <% - JSON.stringify(typeof payload !== 'undefined' ? payload : null) %>;
       console.log("data", data);
 
       async function populateCertificate(data) {
@@ -284,20 +282,6 @@
           input.style.width = input.value.length + 5 + "ch";
         }
         document.querySelectorAll("input[data-autoresize]").forEach(autoResizeInput);
-
-        const buttons = {
-          savePdf: "save-to-pdf",
-          saveDatabase: "save-to-database",
-        };
-
-        Object.values(buttons).forEach((buttonId) => {
-          const btn = document.getElementById(buttonId);
-          if (btn) {
-            btn.setAttribute("data-user-id", userId);
-            btn.setAttribute("data-course-id", courseId);
-            btn.setAttribute("data-instructor-id", instructorId);
-          }
-        });
       }
 
       (async () => {

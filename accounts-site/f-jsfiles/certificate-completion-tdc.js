@@ -105,7 +105,6 @@ async function populateCertificate(data) {
 
   const buttons = {
     savePdf: "save-to-pdf",
-    saveDatabase: "save-to-database",
   };
 
   Object.values(buttons).forEach((buttonId) => {
@@ -120,22 +119,13 @@ async function populateCertificate(data) {
 
 const pdfBtn = document.getElementById("save-to-pdf");
 pdfBtn.addEventListener("click", handleSave);
-const dbBtn = document.getElementById("save-to-database");
-dbBtn.addEventListener("click", handleSave);
 
 async function handleSave(event) {
   const button = event.currentTarget;
   const userId = button.getAttribute("data-user-id");
   const instructorId = button.getAttribute("data-instructor-id");
   const courseId = button.getAttribute("data-course-id");
-  const type = button.id === "save-to-database" ? "database" : "pdf";
-
-  let btnText;
-  if (type == "pdf") {
-    btnText = pdfBtn;
-  } else {
-    btnText = dbBtn;
-  }
+  const type = button.id === "save-to-pdf" ? "pdf" : "";
 
   const onsite =
     document.querySelector('input[value="onsite"]')?.checked || false;
@@ -183,7 +173,7 @@ async function handleSave(event) {
   };
 
   const encrypted = await encryptData(payload);
-  btnText.innerText = "Processing...";
+  pdfBtn.innerText = "Processing...";
   button.disabled = true;
 
   try {
@@ -196,10 +186,10 @@ async function handleSave(event) {
     });
 
     if (!response.ok) {
-      btnText.innerText = "Failed";
+      pdfBtn.innerText = "Failed";
       alert("Failed to generate PDF.");
     } else {
-      btnText.innerText = "Success";
+      pdfBtn.innerText = "Success";
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -212,9 +202,9 @@ async function handleSave(event) {
     }
     setTimeout(() => {
       if (type == "pdf") {
-        btnText.innerText = "Save to PDF";
+        pdfBtn.innerText = "Save to PDF";
       } else {
-        btnText.innerText = "Save to Database";
+        pdfBtn.innerText = "Save to Database";
       }
       button.disabled = false;
     }, 3000);

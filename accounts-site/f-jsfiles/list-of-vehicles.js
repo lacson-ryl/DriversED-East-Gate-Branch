@@ -5,6 +5,11 @@ import {
   showBtnResult,
 } from "../utils/modal-feedback.js";
 import { openFileViewer, applyDownloadBtn } from "../utils/file-helper.js";
+import { encryptData, decryptData } from "../utils/f-webCryptoKeys.js";
+
+const modal = document.getElementById("myModal");
+const span = document.getElementsByClassName("close")[0];
+const modalDetails = document.getElementById("modal-details");
 
 async function renderVehicleList() {
   const response = await fetch("/account/api/vehicles");
@@ -31,6 +36,7 @@ async function renderVehicleList() {
                     <th class="border border-gray-300 px-4 py-2 w-24">Registered</th>
                     <th class="border border-gray-300 px-4 py-2 w-36">LTO Doc</th>
                     <th class="border border-gray-300 px-4 py-2 w-36">Car Image</th>
+                    <th class="border border-gray-300 px-4 py-2 w-36">Status</th>
                     <th class="border border-gray-300 px-4 py-2 w-36">Actions</th>
                 </tr>
             </thead>
@@ -108,12 +114,28 @@ async function renderVehicleList() {
                             </div>
                         </td>
                         <td class="border border-gray-300 px-4 py-2">
-                            <button data-id="${arr.vehicle_id}"
+                            <p data-id="${arr.vehicle_id}"
                                 class="vehicle-edit-btn bg-blue-700 hover:bg-gradient-to-t from-sky-400 to-sky-800 text-white rounded-md px-2">
+                                ${
+                                  arr.status == "Ready for Use"
+                                    ? `<div class="text-green-700 hover:font-semibold rounded-md">${arr.status}</div>`
+                                    : arr.status == "Partially Repaired"
+                                    ? `<div class="text-yellow-700 hover:font-semibold rounded-md">${arr.status}</div>`
+                                    : `<div class="text-red-700 hover:font-semibold rounded-md">${arr.status}</div>`
+                                }  
+                              </p>
+                            <button data-id="${arr.vehicle_id}"
+                                class="vehicle-repair-view-btn bg-blue-700 hover:bg-gradient-to-t from-blue-400 to-blue-800 text-white rounded-md px-2">
+                                <img src="/account/f-assets/solid/icons_for_buttons/view-boards.svg" class="w-6 h-6 reverse-color" />  
+                              </button>
+                        </td>
+                        <td class="border border-gray-300 px-4 py-2">
+                            <button data-id="${arr.vehicle_id}"
+                                class="vehicle-edit-btn bg-blue-700 hover:bg-gradient-to-t from-sky-400 to-sky-800 text-white rounded-md p-1">
                                 <img src="/account/f-assets/solid/icons_for_buttons/pencil.svg" class="w-6 h-6 reverse-color" />  
                               </button>
                             <button data-id="${arr.vehicle_id}"
-                                class="vehicle-delete-btn bg-rose-700 hover:bg-gradient-to-t from-rose-400 to-rose-800 text-white rounded-md px-2">
+                                class="vehicle-delete-btn bg-rose-700 hover:bg-gradient-to-t from-rose-400 to-rose-800 text-white rounded-md p-1">
                                 <img src="/account/f-assets/solid/icons_for_buttons/trash.svg" class="w-6 h-6 reverse-color" />  
                               </button>
                         </td>
@@ -124,15 +146,6 @@ async function renderVehicleList() {
                   .join("")}
             </tbody>
         </table>
-  
-        <div id="myModal" class="fixed inset-0 z-50 items-center justify-center hidden bg-gray-900 bg-opacity-50">
-            <div class="relative bg-white rounded-lg shadow-lg min-w-screen-md max-w-screen-md p-6">
-                <span
-                    class="close absolute top-0 right-2 text-3xl font-semibold text-gray-700 hover:text-gray-900 cursor-pointer ">&times;</span>
-                <h2 class="text-xl font-semibold">Vehicle Details</h2>
-                <p id="modal-details" class="mt-4">the details</p>
-            </div>
-        </div>
     `;
   //call the button functions.
   allButtons(data);
@@ -146,9 +159,6 @@ function filterVehicleList(data, id) {
 
 function allButtons(data) {
   // Initialize modal and its components
-  const modal = document.getElementById("myModal");
-  const span = document.getElementsByClassName("close")[0];
-  const modalDetails = document.getElementById("modal-details");
 
   const modalform = `
   
@@ -287,16 +297,19 @@ function allButtons(data) {
           const vehicleType = document.getElementById("vehicle-type").value;
           showBtnLoading(vehicleSubmitBtn);
           try {
-            const updateResponse = await fetch(`/account/api/vehicles/${originalId}`, {
-              method: "PUT",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                plateNumber,
-                vehicleModel,
-                year,
-                vehicleType,
-              }),
-            });
+            const updateResponse = await fetch(
+              `/account/api/vehicles/${originalId}`,
+              {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  plateNumber,
+                  vehicleModel,
+                  year,
+                  vehicleType,
+                }),
+              }
+            );
             if (updateResponse.ok) {
               showBtnResult(vehicleSubmitBtn, true);
               alert("Vehicle updated successfully!");
@@ -561,6 +574,13 @@ function allButtons(data) {
     });
   });
 
+  document.querySelectorAll(".vehicle-repair-view-btn").forEach((button) => {
+    button.addEventListener("click", async () => {
+      const rowId = button.getAttribute("data-id");
+      renderViewRepairTable(rowId);
+    });
+  });
+
   // Delete Vehicle
   document.querySelectorAll(".vehicle-delete-btn").forEach((button) => {
     button.addEventListener("click", async function () {
@@ -585,7 +605,10 @@ function allButtons(data) {
       const response = await fetch("/account/api/delete-token", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: rowId, path: `/account/api/vehicles/${rowId}` }),
+        body: JSON.stringify({
+          id: rowId,
+          path: `/account/api/vehicles/${rowId}`,
+        }),
       });
 
       const data = await response.json();
@@ -603,13 +626,16 @@ function allButtons(data) {
           "click",
           async () => {
             try {
-              const deleteResponse = await fetch(`/account/api/vehicles/${rowId}`, {
-                method: "DELETE",
-                headers: {
-                  "Content-Type": "application/json",
-                  "x-delete-token": data.deleteToken,
-                },
-              });
+              const deleteResponse = await fetch(
+                `/account/api/vehicles/${rowId}`,
+                {
+                  method: "DELETE",
+                  headers: {
+                    "Content-Type": "application/json",
+                    "x-delete-token": data.deleteToken,
+                  },
+                }
+              );
               const reply = await deleteResponse.json();
               if (deleteResponse.ok) {
                 tokenIndicator.innerText = `Successfully Deleted Vehicle ID #${rowId}`;
@@ -640,16 +666,352 @@ function allButtons(data) {
       });
     });
   });
-
-  // When the user clicks on <span> (x), close the modal
-  span.onclick = function () {
-    modal.style.display = "none";
-  };
-
-  // When the user clicks anywhere outside of the modal, close it
-  window.onclick = function (event) {
-    if (event.target == modal) {
-      modal.style.display = "none";
-    }
-  };
 }
+
+function filterData(data, filterBy, value) {
+  return data.filter((item) => item[filterBy] == value);
+}
+
+async function renderViewRepairTable(vehicleId) {
+  const response = await fetch(
+    `/account/api/vehicles/repair-list/${vehicleId}`
+  );
+  const data = await response.json();
+  if (!response.ok) {
+    viewRepairTable.innerHTML = `<p class="text-red-600">Failed to fetch repair records.</p>`;
+    viewRepairTable.style.display = "block";
+    setTimeout(() => {
+      viewRepairTable.style.display = "none";
+    }, 5000);
+    return;
+  }
+  const repairList = data;
+  console.log("repairList", repairList);
+  const viewRepairTable = document.getElementById("vehicle-repair-table");
+  if (!repairList || repairList.length === 0) {
+    viewRepairTable.innerHTML = "";
+    viewRepairTable.innerHTML = `
+    <button data-id="${vehicleId}" id="add-repair-record-btn" class="bg-green-600 hover:bg-green-800 text-white rounded-md px-3 py-1 mb-4">
+    Add Repair
+		</button>
+    <p class="text-gray-600 text-center py-4">No repair records found for this vehicle.</p>`;
+    viewRepairTable.style.display = "flex";
+  } else {
+    viewRepairTable.innerHTML = "";
+    const table = `
+  ${repairList
+    .map(
+      (repair) => `
+        <tr class="hover:outline outline-1 outline-black">
+          <td class="border border-gray-300 px-4 py-2">${repair.repair_id}</td>
+          <td class="border border-gray-300 px-4 py-2">
+            ${new Date(repair.repair_date).toLocaleString()}
+          </td>
+          <td class="border border-gray-300 px-4 py-2">${repair.status}</td>
+          <td class="border border-gray-300 px-4 py-2">${
+            repair.mechanic_name ?? "—"
+          }</td>
+          <td class="border border-gray-300 px-4 py-2">₱${
+            repair.cost ? Number(repair.cost).toFixed(2) : "0.00"
+          }</td>
+          <td class="border border-gray-300 px-4 py-2">${
+            repair.updates ?? "—"
+          }</td>
+          <td class="border border-gray-300 px-4 py-2 space-x-2">
+            <button data-id="${
+              repair.repair_id
+            }" class="repair-update-btn bg-blue-500 hover:bg-blue-700 text-white rounded-md p-1">
+              <img src="/account/f-assets/solid/icons_for_buttons/pencil.svg" class="w-5 h-5 reverse-color" />
+            </button>
+            <button data-id="${
+              repair.repair_id
+            }" class="repair-delete-btn bg-rose-500 hover:bg-rose-700 text-white rounded-md p-1">
+              <img src="/account/f-assets/solid/icons_for_buttons/trash.svg" class="w-5 h-5 reverse-color" />
+            </button>
+          </td>
+        </tr>
+      `
+    )
+    .join("")}
+`;
+    viewRepairTable.innerHTML = `
+    <button data-id="${vehicleId}" id="add-repair-record-btn" class="bg-green-600 hover:bg-green-800 text-white rounded-md px-3 py-1 mb-4">
+      Add Repair
+		</button>
+    <table class="w-full text-left table-fixed border-collapse border-2 border-gray-300">
+      <thead>
+        <tr>
+          <th class="border border-gray-300 px-4 py-2 w-12">ID</th>
+          <th class="border border-gray-300 px-4 py-2">Date</th>
+          <th class="border border-gray-300 px-4 py-2">Status</th>
+          <th class="border border-gray-300 px-4 py-2">Mechanic</th>
+          <th class="border border-gray-300 px-4 py-2">Cost</th>
+          <th class="border border-gray-300 px-4 py-2">Updates</th>
+          <th class="border border-gray-300 px-4 py-2">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+          ${table}
+      </tbody>
+    </table>
+      `;
+    viewRepairTable.style.display = "flex";
+
+    document.querySelectorAll(".repair-update-btn").forEach((button) => {
+      button.addEventListener("click", async function () {
+        const repairId = this.getAttribute("data-id");
+        const selected = repairList.find((r) => r.repair_id == repairId);
+        console.log("selected", selected);
+        if (!selected) return;
+
+        modalDetails.innerHTML = `
+      <form id="update-repair-form" class="w-96 space-y-4">
+        <h3 class="text-xl font-semibold mb-3">Update Repair Record</h3>
+
+        <div class="mb-4">
+          <h3 class="text-lg font-base mb-2">Description Before Repair</h3>
+          <textarea name="descriptionBeforeRepair" class="w-full outline outline-1 outline-gray-300 rounded-md text-lg px-2 py-1" required>${
+            selected.description_before_repair
+          }</textarea>
+        </div>
+
+        <div class="mb-4">
+          <h3 class="text-lg font-base mb-2">Repair Updates</h3>
+          <textarea name="updates" class="w-full outline outline-1 outline-gray-300 rounded-md text-lg px-2 py-1">${
+            selected.updates ?? ""
+          }</textarea>
+        </div>
+
+        <div class="mb-4">
+          <h3 class="text-lg font-medium mb-2">Last Updated</h3>
+          <p class="w-full outline outline-1 outline-gray-300 rounded-md text-lg px-2 py-1 bg-gray-100">
+          ${selected.updated_at || ""}
+          </p>
+        </div>
+
+        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white rounded-md px-4 py-2 w-full">Save Changes</button>
+      </form>
+      
+      `;
+        modal.style.display = "flex";
+
+        document
+          .getElementById("update-repair-form")
+          .addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            formData.append("repairId", repairId);
+
+            try {
+              const encryptedPayload = await encryptData(formData);
+              const response = await fetch(
+                "/account/api/vehicles-repair/update",
+                {
+                  method: "PUT",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    encryptedWithEncAesKey: encryptedPayload,
+                  }),
+                }
+              );
+
+              const result = await response.json();
+              if (!response.ok)
+                throw new Error(result.error || "Update failed");
+
+              modalDetails.innerHTML = `<p class="text-green-600 font-semibold">✅ ${result.message}</p>`;
+              renderViewRepairTable(vehicleId);
+            } catch (err) {
+              modalDetails.innerHTML = `<p class="text-red-600 font-semibold">❌ ${err.message}</p>`;
+            }
+          });
+      });
+
+      //delete btn
+      document.querySelectorAll(".repair-delete-btn").forEach((button) => {
+        button.addEventListener("click", async function () {
+          const rowId = this.getAttribute("data-id");
+          if (!rowId) {
+            modalDetails.innerHTML = "<p>ID not found.</p>";
+            modal.style.display = "flex";
+            return;
+          }
+
+          modalDetails.innerHTML = `
+            <p id="delete-token-indicator" class="text-sm animate-pulse text-gray-500">fetching delete token...</p>
+            <p>Are you sure you want to delete Repair ID #${rowId}?</p>
+            <div class="justify-self-end space-x-4 mt-5">
+              <button id="delete-yes" class="bg-blue-700 text-white rounded-md px-2" disabled>Yes</button>
+              <button id="delete-no" class="bg-rose-700 text-white rounded-md px-2">No</button>
+            </div>
+          `;
+          modal.style.display = "flex";
+
+          const tokenIndicator = document.getElementById(
+            "delete-token-indicator"
+          );
+          const response = await fetch("/account/api/delete-token", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              id: rowId,
+              path: `/account/api/vehicles/repair-delete/${rowId}`,
+            }),
+          });
+
+          const data = await response.json();
+          if (!response.ok) {
+            tokenIndicator.innerText =
+              data.error || "Failed to fetch delete token.";
+            tokenIndicator.classList.add("text-red-600");
+          } else {
+            tokenIndicator.innerText = "token available";
+            tokenIndicator.classList.add("text-green-600");
+
+            const deleteYes = document.getElementById("delete-yes");
+            deleteYes.disabled = false;
+            deleteYes.addEventListener(
+              "click",
+              async () => {
+                try {
+                  const deleteResponse = await fetch(
+                    `/account/api/vehicles/repair-delete/${rowId}`,
+                    {
+                      method: "DELETE",
+                      headers: {
+                        "Content-Type": "application/json",
+                        "x-delete-token": data.deleteToken,
+                      },
+                    }
+                  );
+                  const reply = await deleteResponse.json();
+                  if (deleteResponse.ok) {
+                    tokenIndicator.innerText = `Successfully Deleted Repair ID #${rowId}`;
+                    renderViewRepairTable(rowId);
+                  } else {
+                    console.error(reply.err);
+                    tokenIndicator.innerText = `Can't Delete Repair ID #${rowId}`;
+                  }
+                  setTimeout(() => {
+                    modal.style.display = "none";
+                  }, 3000);
+                } catch (error) {
+                  console.error("Error deleting vehicle repair data", error);
+                  tokenIndicator.innerText =
+                    "An error occurred while deleting.";
+                  tokenIndicator.classList.add("text-red-600");
+                  setTimeout(() => {
+                    modal.style.display = "none";
+                  }, 3000);
+                }
+              },
+              { once: true }
+            );
+          }
+
+          tokenIndicator.classList.remove("animate-pulse");
+          document.getElementById("delete-no").addEventListener("click", () => {
+            modal.style.display = "none";
+          });
+        });
+      });
+    });
+  }
+
+  document
+    .getElementById("add-repair-record-btn")
+    .addEventListener("click", async function () {
+      const vehicleId = this.getAttribute("data-id");
+      modalDetails.innerHTML = `
+			<form id="add-repair-form" class="w-96 space-y-4">
+				<h3 class="text-xl font-semibold mb-3">Add Repair Record</h3>
+
+				<div class="flex flex-row gap-4 mb-4">
+					<div class="w-1/3">
+					<h3 class="text-lg font-medium mb-2">VehicleId</h3>
+					<input type="text" name="vehicleId" class="w-full outline outline-1 outline-gray-300 rounded-md text-lg px-2 py-1" placeholder="Vehicle ID" required 
+					value="${vehicleId}"/>
+					</div>
+
+					<div class="w-2/3">
+						<h3 class="text-lg font-medium mb-2">Repair Date</h3>
+						<input type="datetime-local" name="repairDate" class="w-full outline outline-1 outline-gray-300 rounded-md text-lg px-2 py-1" required />
+					</div>
+				</div>
+
+				<div class="mb-4">
+					<h3 class="text-lg font-medium mb-2">Repair Status</h3>
+					<select name="status" class="w-full outline outline-1 outline-gray-300 rounded-md text-lg px-2 py-1">
+						<option value="Maintenance">Maintenance</option>
+						<option value="Partially Repaired">Partially Repaired</option>
+						<option value="Ready for Use">Ready for Use</option>
+					</select>
+				</div>
+
+				<div class="flex flex-row gap-4 mb-4">
+					<div class="w-1/2">
+						<h3 class="text-lg font-medium mb-2">Mechanic Name</h3>
+						<input type="text" name="mechanicName" class="w-full outline outline-1 outline-gray-300 rounded-md text-lg px-2 py-1" placeholder="Mechanic Name" />
+					</div>
+
+					<div class="w-1/2">
+						<h3 class="text-lg font-medium mb-2">Repair Cost (₱)</h3>
+						<input type="number" step="0.01" name="cost" class="w-full outline outline-1 outline-gray-300 rounded-md text-lg px-2 py-1" placeholder="Cost (₱)" />
+					</div>
+				</div>
+
+				<div class="mb-4">
+					<h3 class="text-lg font-medium mb-2">Description Before Repair</h3>
+					<textarea name="descriptionBeforeRepair" class="w-full outline outline-1 outline-gray-300 rounded-md text-lg px-2 py-1" placeholder="Description before repair" required></textarea>
+				</div>
+
+				<button id="submit-repair-btn" type="submit" class="bg-green-600 hover:bg-green-700 text-white rounded-md px-4 py-2 w-full">Submit</button>
+			</form>
+  `;
+      const submitBtn = document.getElementById("submit-repair-btn");
+      modal.style.display = "flex";
+
+      const form = document.getElementById("add-repair-form");
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+
+        const formData = new FormData(form);
+        showBtnLoading(submitBtn);
+
+        try {
+          const encryptedPayload = await encryptData(formData);
+          const response = await fetch("/account/api/vehicles/repair-add", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ encryptedWithEncAesKey: encryptedPayload }),
+          });
+
+          const result = await response.json();
+          if (!response.ok)
+            throw new Error(result.error || "Failed to add repair");
+
+          modalDetails.innerHTML = `<p class="text-green-600 font-semibold">✅ ${result.message}</p>`;
+          renderViewRepairTable(vehicleId);
+        } catch (err) {
+          modalDetails.innerHTML = `<p class="text-red-600 font-semibold">❌ ${err.message}</p>`;
+        }
+        setTimeout(() => {
+          modalDetails.innerHTML = "";
+          modal.style.display = "none";
+        }, 4000);
+      });
+    });
+  return;
+}
+
+// When the user clicks on <span> (x), close the modal
+span.onclick = function () {
+  modal.style.display = "none";
+};
+
+// When the user clicks anywhere outside of the modal, close it
+window.onclick = function (event) {
+  if (event.target == modal) {
+    modal.style.display = "none";
+  }
+};

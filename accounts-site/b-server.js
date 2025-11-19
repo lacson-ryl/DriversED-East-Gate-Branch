@@ -373,6 +373,11 @@ import {
   setTdcDate,
   deleteTraineeAttendance,
   getAllAccounts,
+  getVehicleRepairs,
+  deleteVehicleRepair,
+  addVehicleRepair,
+  updateVehicleRepair,
+  getRepairById,
 } from "./config/b-database.js";
 
 import {
@@ -952,7 +957,7 @@ router.post(
           profile.user_id,
           profile.user_role,
           `Applying ${enrolltype} course.`,
-          "Application successfully added!"
+          "Application successfully added! Please check your email for details."
         );
       } else {
         await addNotification(
@@ -3380,6 +3385,161 @@ router.put("/api/vehicles/:id", authenticateToken, async (req, res) => {
   }
 });
 
+router.get(
+  "/api/vehicles/repair-list/:vehicleId",
+  authenticateToken,
+  authorizeRole("admin"),
+  async (req, res) => {
+    const { vehicleId } = req.params;
+    console.log("vehicleId", vehicleId);
+    try {
+      // Call the database function to store the file
+      const repairList = await getVehicleRepairs(vehicleId);
+      console.log("repairList", repairList);
+      res.status(200).json(repairList);
+    } catch (error) {
+      console.error("Error fetching repair list:", error);
+      res.status(500).json({ error: "Internal Server Error" });
+    }
+  }
+);
+
+router.post(
+  "/api/vehicles/repair-add",
+  authenticateToken,
+  authorizeRole("admin"),
+  async (req, res) => {
+    try {
+      const { userId, role } = req.user;
+      const { encryptedWithEncAesKey } = req.body;
+
+      const {
+        vehicleId,
+        repairDate,
+        descriptionBeforeRepair,
+        status,
+        mechanicName,
+        cost,
+      } = await decryptData(encryptedWithEncAesKey, userId, role);
+
+      // Validate required fields
+      if (!vehicleId || !repairDate || !descriptionBeforeRepair) {
+        return res
+          .status(400)
+          .json({ error: "Missing required repair fields." });
+      }
+
+      // Build insert payload
+      const repairDetails = {
+        repair_date: new Date(repairDate),
+        description_before_repair: descriptionBeforeRepair,
+        status: status ?? "Maintenance",
+        mechanic_name: mechanicName ?? null,
+        cost: cost ?? null,
+      };
+
+      const repairId = await addVehicleRepair(vehicleId, repairDetails);
+
+      await addNotification(
+        userId,
+        role,
+        "Vehicle Repair",
+        `New repair record added for vehicle ${vehicleId}`
+      );
+
+      return res.status(200).json({
+        message: "Repair record added successfully!",
+        repairId,
+      });
+    } catch (error) {
+      console.error("Error adding vehicle repair:", error);
+      res.status(500).json({ error: "Internal Server Error" });
+    }
+  }
+);
+
+router.put(
+  "/api/vehicles-repair/update",
+  authenticateToken,
+  authorizeRole("admin"),
+  async (req, res) => {
+    try {
+      const { userId, role } = req.user;
+      const { encryptedWithEncAesKey } = req.body;
+
+      const { repairId, descriptionBeforeRepair, updates } = await decryptData(
+        encryptedWithEncAesKey,
+        userId,
+        role
+      );
+
+      // Fetch existing repair record
+      const existingRepair = await getRepairById(repairId);
+      if (!existingRepair) {
+        return res.status(404).json({ error: "Repair record not found." });
+      }
+
+      // Build update payload with only changed fields
+      const updatedRepair = {};
+
+      if (
+        descriptionBeforeRepair != null &&
+        descriptionBeforeRepair !== existingRepair.description_before_repair
+      ) {
+        updatedRepair.description_before_repair = descriptionBeforeRepair;
+      }
+
+      if (updates != null && updates !== existingRepair.updates) {
+        updatedRepair.updates = updates;
+      }
+
+      // Check if anything changed
+      if (Object.keys(updatedRepair).length === 0) {
+        return res.status(200).json({ message: "No changes detected." });
+      }
+
+      await updateVehicleRepair(repairId, updatedRepair);
+      await addNotification(
+        userId,
+        role,
+        "Vehicle Repair",
+        `Repair record ${repairId} updated successfully`
+      );
+
+      return res.status(200).json({ message: "Repair updated successfully!" });
+    } catch (error) {
+      console.error("Error updating vehicle repair:", error);
+      return res.status(400).json({ error: "Error updating vehicle repair!" });
+    }
+  }
+);
+
+router.delete(
+  "/api/vehicles/repair-delete/:rowID",
+  authenticateToken,
+  verifyDeleteToken,
+  authorizeRole("admin"),
+  async (req, res) => {
+    try {
+      const { userId, role } = req.user;
+      const id = req.params.rowID;
+      await deleteVehicleRepair(id);
+      await addNotification(
+        userId,
+        role,
+        "Vehicle",
+        `Repair id#${id} Successfully deleted! `
+      );
+      return res
+        .status(200)
+        .json({ message: `Repair id#${id} Successfully deleted! ` });
+    } catch (err) {
+      console.error("Error deleting vehicle:", err);
+      return res.status(500).json({ error: "Internal Server Error", err });
+    }
+  }
+);
+
 router.delete(
   "/api/vehicles/:rowID",
   authenticateToken,
@@ -3983,6 +4143,103 @@ router.post(
   }
 );
 
+router.get(
+  "/certificates-completion/pdc-tdc",
+  authenticateToken,
+  authorizeRole("admin"),
+  async (req, res) => {
+    try {
+      res.render("certificate-of-completion-PDC-TDC", {
+        isPDF: false,
+      });
+    } catch (error) {
+      res.status(500).render("error-500", {
+        error,
+      });
+    }
+  }
+);
+
+router.post(
+  "/api/certificates-completion-pdc-tdc",
+  authenticateToken,
+  authorizeRole("admin"),
+  async (req, res) => {
+    try {
+      const { userId, role } = req.user;
+      const { clientId, courseId, instructorId } = req.body;
+      console.log("tdc", clientId, courseId, instructorId);
+
+      const instructor = await getInstructorwithId(instructorId);
+      const user = await getProfilewithUserId(clientId);
+      const trainee_course = await getTraineeCourseInfo(courseId);
+
+      const logoPath = path.join(
+        __dirname,
+        "./shared/f-assets/solid/drivers_ed_logo-no-bg.png"
+      );
+
+      const driversEdLogo = `data:image/png;base64,${fs.readFileSync(
+        logoPath,
+        "base64"
+      )}`;
+
+      const genCertificateNumber = generateTemporaryPassword(14);
+
+      const certificateInputs = [
+        {
+          instructor: instructor.instructor_name,
+          driversEdLogo: driversEdLogo,
+          certNumber: genCertificateNumber,
+        },
+      ];
+      const fullName = `${user.first_name || ""} ${user.middle_name || ""} ${
+        user.last_name || ""
+      }`;
+      const userCourse = [
+        {
+          name: fullName,
+          courseType: trainee_course[0].program_name,
+          dateStarted: new Date(trainee_course[0].date_started).toLocaleString(
+            "default",
+            {
+              month: "long",
+              day: "numeric",
+              year: "numeric",
+            }
+          ),
+          dateEnded: new Date(trainee_course[0].date_completed).toLocaleString(
+            "default",
+            {
+              month: "long",
+              day: "numeric",
+              year: "numeric",
+            }
+          ),
+          totalHours: trainee_course[0].total_hours,
+        },
+      ];
+
+      const encrypted = await encryptData(
+        {
+          certificateInputs,
+          userCourse,
+          userId: clientId,
+          courseId,
+          instructorId,
+        },
+        userId,
+        role
+      );
+
+      res.status(200).json(encrypted);
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: "Internal Server Error" });
+    }
+  }
+);
+
 app.use("/account", router);
 
 app.post(
@@ -4078,42 +4335,6 @@ app.post(
         payload,
       });
 
-      const convertedPdfBuff = Buffer.isBuffer(pdfBuffer)
-        ? pdfBuffer
-        : Buffer.from(pdfBuffer);
-
-      console.log("pdfBuffer size:", convertedPdfBuff.length);
-
-      if (type == "database") {
-        const user = await getProfilewithUserId(userId);
-        try {
-          await saveCertificateToDatabase(
-            courseId,
-            convertedPdfBuff,
-            "application/pdf"
-          );
-        } catch (error) {
-          throw new Error("Cant upload certificate to the database.");
-        }
-
-        await sendEmail("completion-certificate", user.email, {
-          name: user.first_name,
-          certificate: Buffer.from(pdfBuffer),
-        });
-
-        await addNotification(
-          userId,
-          "user",
-          "PDC Certificate of Completion",
-          `${profileInputs.fullName} PDC Course Certificate `
-        );
-        await addNotification(
-          0,
-          "admin",
-          "PDC Certificate of Completion",
-          `${profileInputs.fullName} PDC Course Certificate `
-        );
-      }
       const name = profileInputs.courseName;
       console.log("name", name);
       const sanitized = name.replace(/[^a-zA-Z0-9 ]/g, "");
@@ -4220,6 +4441,88 @@ app.post(
 
       const name = `${profileInputs.lastName.toUpperCase()} ${profileInputs.firstName.toUpperCase()} ${profileInputs.middleName.toUpperCase()}`;
 
+      const sanitized = name.replace(/[^a-zA-Z0-9 ]/g, " ");
+      const fileSafe = sanitized.trim().toLowerCase().replace(/ +/g, "_");
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename="${fileSafe}-certificate-tdc.pdf"`
+      );
+
+      res.setHeader("Content-Type", "application/pdf");
+      res.status(200).end(Buffer.from(pdfBuffer));
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      res
+        .status(500)
+        .json({ error: "An error occurred while generating the PDF." });
+    }
+  }
+);
+
+app.post(
+  "/api/certificates-completion-pdc-tdc/:type",
+  authenticateToken,
+  authorizeRole("admin"),
+  async (req, res) => {
+    try {
+      const adminId = req.user.userId;
+      const role = req.user.role;
+      const type = req.params.type;
+      const { encryptedWithEncAesKey } = req.body;
+      const decrypted = await decryptData(
+        encryptedWithEncAesKey,
+        adminId,
+        role
+      );
+
+      const { userId, courseId, instructorId, certInputs } = decrypted;
+      console.log("certInputs", certInputs);
+
+      const logoPath = path.join(
+        __dirname,
+        "./shared/f-assets/solid/drivers_ed_logo-no-bg.png"
+      );
+      const driversEdLogo = `data:image/png;base64,${fs.readFileSync(
+        logoPath,
+        "base64"
+      )}`;
+
+      const certificateInputs = [
+        {
+          driversEdLogo: driversEdLogo,
+          instructor: certInputs.instructor,
+          certNumber: certInputs.certNumber,
+          drivingType: certInputs.drivingType,
+          courseType: certInputs.courseType,
+          day: certInputs.day,
+          monthYear: certInputs.monthYear,
+          proprietor: certInputs.proprietor,
+          proprietorCode: certInputs.proprietorCode,
+        },
+      ];
+
+      const userCourse = [
+        {
+          name: certInputs.name,
+          dateStarted: certInputs.dateStarted,
+          dateEnded: certInputs.dateEnded,
+          totalHours: certInputs.totalHours,
+        },
+      ];
+
+      const payload = {
+        certificateInputs,
+        userCourse,
+        userId,
+        courseId,
+        instructorId,
+      };
+
+      const pdfBuffer = await generateCertificatePDF({
+        type: "PDC-TDC",
+        payload,
+      });
+
       if (type === "database") {
         const user = await getProfilewithUserId(userId);
 
@@ -4230,7 +4533,7 @@ app.post(
         );
 
         await sendEmail("completion-certificate", user.email, {
-          name: name,
+          name: certInputs.name,
           certificate: Buffer.from(pdfBuffer),
         });
 
@@ -4238,17 +4541,17 @@ app.post(
           userId,
           "user",
           "TDC Certificate of Completion",
-          `${name} TDC Course Certificate `
+          `${certInputs.name} TDC Course Certificate `
         );
         await addNotification(
           0,
           "admin",
           "TDC Certificate of Completion",
-          `${name} TDC Course Certificate `
+          `${certInputs.name} TDC Course Certificate `
         );
       }
 
-      const sanitized = name.replace(/[^a-zA-Z0-9 ]/g, " ");
+      const sanitized = certInputs.name.replace(/[^a-zA-Z0-9 ]/g, " ");
       const fileSafe = sanitized.trim().toLowerCase().replace(/ +/g, "_");
       res.setHeader(
         "Content-Disposition",
