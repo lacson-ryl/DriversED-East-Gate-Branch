@@ -37,6 +37,28 @@ window.addEventListener("scroll", () => {
   }
 });
 
+// ✅ Smooth scroll for nav links
+document.querySelectorAll("#nav-menu .nav-link").forEach((link) => {
+  link.addEventListener("click", function (e) {
+    e.preventDefault(); // prevent default jump
+    const targetId = this.getAttribute("href").substring(1);
+    const targetElement = document.getElementById(targetId);
+
+    if (targetElement) {
+      targetElement.scrollIntoView({
+        behavior: "smooth",
+        block: "end",
+      });
+    }
+
+    // ✅ Close mobile menu after clicking
+    if (window.innerWidth < 768) {
+      navMenu.style.display = "none";
+      isMenuOpen = false;
+    }
+  });
+});
+
 const data = [
   {
     imageBackground: "/public/f-assets/public/behind-wheels.jpg",

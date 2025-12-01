@@ -20,8 +20,8 @@ async function renderUserPaymentsForm() {
 
   const encrypted = await response.json();
   const data = await decryptData(encrypted.encrypted);
-  const paymentMethods = data.paymentMethods;
-  const paymentCourses = data.paymentCourses;
+  const paymentMethods = data.paymentMethods || null;
+  const paymentCourses = data.paymentCourses || null;
 
   if (
     !response.ok ||
@@ -30,13 +30,19 @@ async function renderUserPaymentsForm() {
     paymentCourses.length === 0 ||
     !paymentCourses
   ) {
-    modalDetails.innerHTML = "";
-    modalDetails.innerHTML = `
-    <h2 class="text-lg font-semibold">Error</h2>
-    <p class="mt-4">Sorry! Can't fetch Payment form details right now. Please try again later.</p>
-    <p>Try contacting the admin through the report page</p> 
-    `;
-    modal.style.display = "flex";
+    if (paymentMethods.length === 0 || !paymentMethods) {
+      const methodOption = document.createElement("option");
+      methodOption.value = "No payment methods available";
+      methodOption.id = 0;
+      methodOption.innerText = "No payment methods available";
+      paymentMethodSelect.appendChild(methodOption);
+    }
+    if (paymentCourses.length === 0 || !paymentCourses) {
+      const courseOption = document.createElement("option");
+      courseOption.value = "No courses available";
+      courseOption.innerText = "No courses available";
+      courseSelect.appendChild(courseOption);
+    }
   }
 
   paymentMethods.forEach((method) => {
