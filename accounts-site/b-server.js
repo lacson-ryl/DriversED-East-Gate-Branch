@@ -1952,12 +1952,13 @@ router.get(
 );
 
 router.get(
-  "/api/applicants/list",
+  "/api/applicants/list/:monthYear",
   authenticateToken,
   authorizeRole("admin"),
   async (req, res) => {
     try {
-      const applicantlist = await getApplicants();
+      const { monthYear } = req.params;
+      const applicantlist = await getApplicants(monthYear);
       res.status(200).json(applicantlist);
     } catch (error) {
       console.error("Error fetching applicants:", error);

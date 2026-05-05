@@ -1,9 +1,45 @@
-async function renderApplicantsTable() {
-  const response = await fetch("/account/api/applicants/list");
-  if (!response.ok) return alert("Cant get applicants details for the table.");
+const currentMonthYear = new Date().toISOString().slice(0, 7);
+
+async function fetchApplicantsData(monthYear = currentMonthYear) {
+  let url = `/account/api/applicants/list/${monthYear}`;
+
+  const response = await fetch(url);
+  if (!response.ok) {
+    console.error("Cant get applicants details for the table.");
+    return;
+  }
 
   const data = await response.json();
+  renderApplicantsTable(data);
+}
+
+fetchApplicantsData();
+
+const centerSide = document.getElementById("center-side");
+if (centerSide) {
+  // filter form
+  const monthYearFilter = document.getElementById("monthyearfilter");
+  const monthYear = document.getElementById("monthyear");
+  monthYear.value = currentMonthYear; // set default value to current month-year
+
+  monthYearFilter.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const monthYear = document.getElementById("monthyear").value;
+    monthYear.value;
+    fetchApplicantsData(monthYear);
+  });
+}
+
+async function renderApplicantsTable(data) {
   const applicantsTable = document.getElementById("applicants-table");
+
+  centerSide.style.display = "flex";
+
+  if (!Array.isArray(data) || data.length === 0) {
+    applicantsTable.innerHTML =
+      "<p>No applicant data available for this month.</p>";
+    return;
+  }
 
   applicantsTable.innerHTML = `
     <table id="applicants-table" class="w-full table-fixed border-collapse">
@@ -64,7 +100,7 @@ async function renderApplicantsTable() {
                 </button>
               </td>
             </tr>
-          `
+          `,
           )
           .join("")}
       </tbody>
@@ -136,7 +172,7 @@ function allButtons() {
                     "Content-Type": "application/json",
                     "x-delete-token": data.deleteToken,
                   },
-                }
+                },
               );
               if (deleteResponse.ok) {
                 tokenIndicator.innerText = `Successfully Deleted Applicant ID #${applicantId}`;
@@ -157,7 +193,7 @@ function allButtons() {
               }, 3000);
             }
           },
-          { once: true }
+          { once: true },
         );
       }
 

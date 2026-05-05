@@ -930,7 +930,11 @@ export async function getInstructorScheduleForToday() {
   }
 }
 
-export async function getApplicants() {
+export async function getApplicants(monthYear) {
+  if (!monthYear) {
+    monthYear = new Date().toISOString().slice(0, 7); // YYYY-MM
+  }
+
   try {
     const [result] = await pool.query(
       `
@@ -938,9 +942,9 @@ export async function getApplicants() {
         applications.application_id,
         instructor.instructor_name,
         CASE
-        WHEN applications.created_by = 'user' THEN user.user_name
-        WHEN applications.created_by = 'admin' THEN admin_account.admin_name
-        ELSE 'Unknown'
+          WHEN applications.created_by = 'user' THEN user.user_name
+          WHEN applications.created_by = 'admin' THEN admin_account.admin_name
+          ELSE 'Unknown'
         END AS creator_name,
         applications.created_by,
         applications.start_date,
@@ -949,15 +953,18 @@ export async function getApplicants() {
         applications.continuation_am_pm,
         applications.transmission,
         applications.created
-      FROM
-        applications
-      JOIN
-        instructor ON applications.instructor_id = instructor.instructor_id
-      LEFT JOIN
-        user ON applications.creator_id = user.user_id AND applications.created_by = 'user'
-      LEFT JOIN
-        admin_account ON applications.creator_id = admin_account.account_id AND applications.created_by = 'admin';
+      FROM applications
+      JOIN instructor 
+        ON applications.instructor_id = instructor.instructor_id
+      LEFT JOIN user 
+        ON applications.creator_id = user.user_id 
+        AND applications.created_by = 'user'
+      LEFT JOIN admin_account 
+        ON applications.creator_id = admin_account.account_id 
+        AND applications.created_by = 'admin'
+      WHERE DATE_FORMAT(applications.start_date, '%Y-%m') = ?
       `,
+      [monthYear]
     );
 
     const formattedResult = result.map((row) => ({
@@ -973,6 +980,7 @@ export async function getApplicants() {
     throw error;
   }
 }
+
 
 export async function getApplicant(userId) {
   const query = `

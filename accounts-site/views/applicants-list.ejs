@@ -32,6 +32,16 @@
         <div id="content" class="flex flex-col w-full">
             <div class="flex w-full justify-between pr-4 my-2">
                 <h2 class="text-lg ml-4 my-2"> Manage Applicants</h2>
+                <div id="center-side" class="hidden">
+                    <form id="monthyearfilter">
+                        <div class="flex flex-row gap-4">
+                            <h3 class="flex items-center justify-center">Month / Year</h3>
+                            <input type="month" id="monthyear" name="monthyear" min="1976-03"
+                                class="border-b-2 border-b-black " />
+                            <button type="submit" class="px-4 py-2 bg-blue-500 text-white rounded">Filter</button>
+                        </div>
+                    </form>
+                </div>
                 <a href="/account/applicants"
                     class="bg-sky-900 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg focus:outline-none focus:shadow-outline">
                     Back
