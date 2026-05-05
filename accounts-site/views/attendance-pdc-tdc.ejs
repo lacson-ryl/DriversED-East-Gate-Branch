@@ -19,7 +19,7 @@
                     <button id="notif-button" class="relative">
                         <img id="notif-logo" src="/account/f-assets/solid/bell.svg" class="w-7 h-7 inline-block" />
                         <div id="notif-new-indicator"
-                            class="h-3 w-3 rounded-full bg-blue-900 absolute top-2 right-2 transform translate-x-1/2 -translate-y-1/2 animate-pulse">
+                            class="h-3 w-3 rounded-full bg-blue-900 absolute top-2 right-2 transform translate-x-1/2 -translate-y-1/2 animate-pulse hidden">
                         </div>
                     </button>
                 </div>
@@ -33,6 +33,18 @@
         <div id="content" class="flex flex-col w-full">
             <div class="flex w-full justify-between pr-4 my-2">
                 <h2 class="text-lg ml-4 my-2"> Manage Applicants</h2>
+
+                <div id="center-side" class="hidden">
+                    <form id="monthyearfilter">
+                        <div class="flex flex-row gap-4">
+                            <h3 class="flex items-center justify-center">Month / Year</h3>
+                            <input type="month" id="monthyear" name="monthyear" min="1976-03"
+                                class="border-b-2 border-b-black " />
+                            <button type="submit" class="px-4 py-2 bg-blue-500 text-white rounded">Filter</button>
+                        </div>
+                    </form>
+                </div>
+                
                 <div class="flex gap-2">
                     <button id="pdc-takers-btn"
                         class=" bg-sky-900 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg outline-2 outline-offset-2 outline-sky-800 shadow-outline">

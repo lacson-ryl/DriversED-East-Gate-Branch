@@ -50,18 +50,18 @@ app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 //app.use(express.static(__dirname)); // serves root-level files
 app.use(
   "/account/f-css",
-  express.static(path.join(process.cwd(), "/shared/f-css"))
+  express.static(path.join(process.cwd(), "/shared/f-css")),
 );
 app.use(
   "/account/f-assets",
   express.static(path.join(__dirname, "shared", "f-assets"), {
     maxAge: "1h", // cache for 1 hour
     etag: false, // disable ETag revalidation
-  })
+  }),
 );
 app.use(
   "/account/f-jsfiles",
-  express.static(path.join(__dirname, "f-jsfiles"))
+  express.static(path.join(__dirname, "f-jsfiles")),
 ); // ✅ this is key
 app.use("/account/utils", express.static(path.join(__dirname, "utils")));
 
@@ -136,7 +136,7 @@ app.use(adminPassport.session());
 // Admin Google Authentication
 app.get(
   "/auth/google/admin",
-  adminPassport.authenticate("google", { scope: ["profile", "email"] })
+  adminPassport.authenticate("google", { scope: ["profile", "email"] }),
 );
 
 app.get(
@@ -166,14 +166,14 @@ app.get(
     const token = jwt.sign(
       { userId: req.user.account_id, role: req.user.account_role },
       secretKey,
-      { expiresIn: "3h" }
+      { expiresIn: "3h" },
     );
     res.cookie("jwtToken", token, {
       maxAge: 3 * 60 * 60 * 1000,
       httpOnly: true,
     });
     res.redirect(`/account/login-success`);
-  }
+  },
 );
 
 app.use(userPassport.initialize());
@@ -182,7 +182,7 @@ app.use(userPassport.session());
 // User Google Authentication
 app.get(
   "/auth/google/user",
-  userPassport.authenticate("google", { scope: ["profile", "email"] })
+  userPassport.authenticate("google", { scope: ["profile", "email"] }),
 );
 
 app.get(
@@ -194,7 +194,7 @@ app.get(
     const token = jwt.sign(
       { userId: req.user.user_id, role: req.user.user_role },
       secretKey,
-      { expiresIn: "3h" }
+      { expiresIn: "3h" },
     );
 
     res.cookie("jwtToken", token, {
@@ -203,7 +203,7 @@ app.get(
       secure: true,
     });
     res.redirect(`/account/login-success`);
-  }
+  },
 );
 
 app.use(changePasswordPassport.initialize());
@@ -212,7 +212,9 @@ app.use(changePasswordPassport.session());
 //Change PAssword Google Authentication
 app.get(
   "/auth/google/change-password",
-  changePasswordPassport.authenticate("google", { scope: ["profile", "email"] })
+  changePasswordPassport.authenticate("google", {
+    scope: ["profile", "email"],
+  }),
 );
 
 app.get(
@@ -244,7 +246,7 @@ app.get(
           role: profile.user_role,
         },
         secretKey,
-        { expiresIn: "20m" } // Token expires in 20 minutes
+        { expiresIn: "20m" }, // Token expires in 20 minutes
       );
 
       // Set the JWT as a cookie
@@ -255,7 +257,7 @@ app.get(
 
       res.redirect("/account/change-password-email-option?success=true");
     })(req, res, next);
-  }
+  },
 );
 
 const limiter = rateLimit({
@@ -378,6 +380,10 @@ import {
   addVehicleRepair,
   updateVehicleRepair,
   getRepairById,
+  auditUserPayments,
+  getAuditSummary,
+  auditInstructorPayroll,
+  auditVehicleExpenses,
 } from "./config/b-database.js";
 
 import {
@@ -395,6 +401,8 @@ import { v4 as uuidv4 } from "uuid";
 import redis from "./config/b-redis.js";
 import { fileTypeFromBuffer } from "file-type";
 import { generateCertificatePDF } from "./utils-backend/generateCertPDF.js";
+import { generateAuditExcel } from "./utils-backend/audit-excel-eport.js";
+import { registerStream } from "./utils-backend/notifStream.js";
 
 const router = express.Router();
 
@@ -409,7 +417,7 @@ router.post(
       const { encrypted, iv } = handlePrivateKey(
         "encrypt",
         secretKey,
-        privateKey
+        privateKey,
       );
       const { userId, role } = req.user;
 
@@ -419,7 +427,7 @@ router.post(
       console.error("Error sharing public key:", error);
       res.status(500).json({ error: "Failed to share public key." });
     }
-  }
+  },
 );
 
 router.post(
@@ -454,7 +462,7 @@ router.post(
       console.error("delete token error:", error);
       res.status(500).json({ error: "Cant make delete token right now." });
     }
-  }
+  },
 );
 
 router.get("/login-success", authenticateToken, (req, res) => {
@@ -462,6 +470,11 @@ router.get("/login-success", authenticateToken, (req, res) => {
     role: req.user.role,
   });
 });
+
+router.get("/api/notifications/stream", authenticateToken, (req, res) => {
+  const { userId, role } = req.user; // from your JWT
+  registerStream(userId, role, res);
+}); 
 
 router.get("/user-registration-form", (req, res) => {
   try {
@@ -532,21 +545,21 @@ router.post(
         idCard,
         prn,
         profilePicture,
-        userId
+        userId,
       );
 
       await addNotification(
         userId,
         role,
         "Profile",
-        "Profile successfully added"
+        "Profile successfully added",
       );
       return res.status(200).json({ message: "Profile Submitted" });
     } catch (error) {
       console.error("Internal Server Error", error);
       return res.status(500).json({ error: "Internal Server Error!" });
     }
-  }
+  },
 );
 
 router.put(
@@ -646,14 +659,14 @@ router.put(
         userId,
         role,
         "Profile",
-        "Profile changes successfully edited"
+        "Profile changes successfully edited",
       );
       return res.status(200).json({ message: "Profile updated successfully!" });
     } catch (error) {
       console.error("Error Updating Profile:", error);
       return res.status(400).json({ error: "Error Updating Profile!" });
     }
-  }
+  },
 );
 
 router.get("/user-profile", authenticateToken, async (req, res) => {
@@ -679,20 +692,20 @@ router.get(
       if (userProfileDetails) {
         if (userProfileDetails.profile_picture) {
           userProfileDetails.profile_picture = await renderBase64File(
-            userProfileDetails.profile_picture
+            userProfileDetails.profile_picture,
           );
         }
         if (userProfileDetails.identification_card) {
           userProfileDetails.identification_card_picture =
             await renderBase64File(
-              userProfileDetails.identification_card_picture
+              userProfileDetails.identification_card_picture,
             );
         }
 
         userProfileDetails.age = userProfileDetails.birth_date
           ? Math.floor(
               (new Date() - new Date(userProfileDetails.birth_date)) /
-                (1000 * 60 * 60 * 24 * 365.25)
+                (1000 * 60 * 60 * 24 * 365.25),
             )
           : null;
       }
@@ -718,7 +731,7 @@ router.get(
       console.error("User Profile error:", error);
       return res.status(500).json({ error: "Can't fetch data right now!" });
     }
-  }
+  },
 );
 
 router.post("/api/user-registration", async (req, res) => {
@@ -755,7 +768,7 @@ router.post("/api/user-registration", async (req, res) => {
       "user",
       "Welcome!!",
       `Greetings to you, ${name}!!
-      Thank you for choosing our driving school.`
+      Thank you for choosing our driving school.`,
     );
 
     await sendEmail("new-account", email, {
@@ -804,7 +817,7 @@ router.post("/user-login", async (req, res) => {
           secretKey,
           {
             expiresIn: "3h",
-          }
+          },
         );
 
         // Set the JWT token in a cookie
@@ -844,7 +857,7 @@ router.get(
         error,
       });
     }
-  }
+  },
 );
 
 router.get(
@@ -857,14 +870,14 @@ router.get(
       const traineesCourseList = await getTraineeCourseList(userId);
       const traineesCourseSchedule = await getUserAttendanceSchedule(
         userId,
-        role
+        role,
       );
       res.status(200).json({ traineesCourseList, traineesCourseSchedule });
     } catch (error) {
       console.error("Error fetching data:", error);
       res.status(500).json({ error: "Error fetching data" });
     }
-  }
+  },
 );
 
 router.get("/api/user-dashboard/program-list", async (req, res) => {
@@ -886,7 +899,7 @@ router.get("/api/user-dashboard/program-list", async (req, res) => {
       } else {
         const cover = await renderBase64File(
           row.program_cover,
-          row.program_cover_file_type
+          row.program_cover_file_type,
         );
 
         programMap.set(row.program_id, {
@@ -942,7 +955,7 @@ router.post(
         userId,
         role,
         transmissionType,
-        program_id
+        program_id,
       );
 
       let enrolltype = transmissionType == "Onsite" ? "TDC" : "PDC";
@@ -957,14 +970,14 @@ router.post(
           profile.user_id,
           profile.user_role,
           `Applying ${enrolltype} course.`,
-          "Application successfully added! Please check your email for details."
+          "Application successfully added! Please check your email for details.",
         );
       } else {
         await addNotification(
           userId,
           role,
           `Applying ${enrolltype} course.`,
-          "Application successfully added!"
+          "Application successfully added!",
         );
       }
 
@@ -973,7 +986,7 @@ router.post(
       console.error("Error applying TDC:", error);
       return res.status(401).json({ error: error.message });
     }
-  }
+  },
 );
 
 router.post(
@@ -995,7 +1008,7 @@ router.post(
         userId,
         role,
         "Set TDC date",
-        `TDC Date Set to ${tdcDate} with ${maxSlots} slots Successfully!`
+        `TDC Date Set to ${tdcDate} with ${maxSlots} slots Successfully!`,
       );
       return res.status(200).json({
         message: `TDC Date Set to ${tdcDate} with ${maxSlots} slots Successfully!`,
@@ -1004,7 +1017,7 @@ router.post(
       console.error("Error setting TDC date:", error);
       return res.status(500).json({ error: "Error setting TDC date" });
     }
-  }
+  },
 );
 
 router.post(
@@ -1034,21 +1047,21 @@ router.post(
         course,
         instructor,
         continuationDate,
-        dateAMPM
+        dateAMPM,
       );
       if (clientId !== null) {
         await addNotification(
           userID,
           createdBy,
           `Continuation date.`,
-          "Successfully added new continuation date to your course."
+          "Successfully added new continuation date to your course.",
         );
       }
       await addNotification(
         0,
         "admin",
         `Continuation date.`,
-        "Successfully added new continuation date to your course."
+        "Successfully added new continuation date to your course.",
       );
       return res.status(200).json({
         message: "Successfully added continuation date to your course",
@@ -1059,7 +1072,7 @@ router.post(
         .status(500)
         .json({ error: "Error adding continuation to your course" });
     }
-  }
+  },
 );
 
 router.post(
@@ -1078,13 +1091,13 @@ router.post(
         instructor,
         continuationDate,
         dateAMPM,
-        transmissionType
+        transmissionType,
       );
       await addNotification(
         0,
         "admin",
         `Continuation date.`,
-        "Successfully added new continuation date to your course."
+        "Successfully added new continuation date to your course.",
       );
       return res.status(200).json({
         message: "Successfully added continuation date to your course",
@@ -1095,7 +1108,7 @@ router.post(
         .status(500)
         .json({ error: "Error adding continuation to your course" });
     }
-  }
+  },
 );
 
 // Get Instructor Availability Endpoint
@@ -1135,7 +1148,7 @@ router.get(
         error,
       });
     }
-  }
+  },
 );
 
 router.get(
@@ -1148,7 +1161,7 @@ router.get(
       const userApplication = await getApplicant(userId);
       const courseList = await getTraineeCourseList(userId);
       const filtered = courseList.filter(
-        (arr) => arr.program_duration > arr.total_hours
+        (arr) => arr.program_duration > arr.total_hours,
       );
       res
         .status(200)
@@ -1157,7 +1170,7 @@ router.get(
       console.error("Error fetching applicants:", error);
       res.status(500).json({ error: "Error fetching applicants" });
     }
-  }
+  },
 );
 
 router.get("/search", authenticateToken, async (req, res) => {
@@ -1182,7 +1195,7 @@ router.post(
       const { searchOption, userInfo } = await decryptData(
         encryptedWithEncAesKey,
         userId,
-        role
+        role,
       );
       const profile = await findUserAccount(searchOption, userInfo);
       const encryptedProfile = await encryptData(profile, userId, role);
@@ -1193,7 +1206,7 @@ router.post(
         .status(500)
         .json({ error: "Error sending data to the server!", err });
     }
-  }
+  },
 );
 
 router.get(
@@ -1213,7 +1226,7 @@ router.get(
         .status(500)
         .json({ error: "Errorfetching data for user!", err });
     }
-  }
+  },
 );
 
 router.get(
@@ -1229,7 +1242,7 @@ router.get(
         error,
       });
     }
-  }
+  },
 );
 
 router.post("/api/submit-request", authenticateToken, async (req, res) => {
@@ -1245,13 +1258,13 @@ router.post("/api/submit-request", authenticateToken, async (req, res) => {
       userId,
       role,
       "Request submit",
-      "Request Form successfully submitted!"
+      "Request Form successfully submitted!",
     );
     await addNotification(
       0,
       "admin",
       "Request submit",
-      `User ${userId} submitted a request!`
+      `User ${userId} submitted a request!`,
     );
     res.status(200).json({ message: "Request added successfully" });
   } catch (error) {
@@ -1283,7 +1296,7 @@ router.get(
       console.log("Error fetching data: ", err);
       res.status(500).json({ error: "Internal Server Error" });
     }
-  }
+  },
 );
 
 router.get(
@@ -1299,7 +1312,7 @@ router.get(
         error,
       });
     }
-  }
+  },
 );
 
 router.post("/api/submit-report", authenticateToken, async (req, res) => {
@@ -1314,13 +1327,13 @@ router.post("/api/submit-report", authenticateToken, async (req, res) => {
       userId,
       role,
       "Report submit",
-      "Report Form successfully submitted!"
+      "Report Form successfully submitted!",
     );
     await addNotification(
       0,
       "admin",
       "Request submit",
-      `User ${userId} submitted a report!`
+      `User ${userId} submitted a report!`,
     );
     res.status(201).json({ message: "Report added successfully" });
   } catch (error) {
@@ -1352,7 +1365,7 @@ router.get(
       console.log("Error fetching data: ", err);
       res.status(500).json({ error: "Internal Server Error" });
     }
-  }
+  },
 );
 
 router.get("/user-payments", authenticateToken, (req, res) => {
@@ -1377,7 +1390,7 @@ router.get(
     } catch (error) {
       res.status(500).json({ error: "Internal Server Error" });
     }
-  }
+  },
 );
 
 router.get(
@@ -1399,9 +1412,9 @@ router.get(
           ...method,
           method_file: await renderBase64File(
             method.method_file,
-            method.method_file_type
+            method.method_file_type,
           ),
-        }))
+        })),
       );
 
       const data = {
@@ -1414,7 +1427,7 @@ router.get(
     } catch (error) {
       res.status(500).json({ error: "Internal Server Error" });
     }
-  }
+  },
 );
 
 router.get(
@@ -1429,7 +1442,7 @@ router.get(
         error,
       });
     }
-  }
+  },
 );
 
 router.post(
@@ -1486,7 +1499,7 @@ router.post(
         "admin",
         "New Admin account added.",
         `Welcome to the company, ${admin_name} <br>
-      I look forward working with you!! `
+      I look forward working with you!! `,
       );
 
       // Send a successful response with the token
@@ -1495,7 +1508,7 @@ router.post(
       console.error("Internal server error:", error);
       return res.status(500).json({ error: "Internal server error!" });
     }
-  }
+  },
 );
 
 router.get("/adminlogin", (req, res) => {
@@ -1528,7 +1541,7 @@ router.post("/adminlogin", async (req, res) => {
           secretKey,
           {
             expiresIn: "3h",
-          }
+          },
         );
 
         res.cookie("jwtToken", token, {
@@ -1580,7 +1593,7 @@ router.get(
         error,
       });
     }
-  }
+  },
 );
 
 router.get("/api/admin-dashboard-time/:month/:year", async (req, res) => {
@@ -1606,9 +1619,9 @@ router.get(
           ...row,
           method_file: await renderBase64File(
             row.method_file,
-            row.method_file_type
+            row.method_file_type,
           ),
-        }))
+        })),
       );
       const scheduleList = await getInstructorScheduleForToday();
       res.status(200).json({ methodList, scheduleList });
@@ -1616,7 +1629,7 @@ router.get(
       console.log("Error fetching data: ", err);
       res.status(500).json({ error: "Internal Server Error" });
     }
-  }
+  },
 );
 
 router.post(
@@ -1638,14 +1651,14 @@ router.post(
         userId,
         role,
         "Payment",
-        `${methodName} Payment method successfully added!`
+        `${methodName} Payment method successfully added!`,
       );
       res.status(200).json({ message: "Payment Method Added Successfully!" });
     } catch (error) {
       console.error("Error adding payment method:", error);
       res.status(500).json({ error: "Internal Server Error" });
     }
-  }
+  },
 );
 
 // Edit Payment Method
@@ -1662,7 +1675,7 @@ router.put(
       console.error("Error editing payment method:", error);
       res.status(500).json({ error: "Internal Server Error" });
     }
-  }
+  },
 );
 
 router.post(
@@ -1703,7 +1716,7 @@ router.post(
       console.error("Error uploading file:", error);
       res.status(500).json({ error: "Internal Server Error" });
     }
-  }
+  },
 );
 
 // Delete Payment Method
@@ -1721,7 +1734,7 @@ router.delete(
         userId,
         role,
         "Payment",
-        `Payment method ID #${methodId} successfully deleted!`
+        `Payment method ID #${methodId} successfully deleted!`,
       );
       res
         .status(200)
@@ -1730,23 +1743,24 @@ router.delete(
       console.error("Error deleting method:", error);
       res.status(500).json({ error: "Internal Server Error" });
     }
-  }
+  },
 );
 
 router.get(
-  "/api/instructor/attendance-list/:type",
+  "/api/instructor/attendance-list/:type/:monthYear",
   authenticateToken,
   authorizeRole("instructor"),
   async (req, res) => {
     try {
       // const id = req.params.instructorId;
       const { userId, role } = req.user;
-      const type = req.params.type;
+      const {type, monthYear} = req.params;
       const instructor = await getInstructorWithAccountId(userId);
       const instructorId = instructor.instructor_id;
       const { data, userProfilePictures } = await getAttendanceByInstructorId(
         instructorId,
-        type
+        type,
+        monthYear,
       );
       const encrypted = await encryptData(
         {
@@ -1754,14 +1768,14 @@ router.get(
           pictures: userProfilePictures,
         },
         userId,
-        role
+        role,
       );
       res.status(200).json({ encrypted });
     } catch (err) {
       console.error("Error fetching data: ", err);
       res.status(500).json({ error: "Internal Server Error" });
     }
-  }
+  },
 );
 
 router.get(
@@ -1782,18 +1796,18 @@ router.get(
           ...arr,
           certificate_file: await renderBase64File(
             arr.certificate_file,
-            arr.certificate_file_type
+            arr.certificate_file_type,
           ),
           grade_sheet: await renderBase64File(arr.grade_sheet, mimeType),
           grade_sheet_type: mimeType,
-        }))
+        })),
       );
       res.status(200).json(userCourse);
     } catch (err) {
       console.log("Error fetching data: ", err);
       res.status(500).json({ error: "Internal Server Error" });
     }
-  }
+  },
 );
 
 router.get(
@@ -1808,23 +1822,23 @@ router.get(
         error,
       });
     }
-  }
+  },
 );
 
 router.get(
-  "/api/attendance/:type",
+  "/api/attendance/:type/:monthYear",
   authenticateToken,
   authorizeRole("admin"),
   async (req, res) => {
     try {
-      const type = req.params.type;
-      const attendanceList = await getAllPdcTdcTakers(type);
+      const {type, monthYear} = req.params;
+      const attendanceList = await getAllPdcTdcTakers(type, monthYear);
       return res.status(200).json(attendanceList);
     } catch (error) {
       console.error("Error fetching data:", error);
       res.status(500).json({ error: "Internal Server Error" });
     }
-  }
+  },
 );
 
 router.put(
@@ -1839,7 +1853,7 @@ router.put(
       const { clientId } = await changeUserAttendanceStatus(
         id,
         status,
-        hoursAttended
+        hoursAttended,
       );
       const { userId, role } = req.user; //admin
       await addNotification(
@@ -1848,7 +1862,7 @@ router.put(
         "Attendance",
         `Attendance id#${id} Status has been change into "${status}" ${
           !hoursAttended ? "" : `with ${hoursAttended} hours added`
-        }`
+        }`,
       );
       await addNotification(
         clientId,
@@ -1856,7 +1870,7 @@ router.put(
         "Attendance",
         `Attendance id#${id} Status has been change into "${status}" ${
           !hoursAttended ? "" : `with ${hoursAttended} hours added`
-        }`
+        }`,
       );
 
       return res.status(200).json({ message: "Success" });
@@ -1864,7 +1878,7 @@ router.put(
       console.error("Error fetching data:", error);
       res.status(500).json({ error: "Internal Server Error" });
     }
-  }
+  },
 );
 
 router.delete(
@@ -1879,7 +1893,7 @@ router.delete(
       const deleted = await deleteTraineeAttendance(
         creatorId,
         createdBy,
-        courseId
+        courseId,
       );
       console.log("deleted", deleted);
       if (createdBy == "user") {
@@ -1887,14 +1901,14 @@ router.delete(
           creatorId,
           "user",
           "Application",
-          `User course id#${courseId} successfully deleted!`
+          `User course id#${courseId} successfully deleted!`,
         );
       }
       await addNotification(
         userId,
         role,
         "Application",
-        `Application id#${id} successfully deleted!`
+        `Application id#${id} successfully deleted!`,
       );
 
       return res.status(200).json({
@@ -1904,7 +1918,7 @@ router.delete(
       console.error("Error deleting application:", err);
       res.status(500).json({ error: err });
     }
-  }
+  },
 );
 
 router.get(
@@ -1920,7 +1934,7 @@ router.get(
         error,
       });
     }
-  }
+  },
 );
 
 router.get(
@@ -1934,7 +1948,7 @@ router.get(
       console.error("Error fetching applicants:", error);
       res.status(500).json({ error: "Internal Server Error" });
     }
-  }
+  },
 );
 
 router.get(
@@ -1949,7 +1963,7 @@ router.get(
       console.error("Error fetching applicants:", error);
       res.status(500).json({ error: "Internal Server Error" });
     }
-  }
+  },
 );
 
 router.delete(
@@ -1968,13 +1982,13 @@ router.delete(
         userId,
         role,
         "User Course",
-        `User course id#${courseId} successfully deleted!`
+        `User course id#${courseId} successfully deleted!`,
       );
       await addNotification(
         clientId,
         "user",
         "User Course",
-        `User course id#${courseId} successfully deleted!`
+        `User course id#${courseId} successfully deleted!`,
       );
 
       res.status(200).json({ success: true });
@@ -1982,7 +1996,7 @@ router.delete(
       console.error(error);
       res.status(500).json({ error: error });
     }
-  }
+  },
 );
 
 router.delete(
@@ -2000,13 +2014,13 @@ router.delete(
         userId,
         role,
         "Application",
-        `Application id#${id} successfully deleted!`
+        `Application id#${id} successfully deleted!`,
       );
       await addNotification(
         deleted.clientId,
         "user",
         "Application",
-        `User course id#${deleted.courseId} successfully deleted!`
+        `User course id#${deleted.courseId} successfully deleted!`,
       );
       return res.status(200).json({
         message: `User course id#${deleted.courseId} successfully deleted!`,
@@ -2015,7 +2029,7 @@ router.delete(
       console.error("Error deleting application:", err);
       res.status(500).json({ error: err });
     }
-  }
+  },
 );
 
 router.get(
@@ -2031,7 +2045,7 @@ router.get(
         error,
       });
     }
-  }
+  },
 );
 
 router.get(
@@ -2050,7 +2064,7 @@ router.get(
         .status(500)
         .json({ error: "Error fetching Instructors Data: " + error.message });
     }
-  }
+  },
 );
 
 router.get(
@@ -2069,7 +2083,7 @@ router.get(
         .status(500)
         .json({ error: "Error fetching Instructors Data: " + error.message });
     }
-  }
+  },
 );
 
 router.post(
@@ -2108,13 +2122,13 @@ router.post(
         Philhealth,
         accreditationNumber,
         dateStarted,
-        profilePicture
+        profilePicture,
       );
       await addNotification(
         userId,
         role,
         "Add Instructor",
-        `${name} has been successfully added!`
+        `${name} has been successfully added!`,
       );
       return res
         .status(200)
@@ -2123,7 +2137,7 @@ router.post(
       console.error("Error fetching Instructors Data:", error);
       res.status(500).json({ error: "Internal Server Error" });
     }
-  }
+  },
 );
 
 router.post(
@@ -2177,14 +2191,14 @@ router.post(
         userId,
         role,
         "Assign Account",
-        `Instructor ${userName} successfully assigned a account!`
+        `Instructor ${userName} successfully assigned a account!`,
       );
       await addNotification(
         accountId,
         "instructor",
         "User Course",
         `Welcome to the company, ${userName} <br>
-        I look forward working with you!! `
+        I look forward working with you!! `,
       );
 
       return res.status(201).json({ message: "Account assigned successfully" });
@@ -2192,13 +2206,12 @@ router.post(
       console.error("Error fetching Instructors Data:", error);
       res.status(500).json({ error: "Internal Server Error" });
     }
-  }
+  },
 );
 
 router.put(
   "/api/manage-people/:id",
   authenticateToken,
-  upload.none(),
   async (req, res) => {
     try {
       const { userId, role } = req.user;
@@ -2304,7 +2317,7 @@ router.put(
       console.error("Error Updating Profile:", error);
       return res.status(400).json({ error: "Error Updating Profile!" });
     }
-  }
+  },
 );
 
 router.get(
@@ -2319,7 +2332,7 @@ router.get(
     } catch (error) {
       return res.status(500).json({ error: "Internal Server Error" });
     }
-  }
+  },
 );
 
 router.get(
@@ -2343,7 +2356,7 @@ router.get(
     } catch (error) {
       return res.status(500).json({ error: "Internal Server Error" });
     }
-  }
+  },
 );
 
 router.get("/api/instructor-profile", authenticateToken, async (req, res) => {
@@ -2370,7 +2383,7 @@ router.get(
     } catch (error) {
       return res.status(500).json({ error: "Internal Server Error" });
     }
-  }
+  },
 );
 
 router.get(
@@ -2396,7 +2409,7 @@ router.get(
     } catch (error) {
       return res.status(500).json({ error: "Internal Server Error" });
     }
-  }
+  },
 );
 
 router.delete(
@@ -2420,7 +2433,7 @@ router.delete(
     } catch (error) {
       return res.status(500).json({ error: "Internal Server Error" });
     }
-  }
+  },
 );
 
 router.get(
@@ -2435,7 +2448,7 @@ router.get(
         error,
       });
     }
-  }
+  },
 );
 
 router.get(
@@ -2449,7 +2462,7 @@ router.get(
     } catch (error) {
       return res.status(500).json({ error: "Internal Server Error" });
     }
-  }
+  },
 );
 
 router.post("/api/program/add", authenticateToken, async (req, res) => {
@@ -2470,14 +2483,14 @@ router.post("/api/program/add", authenticateToken, async (req, res) => {
       status,
       programDuration,
       programFee,
-      programDescription
+      programDescription,
     );
 
     await addNotification(
       userId,
       role,
       "Program",
-      `${programName} successfully added!`
+      `${programName} successfully added!`,
     );
     res.status(201).json({ message: "Program added successfully" });
   } catch (error) {
@@ -2496,7 +2509,7 @@ router.put("/api/programs/:id", authenticateToken, async (req, res) => {
       duration,
       fee,
       description,
-      cloneId
+      cloneId,
     );
     return res.status(200).json({ message: "Program edited successfully" });
   } catch (error) {
@@ -2526,7 +2539,7 @@ router.post(
       console.error("Error storing vehicle photo:", error);
       res.status(500).json({ error: "Internal Server Error" });
     }
-  }
+  },
 );
 
 router.get("/api/programs/name-list", authenticateToken, async (req, res) => {
@@ -2566,7 +2579,7 @@ router.post("/api/assign-programs", authenticateToken, async (req, res) => {
       userId,
       role,
       "Program assign",
-      `Instructor id#${instructor_id} assigned programs id#${programMsg} successfully added!`
+      `Instructor id#${instructor_id} assigned programs id#${programMsg} successfully added!`,
     );
     res.status(200).json({ message: "Programs assigned successfully" });
   } catch (error) {
@@ -2587,7 +2600,7 @@ router.get(
       console.error("Error fetching assigned programs:", error);
       return res.status(500).json({ error: "Internal Server Error" });
     }
-  }
+  },
 );
 
 //Unassigning programs from instructos
@@ -2625,7 +2638,7 @@ router.delete(
         userId,
         role,
         "Program",
-        `Program #${id} successfully deleted!`
+        `Program #${id} successfully deleted!`,
       );
       return res
         .status(200)
@@ -2633,7 +2646,7 @@ router.delete(
     } catch (error) {
       return res.status(500).json({ error: "Internal Server Error" });
     }
-  }
+  },
 );
 
 router.get(
@@ -2648,7 +2661,7 @@ router.get(
         error,
       });
     }
-  }
+  },
 );
 
 router.get("/api/requests/list", authenticateToken, async (req, res) => {
@@ -2674,7 +2687,7 @@ router.get(
       console.error("Error fetching request details:", error);
       res.status(500).json({ error: "Internal Server Error" });
     }
-  }
+  },
 );
 
 router.put(
@@ -2688,20 +2701,20 @@ router.put(
       const { clientId, title, reqStatus } = await editUserRequest(
         status,
         reason,
-        rowId
+        rowId,
       );
 
       await addNotification(
         userId,
         role,
         "Request",
-        `Request titled "${title}" has been updated to ${reqStatus}`
+        `Request titled "${title}" has been updated to ${reqStatus}`,
       );
       await addNotification(
         clientId,
         "user",
         "Request",
-        `Request titled "${title}" has been updated to ${reqStatus}`
+        `Request titled "${title}" has been updated to ${reqStatus}`,
       );
 
       return res.status(200).json({ message: "Success" });
@@ -2709,7 +2722,7 @@ router.put(
       console.error("Error changing request details:", error);
       res.status(500).json({ error: "Internal Server Error" });
     }
-  }
+  },
 );
 
 router.get(
@@ -2724,7 +2737,7 @@ router.get(
         error,
       });
     }
-  }
+  },
 );
 
 router.get("/api/certificates", authenticateToken, async (req, res) => {
@@ -2735,9 +2748,9 @@ router.get("/api/certificates", authenticateToken, async (req, res) => {
         ...cert,
         certificate_template: await renderBase64File(
           cert.certificate_template,
-          cert.template_file_type
+          cert.template_file_type,
         ),
-      }))
+      })),
     );
     return res.json({ certList });
   } catch (error) {
@@ -2759,7 +2772,7 @@ router.post("/api/certificate/add", authenticateToken, async (req, res) => {
       userId,
       role,
       "Certificate",
-      `${certificateName} Certificate successfully added!`
+      `${certificateName} Certificate successfully added!`,
     );
     res
       .status(201)
@@ -2783,14 +2796,14 @@ router.post(
       const certificate = await uploadCertificateTemplate(
         id,
         file.buffer,
-        file.mimetype
+        file.mimetype,
       );
       res.json(certificate);
     } catch (error) {
       console.error("Error fetching report details:", error);
       res.status(500).json({ error: "Internal Server Error" });
     }
-  }
+  },
 );
 
 router.put("/api/certificates/:id", authenticateToken, async (req, res) => {
@@ -2818,7 +2831,7 @@ router.delete(
         userId,
         role,
         "Certificate",
-        `Certificate id#${id} successfully deleted!`
+        `Certificate id#${id} successfully deleted!`,
       );
       return res
         .status(200)
@@ -2826,7 +2839,7 @@ router.delete(
     } catch (error) {
       return res.status(500).json({ error: "Internal Server Error" });
     }
-  }
+  },
 );
 
 router.get(
@@ -2841,7 +2854,7 @@ router.get(
         error,
       });
     }
-  }
+  },
 );
 
 router.get("/report/:id", authenticateToken, async (req, res) => {
@@ -2876,19 +2889,19 @@ router.put(
       const { clientId, title, repStatus } = await editUserReport(
         status,
         reason,
-        rowId
+        rowId,
       );
       await addNotification(
         userId,
         role,
         "Report",
-        `Report titled "${title}" has been updated to ${repStatus}`
+        `Report titled "${title}" has been updated to ${repStatus}`,
       );
       await addNotification(
         clientId,
         "user",
         "Report",
-        `Report titled "${title}" has been updated to ${repStatus}`
+        `Report titled "${title}" has been updated to ${repStatus}`,
       );
 
       return res.status(200).json({ message: "Success" });
@@ -2896,7 +2909,7 @@ router.put(
       console.error("Error changing report details:", error);
       res.status(500).json({ error: "Internal Server Error" });
     }
-  }
+  },
 );
 
 router.get(
@@ -2916,7 +2929,7 @@ router.get(
         error,
       });
     }
-  }
+  },
 );
 
 router.get(
@@ -2925,12 +2938,13 @@ router.get(
   authorizeRole("admin"),
   async (req, res) => {
     try {
-      const paymentList = await getPaymentsLogs();
+      const { monthyear } = req.query;
+      const paymentList = await getPaymentsLogs(monthyear);
       res.status(200).json(paymentList);
     } catch (error) {
       res.status(500).json({ error: "Internal Server Error" });
     }
-  }
+  },
 );
 
 router.post(
@@ -2970,7 +2984,7 @@ router.post(
         amount,
         paymentMethod,
         compressedReceipt,
-        courseSelect
+        courseSelect,
       );
 
       if (role === "user") {
@@ -2979,14 +2993,14 @@ router.post(
           role,
           "Payment",
           `User #${userId} made a payment using: <br>
-           ${paymentMethod} : ${amount} `
+           ${paymentMethod} : ${amount} `,
         );
         await addNotification(
           0,
           "admin",
           "Payment",
           `User #${userId} made a payment using: <br>
-           ${paymentMethod} : ${amount} `
+           ${paymentMethod} : ${amount} `,
         );
       } else {
         const message =
@@ -3006,7 +3020,7 @@ router.post(
       console.error("Error in /api/payment/add:", error);
       res.status(500).json({ error: "Internal Server Error" });
     }
-  }
+  },
 );
 
 router.post(
@@ -3030,7 +3044,7 @@ router.post(
       console.error("Error fetching report details:", error);
       res.status(500).json({ error: "Internal Server Error" });
     }
-  }
+  },
 );
 
 router.put(
@@ -3048,14 +3062,14 @@ router.put(
         "user",
         "Payment",
         `Your payment has change status into "${payStatus}" <br>
-           ${payment_method} : ${amount} `
+           ${payment_method} : ${amount} `,
       );
       res.status(200).json({ message: "Payment Status changed successfully!" });
     } catch (error) {
       console.error("Error fetching report details:", error);
       res.status(500).json({ error: "Internal Server Error" });
     }
-  }
+  },
 );
 
 router.delete(
@@ -3072,7 +3086,7 @@ router.delete(
         userId,
         role,
         "Payment",
-        `Payment id#${rowId} info Deleted successfully!`
+        `Payment id#${rowId} info Deleted successfully!`,
       );
       return res
         .status(200)
@@ -3081,7 +3095,7 @@ router.delete(
       console.error("Cant delete payment right now!", err);
       res.status(500).json({ error: "Internal Server Error", err });
     }
-  }
+  },
 );
 
 router.get("/api/instructors", async (req, res) => {
@@ -3114,7 +3128,7 @@ router.get(
         error,
       });
     }
-  }
+  },
 );
 
 router.get(
@@ -3123,16 +3137,13 @@ router.get(
   authorizeRole("admin"),
   async (req, res) => {
     try {
-      const completedCourseList = await getCompletedCourseList();
-      console.log(
-        "completedCourseList",
-        Object.keys(completedCourseList).length
-      );
+      const { monthyear } = req.query;
+      const completedCourseList = await getCompletedCourseList(monthyear);
       return res.status(200).json(completedCourseList);
     } catch (error) {
       res.status(500).json({ error: "Internal Server Error" });
     }
-  }
+  },
 );
 
 router.put(
@@ -3150,7 +3161,7 @@ router.put(
     } catch (error) {
       res.status(500).json({ error: "Internal Server Error" });
     }
-  }
+  },
 );
 
 router.post(
@@ -3172,7 +3183,7 @@ router.post(
         .status(500)
         .json({ error: "Cant upload completion certificate right now!" });
     }
-  }
+  },
 );
 
 router.post(
@@ -3200,7 +3211,7 @@ router.post(
       console.error(error);
       res.status(500).json({ error: "Cant upload grade sheet right now." });
     }
-  }
+  },
 );
 
 router.delete(
@@ -3217,13 +3228,13 @@ router.delete(
         req.user.userId,
         req.user.role,
         "User Course",
-        `User course id#${decrypted.courseId} successfully deleted!`
+        `User course id#${decrypted.courseId} successfully deleted!`,
       );
       await addNotification(
         userId,
         "user",
         "User Course",
-        `User course id#${decrypted.courseId} successfully deleted!`
+        `User course id#${decrypted.courseId} successfully deleted!`,
       );
       return res
         .status(200)
@@ -3234,7 +3245,7 @@ router.delete(
         .status(500)
         .json({ error: `Deleting user course, please try again later` });
     }
-  }
+  },
 );
 
 router.get(
@@ -3249,7 +3260,7 @@ router.get(
         error,
       });
     }
-  }
+  },
 );
 
 router.get("/api/vehicles", authenticateToken, async (req, res) => {
@@ -3276,7 +3287,7 @@ router.post(
         plateNumber,
         vehicleModel,
         year,
-        vehicleType
+        vehicleType,
       );
 
       await addNotification(
@@ -3284,7 +3295,7 @@ router.post(
         role,
         "Add vehicle",
         `Successfully added! <br>
-        ${vehicleType} ${vehicleModel} ${year} - ${plateNumber} `
+        ${vehicleType} ${vehicleModel} ${year} - ${plateNumber} `,
       );
       res
         .status(201)
@@ -3294,7 +3305,7 @@ router.post(
     } catch (error) {
       res.status(500).json({ error: "Internal Server Error" });
     }
-  }
+  },
 );
 
 router.put(
@@ -3313,7 +3324,7 @@ router.put(
       console.error("Error updating vehicle status:", error);
       return res.status(500).json({ error: "Internal Server Error" });
     }
-  }
+  },
 );
 
 router.post(
@@ -3337,7 +3348,7 @@ router.post(
       console.error("Error storing LTO document:", error);
       res.status(500).json({ error: "Internal Server Error" });
     }
-  }
+  },
 );
 
 router.post(
@@ -3364,7 +3375,7 @@ router.post(
       console.error("Error storing vehicle photo:", error);
       res.status(500).json({ error: "Internal Server Error" });
     }
-  }
+  },
 );
 
 router.put("/api/vehicles/:id", authenticateToken, async (req, res) => {
@@ -3376,7 +3387,7 @@ router.put("/api/vehicles/:id", authenticateToken, async (req, res) => {
       vehicleModel,
       year,
       vehicleType,
-      vehicleID
+      vehicleID,
     );
     return res.status(200).json({ message: "Vehicle Update!" });
   } catch (error) {
@@ -3401,7 +3412,7 @@ router.get(
       console.error("Error fetching repair list:", error);
       res.status(500).json({ error: "Internal Server Error" });
     }
-  }
+  },
 );
 
 router.post(
@@ -3444,7 +3455,7 @@ router.post(
         userId,
         role,
         "Vehicle Repair",
-        `New repair record added for vehicle ${vehicleId}`
+        `New repair record added for vehicle ${vehicleId}`,
       );
 
       return res.status(200).json({
@@ -3455,7 +3466,7 @@ router.post(
       console.error("Error adding vehicle repair:", error);
       res.status(500).json({ error: "Internal Server Error" });
     }
-  }
+  },
 );
 
 router.put(
@@ -3470,7 +3481,7 @@ router.put(
       const { repairId, descriptionBeforeRepair, updates } = await decryptData(
         encryptedWithEncAesKey,
         userId,
-        role
+        role,
       );
 
       // Fetch existing repair record
@@ -3503,7 +3514,7 @@ router.put(
         userId,
         role,
         "Vehicle Repair",
-        `Repair record ${repairId} updated successfully`
+        `Repair record ${repairId} updated successfully`,
       );
 
       return res.status(200).json({ message: "Repair updated successfully!" });
@@ -3511,7 +3522,7 @@ router.put(
       console.error("Error updating vehicle repair:", error);
       return res.status(400).json({ error: "Error updating vehicle repair!" });
     }
-  }
+  },
 );
 
 router.delete(
@@ -3528,7 +3539,7 @@ router.delete(
         userId,
         role,
         "Vehicle",
-        `Repair id#${id} Successfully deleted! `
+        `Repair id#${id} Successfully deleted! `,
       );
       return res
         .status(200)
@@ -3537,7 +3548,7 @@ router.delete(
       console.error("Error deleting vehicle:", err);
       return res.status(500).json({ error: "Internal Server Error", err });
     }
-  }
+  },
 );
 
 router.delete(
@@ -3554,7 +3565,7 @@ router.delete(
         userId,
         role,
         "Vehicle",
-        `Vehicle id#${id} Successfully deleted! `
+        `Vehicle id#${id} Successfully deleted! `,
       );
       return res
         .status(200)
@@ -3563,7 +3574,7 @@ router.delete(
       console.error("Error deleting vehicle:", err);
       return res.status(500).json({ error: "Internal Server Error", err });
     }
-  }
+  },
 );
 
 router.get(
@@ -3580,7 +3591,7 @@ router.get(
       console.error("failed to fetch notifications", error);
       res.status(500).json({ message: "failed to fetch notifications" });
     }
-  }
+  },
 );
 
 router.get(
@@ -3595,7 +3606,7 @@ router.get(
         error,
       });
     }
-  }
+  },
 );
 
 router.get("/change-password-email-option", async (req, res) => {
@@ -3639,7 +3650,7 @@ router.post(
             secret: process.env.RECAPTCHA_SECRET_KEY,
             response: recaptchaToken,
           },
-        }
+        },
       );
 
       const { success, challenge_ts } = recaptchaResponse.data;
@@ -3686,7 +3697,7 @@ router.post(
           timestamp: challenge_ts,
         },
         secretKey,
-        { expiresIn: "20m" }
+        { expiresIn: "20m" },
       );
 
       // Set the JWT as a cookie
@@ -3701,7 +3712,7 @@ router.post(
       console.error("Error handling email or PRN search:", error);
       res.status(500).json({ error: "Internal Server Error." });
     }
-  }
+  },
 );
 
 router.post(
@@ -3730,7 +3741,7 @@ router.post(
         profile.id,
         profile.account_role,
         hashedPassword,
-        "password"
+        "password",
       );
       await sendEmail("password-changed", email, {
         name: profile.name,
@@ -3748,7 +3759,7 @@ router.post(
       console.error("Error updating password:", error);
       res.status(500).json({ error: "Internal Server Error" });
     }
-  }
+  },
 );
 
 router.post(
@@ -3784,7 +3795,7 @@ router.post(
         profile.id,
         profile.account_role,
         hashedPassword,
-        "password"
+        "password",
       );
 
       await sendEmail("password-changed", email, {
@@ -3802,7 +3813,7 @@ router.post(
       console.error("Error updating password:", error);
       res.status(500).json({ error: "Internal Server Error" });
     }
-  }
+  },
 );
 
 router.post(
@@ -3828,7 +3839,7 @@ router.post(
         profile.id,
         profile.account_role,
         newEmail,
-        "email"
+        "email",
       );
 
       await sendEmail("password-changed", newEmail, {
@@ -3846,7 +3857,7 @@ router.post(
       console.error("Error updating password:", error);
       res.status(500).json({ error: "Internal Server Error" });
     }
-  }
+  },
 );
 
 router.post("/api/change-password-email-option/send-code", async (req, res) => {
@@ -3902,7 +3913,7 @@ router.get(
       res.clearCookie("jwtToken", { path: "/" });
       res.redirect(logoutLink);
     }
-  }
+  },
 );
 
 router.get(
@@ -3913,7 +3924,7 @@ router.get(
     res.render("certificate-of-completion-PDC", {
       isPDF: false,
     });
-  }
+  },
 );
 
 router.post(
@@ -3928,11 +3939,11 @@ router.post(
 
       const logoPath = path.join(
         __dirname,
-        "./shared/f-assets/solid/drivers_ed_logo-no-bg.png"
+        "./shared/f-assets/solid/drivers_ed_logo-no-bg.png",
       );
       const driversEdLogo = `data:image/png;base64,${fs.readFileSync(
         logoPath,
-        "base64"
+        "base64",
       )}`;
 
       // Example data to pass to the EJS template
@@ -3982,12 +3993,12 @@ router.post(
       userProfile[0].age = user.birth_date
         ? Math.floor(
             (new Date() - new Date(user.birth_date)) /
-              (1000 * 60 * 60 * 24 * 365.25)
+              (1000 * 60 * 60 * 24 * 365.25),
           )
         : null;
 
       userProfile[0].profilePicture = await renderBase64File(
-        user.profile_picture
+        user.profile_picture,
       );
 
       const userCourse = [
@@ -4019,14 +4030,14 @@ router.post(
           instructorId,
         },
         userId,
-        role
+        role,
       );
       res.status(200).json(encrypted);
     } catch (error) {
       console.error(error);
       res.status(500).json({ error: "Internal Server Error" });
     }
-  }
+  },
 );
 
 router.get(
@@ -4043,7 +4054,7 @@ router.get(
         error,
       });
     }
-  }
+  },
 );
 
 router.post(
@@ -4062,11 +4073,11 @@ router.post(
 
       const logoPath = path.join(
         __dirname,
-        "./shared/f-assets/solid/drivers_ed_logo-no-bg.png"
+        "./shared/f-assets/solid/drivers_ed_logo-no-bg.png",
       );
       const driversEdLogo = `data:image/png;base64,${fs.readFileSync(
         logoPath,
-        "base64"
+        "base64",
       )}`;
       const genControlNumber = generateTemporaryPassword(32); // Re-use a random generator
       const genCertificateNumber = generateTemporaryPassword(14);
@@ -4097,12 +4108,12 @@ router.post(
       userProfile[0].age = user.birth_date
         ? Math.floor(
             (new Date() - new Date(user.birth_date)) /
-              (1000 * 60 * 60 * 24 * 365.25)
+              (1000 * 60 * 60 * 24 * 365.25),
           )
         : null;
 
       userProfile[0].profilePicture = await renderBase64File(
-        user.profile_picture
+        user.profile_picture,
       );
 
       const userCourse = [
@@ -4132,7 +4143,7 @@ router.post(
           instructorId,
         },
         userId,
-        role
+        role,
       );
 
       res.status(200).json(encrypted);
@@ -4140,7 +4151,7 @@ router.post(
       console.error(error);
       res.status(500).json({ error: "Internal Server Error" });
     }
-  }
+  },
 );
 
 router.get(
@@ -4157,7 +4168,7 @@ router.get(
         error,
       });
     }
-  }
+  },
 );
 
 router.post(
@@ -4176,12 +4187,12 @@ router.post(
 
       const logoPath = path.join(
         __dirname,
-        "./shared/f-assets/solid/drivers_ed_logo-no-bg.png"
+        "./shared/f-assets/solid/drivers_ed_logo-no-bg.png",
       );
 
       const driversEdLogo = `data:image/png;base64,${fs.readFileSync(
         logoPath,
-        "base64"
+        "base64",
       )}`;
 
       const genCertificateNumber = generateTemporaryPassword(14);
@@ -4206,7 +4217,7 @@ router.post(
               month: "long",
               day: "numeric",
               year: "numeric",
-            }
+            },
           ),
           dateEnded: new Date(trainee_course[0].date_completed).toLocaleString(
             "default",
@@ -4214,7 +4225,7 @@ router.post(
               month: "long",
               day: "numeric",
               year: "numeric",
-            }
+            },
           ),
           totalHours: trainee_course[0].total_hours,
         },
@@ -4229,7 +4240,7 @@ router.post(
           instructorId,
         },
         userId,
-        role
+        role,
       );
 
       res.status(200).json(encrypted);
@@ -4237,7 +4248,44 @@ router.post(
       console.error(error);
       res.status(500).json({ error: "Internal Server Error" });
     }
-  }
+  },
+);
+
+router.post(
+  "/audit-summary",
+  authenticateToken,
+  authorizeRole("admin"),
+  async (req, res) => {
+    try {
+      const { period, year } = req.body;
+
+      const paymentSummary = await auditUserPayments(period, year);
+      const instructorSummary = await auditInstructorPayroll(period, year);
+      const expenseSummary = await auditVehicleExpenses(period, year);
+      const auditSummary = await getAuditSummary(period, year);
+
+      const workbook = await generateAuditExcel(
+        paymentSummary,
+        instructorSummary,
+        expenseSummary,
+        auditSummary,
+      );
+
+      res.setHeader(
+        "Content-Type",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      );
+      res.setHeader(
+        "Content-Disposition",
+        "attachment; filename=audit_summary.xlsx",
+      );
+
+      await workbook.xlsx.write(res);
+      res.end();
+    } catch (error) {
+      res.status(500).render("error-500", { error });
+    }
+  },
 );
 
 app.use("/account", router);
@@ -4256,7 +4304,7 @@ app.post(
       const decrypted = await decryptData(
         encryptedWithEncAesKey,
         adminId,
-        role
+        role,
       );
       const {
         userId,
@@ -4269,11 +4317,11 @@ app.post(
 
       const logoPath = path.join(
         __dirname,
-        "./shared/f-assets/solid/drivers_ed_logo-no-bg.png"
+        "./shared/f-assets/solid/drivers_ed_logo-no-bg.png",
       );
       const driversEdLogo = `data:image/png;base64,${fs.readFileSync(
         logoPath,
-        "base64"
+        "base64",
       )}`;
 
       const certificateInputs = [
@@ -4296,7 +4344,7 @@ app.post(
           nationality: profileInputs.nationality,
           age: Math.floor(
             (new Date() - new Date(profileInputs.birthday)) /
-              (1000 * 60 * 60 * 24 * 365.25)
+              (1000 * 60 * 60 * 24 * 365.25),
           ),
           profilePicture: profileInputs.profilePicture,
           spNumber: profileInputs.spNumber,
@@ -4341,7 +4389,7 @@ app.post(
       const fileSafe = sanitized.trim().toLowerCase().replace(/ +/g, "-");
       res.setHeader(
         "Content-Disposition",
-        `attachment; filename="${fileSafe}-certificate-pdc.pdf"`
+        `attachment; filename="${fileSafe}-certificate-pdc.pdf"`,
       );
       res.setHeader("Content-Type", "application/pdf");
       res.status(200).end(Buffer.from(pdfBuffer));
@@ -4351,7 +4399,7 @@ app.post(
         .status(500)
         .json({ error: "An error occurred while generating the PDF." });
     }
-  }
+  },
 );
 
 app.post(
@@ -4367,18 +4415,18 @@ app.post(
       const decrypted = await decryptData(
         encryptedWithEncAesKey,
         adminId,
-        role
+        role,
       );
 
       const { userId, courseId, instructorId, profileInputs } = decrypted;
 
       const logoPath = path.join(
         __dirname,
-        "./shared/f-assets/solid/drivers_ed_logo-no-bg.png"
+        "./shared/f-assets/solid/drivers_ed_logo-no-bg.png",
       );
       const driversEdLogo = `data:image/png;base64,${fs.readFileSync(
         logoPath,
-        "base64"
+        "base64",
       )}`;
 
       const certificateInputs = [
@@ -4402,7 +4450,7 @@ app.post(
           nationality: profileInputs.nationality,
           age: Math.floor(
             (new Date() - new Date(profileInputs.birthday)) /
-              (1000 * 60 * 60 * 24 * 365.25)
+              (1000 * 60 * 60 * 24 * 365.25),
           ),
           profilePicture: profileInputs.profilePicture,
         },
@@ -4445,7 +4493,7 @@ app.post(
       const fileSafe = sanitized.trim().toLowerCase().replace(/ +/g, "_");
       res.setHeader(
         "Content-Disposition",
-        `attachment; filename="${fileSafe}-certificate-tdc.pdf"`
+        `attachment; filename="${fileSafe}-certificate-tdc.pdf"`,
       );
 
       res.setHeader("Content-Type", "application/pdf");
@@ -4456,7 +4504,7 @@ app.post(
         .status(500)
         .json({ error: "An error occurred while generating the PDF." });
     }
-  }
+  },
 );
 
 app.post(
@@ -4472,7 +4520,7 @@ app.post(
       const decrypted = await decryptData(
         encryptedWithEncAesKey,
         adminId,
-        role
+        role,
       );
 
       const { userId, courseId, instructorId, certInputs } = decrypted;
@@ -4480,11 +4528,11 @@ app.post(
 
       const logoPath = path.join(
         __dirname,
-        "./shared/f-assets/solid/drivers_ed_logo-no-bg.png"
+        "./shared/f-assets/solid/drivers_ed_logo-no-bg.png",
       );
       const driversEdLogo = `data:image/png;base64,${fs.readFileSync(
         logoPath,
-        "base64"
+        "base64",
       )}`;
 
       const certificateInputs = [
@@ -4529,7 +4577,7 @@ app.post(
         await saveCertificateToDatabase(
           courseId,
           Buffer.from(pdfBuffer),
-          "application/pdf"
+          "application/pdf",
         );
 
         await sendEmail("completion-certificate", user.email, {
@@ -4541,13 +4589,13 @@ app.post(
           userId,
           "user",
           "TDC Certificate of Completion",
-          `${certInputs.name} TDC Course Certificate `
+          `${certInputs.name} TDC Course Certificate `,
         );
         await addNotification(
           0,
           "admin",
           "TDC Certificate of Completion",
-          `${certInputs.name} TDC Course Certificate `
+          `${certInputs.name} TDC Course Certificate `,
         );
       }
 
@@ -4555,7 +4603,7 @@ app.post(
       const fileSafe = sanitized.trim().toLowerCase().replace(/ +/g, "_");
       res.setHeader(
         "Content-Disposition",
-        `attachment; filename="${fileSafe}-certificate-tdc.pdf"`
+        `attachment; filename="${fileSafe}-certificate-tdc.pdf"`,
       );
 
       res.setHeader("Content-Type", "application/pdf");
@@ -4566,7 +4614,7 @@ app.post(
         .status(500)
         .json({ error: "An error occurred while generating the PDF." });
     }
-  }
+  },
 );
 
 // request for public website
@@ -4613,7 +4661,7 @@ app.get("/public/request/web-infos", async (req, res) => {
         } else {
           const cover = await renderBase64File(
             row.program_cover,
-            row.program_cover_file_type
+            row.program_cover_file_type,
           );
 
           programMap.set(row.program_id, {

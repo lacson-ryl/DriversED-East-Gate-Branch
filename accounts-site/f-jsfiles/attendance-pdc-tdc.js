@@ -2,9 +2,16 @@ const pdcBtn = document.getElementById("pdc-takers-btn");
 const tdcBtn = document.getElementById("tdc-takers-btn");
 let currentType;
 
-async function renderAttendanceTable(type) {
-  const response = await fetch(`/account/api/attendance/${type}`);
-  if (!response.ok) return alert("Cant get attendance details for the table.");
+const currentMonthYear = new Date().toISOString().slice(0, 7);
+
+async function fetchPdcTdcData(type, monthYear = currentMonthYear) {
+  let url = `/account/api/attendance/${type}/${monthYear}`;
+
+  const response = await fetch(url);
+  if (!response.ok) {
+    console.error("Failed to fetch data from the server");
+    return;
+  }
 
   if (type == "tdc") {
     tdcBtn.classList.add("outline");
@@ -16,6 +23,35 @@ async function renderAttendanceTable(type) {
   currentType = type;
 
   const data = await response.json();
+  renderAttendanceTable(data);
+}
+
+const centerSide = document.getElementById("center-side");
+if (centerSide) {
+  // filter form
+  const monthYearFilter = document.getElementById("monthyearfilter");
+  const monthYear = document.getElementById("monthyear");
+  monthYear.value = currentMonthYear; // set default value to current month-year
+
+  monthYearFilter.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const monthYear = document.getElementById("monthyear").value;
+    monthYear.value;
+    fetchPdcTdcData(currentType, monthYear);
+  });
+}
+
+function renderAttendanceTable(data) {
+  const attendanceTable = document.getElementById("attendance-table");
+
+  centerSide.style.display = "flex";
+
+  if (!Array.isArray(data) || data.length === 0) {
+    attendanceTable.innerHTML =
+      "<p>No attendance data available for this month.</p>";
+    return;
+  }
+
   const groupedData = data.reduce((acc, item) => {
     const date = item.date;
     if (!acc[date]) acc[date] = [];
@@ -26,8 +62,8 @@ async function renderAttendanceTable(type) {
   // Sort keys and rebuild as a new object
   const sortedGroupedData = Object.fromEntries(
     Object.entries(groupedData).sort(
-      ([dateA], [dateB]) => new Date(dateA) - new Date(dateB)
-    )
+      ([dateA], [dateB]) => new Date(dateA) - new Date(dateB),
+    ),
   );
 
   const tableHTML = Object.keys(sortedGroupedData)
@@ -63,8 +99,8 @@ async function renderAttendanceTable(type) {
                     arr.status == "Present"
                       ? '<div class="text-green-900 hover:font-bold font-semibold rounded-md ">Present</div>'
                       : arr.status == "Absent"
-                      ? '<div class="text-red-800 hover:font-bold font-semibold rounded-md">Absent</div>'
-                      : '<div class="text-gray-700 hover:font-bold font-semibold rounded-md">Pending</div>'
+                        ? '<div class="text-red-800 hover:font-bold font-semibold rounded-md">Absent</div>'
+                        : '<div class="text-gray-700 hover:font-bold font-semibold rounded-md">Pending</div>'
                   }
                 </button>
               </td>
@@ -79,7 +115,7 @@ async function renderAttendanceTable(type) {
                 </button>
               </td>
             </tr>
-          `
+          `,
         )
         .join("");
 
@@ -116,7 +152,7 @@ async function renderAttendanceTable(type) {
     })
     .join("");
 
-  const attendanceTable = document.getElementById("attendance-table");
+  attendanceTable.innerHTML = "";
   attendanceTable.innerHTML = tableHTML;
 
   attachCollapsibleListeners();
@@ -125,12 +161,12 @@ async function renderAttendanceTable(type) {
 
 tdcBtn.addEventListener("click", (event) => {
   event.preventDefault();
-  renderAttendanceTable("tdc");
+  fetchPdcTdcData("tdc");
 });
 
 pdcBtn.addEventListener("click", (event) => {
   event.preventDefault();
-  renderAttendanceTable("pdc");
+  fetchPdcTdcData("pdc");
 });
 
 // Collapsible logic (same as instructor dashboard)
@@ -139,7 +175,7 @@ function attachCollapsibleListeners() {
   collapsibleHeaders.forEach((header) => {
     header.addEventListener("click", () => {
       const content = header.parentElement.querySelector(
-        ".collapsible-content"
+        ".collapsible-content",
       );
       const icon = header.querySelector("#collapsible-icon");
       content.classList.toggle("expanded");
@@ -152,7 +188,7 @@ function attachCollapsibleListeners() {
       }
       header.setAttribute(
         "aria-expanded",
-        content.classList.contains("expanded")
+        content.classList.contains("expanded"),
       );
       if (icon.classList.contains("rotate-180")) {
         icon.classList.remove("rotate-180");
@@ -207,7 +243,7 @@ function allButtons() {
         presentBtn.classList.add(
           "disabled",
           "cursor-not-allowed",
-          "animate-pulse"
+          "animate-pulse",
         );
         const hoursAttended = document.getElementById("hours-attended").value;
         await changeStatus(id, "Present", hoursAttended);
@@ -219,7 +255,7 @@ function allButtons() {
         absentBtn.classList.add(
           "disabled",
           "cursor-not-allowed",
-          "animate-pulse"
+          "animate-pulse",
         );
         await changeStatus(id, "Absent");
       });
@@ -312,7 +348,7 @@ function allButtons() {
                     "x-delete-token": data.deleteToken,
                   },
                   body: JSON.stringify({ id, creatorId, createdBy, courseId }),
-                }
+                },
               );
               const dataDelRes = await deleteResponse.json();
               if (deleteResponse.ok) {
@@ -333,7 +369,7 @@ function allButtons() {
               }, 3000);
             }
           },
-          { once: true }
+          { once: true },
         );
       }
 

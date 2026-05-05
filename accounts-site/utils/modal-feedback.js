@@ -30,7 +30,7 @@ export function showOperationResult(modal, success, message) {
 export function showBtnLoading(button) {
   button.innerText = "Processing...";
   button.classList.add("animate-pulse");
-  button.disabled = true;
+  button.disabled = true; 
 }
 
 export function showBtnResult(button, success) {

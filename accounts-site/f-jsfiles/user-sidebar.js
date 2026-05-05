@@ -119,8 +119,10 @@ const iconMap = {
   "/account/user-dashboard": "/account/f-assets/solid/black/view-grid.svg",
   "/account/user-profile": "/account/f-assets/solid/black/user.svg",
   "/account/user-programs": "/account/f-assets/solid/black/table.svg",
-  "/account/user-requests": "/account/f-assets/solid/black/question-mark-circle.svg",
-  "/account/user-reports": "/account/f-assets/solid/black/exclamation-circle.svg",
+  "/account/user-requests":
+    "/account/f-assets/solid/black/question-mark-circle.svg",
+  "/account/user-reports":
+    "/account/f-assets/solid/black/exclamation-circle.svg",
   "/account/user-payments": "/account/f-assets/solid/black/cash.svg",
   "/account/logout": "/account/f-assets/solid/black/logout.svg",
 };
@@ -150,6 +152,36 @@ logoutBtn.addEventListener("click", (event) => {
     logoutConfirm.style.display = "none";
   });
 });
+
+if (!window.notifStreamInitialized) {
+  window.notifStream = new EventSource("/account/api/notifications/stream");
+
+  window.notifStream.onmessage = (event) => {
+    const data = JSON.parse(event.data);
+    updateNotifIndicator(data.unread_count);
+  };
+
+  window.notifStream.onopen = () => {
+    console.log("Notification stream opened");
+  };
+
+  window.notifStream.onerror = (err) => {
+    console.error("Notification stream error:", err);
+  };
+
+  window.notifStreamInitialized = true;
+}
+
+function updateNotifIndicator(unreadCount) {
+  const indicator = document.getElementById("notif-new-indicator");
+  if (!indicator) return;
+
+  if (unreadCount > 0) {
+    indicator.classList.remove("hidden");
+  } else {
+    indicator.classList.add("hidden");
+  }
+}
 
 // Notification logic (position dropdown under bell icon, always on top)
 const notifBtn = document.getElementById("notif-button");

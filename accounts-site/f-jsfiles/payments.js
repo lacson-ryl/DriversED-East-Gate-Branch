@@ -7,17 +7,51 @@ import {
   showBtnResult,
 } from "../utils/modal-feedback.js";
 
-async function renderPaymentList() {
-  const response = await fetch("/account/api/payments");
+// get current month-year in YYYY-MM format
+const currentMonthYear = new Date().toISOString().slice(0, 7);
 
+async function fetchPaymentData(monthYear = currentMonthYear) {
+  let url = "/account/api/payments";
+  if (monthYear) {
+    url += `?monthyear=${encodeURIComponent(monthYear)}`;
+  }
+
+  const response = await fetch(url);
   if (!response.ok) {
     console.error("Failed to fetch data from the server");
     return;
   }
 
   const data = await response.json();
+  renderPaymentList(data);
+}
 
+// initial load with current month
+fetchPaymentData();
+
+// filter form
+const monthYearFilter = document.getElementById("monthyearfilter");
+const monthYear = document.getElementById("monthyear");
+monthYear.value = currentMonthYear; // set default value to current month-year
+
+monthYearFilter.addEventListener("submit", (e) => {
+  e.preventDefault();
+  const monthYear = document.getElementById("monthyear").value;
+  monthYear.value;
+  fetchPaymentData(monthYear);
+});
+
+async function renderPaymentList(data) {
   const paymentTable = document.getElementById("payments-table");
+
+  if (!data || data.length === 0) {
+    paymentTable.innerHTML = `
+      <div class="flex flex-col items-center justify-center py-10">
+        <p class="text-gray-700">No payment records found this month.</p>
+      </div>
+    `;
+    return;
+  }
 
   paymentTable.innerHTML = `
         <table id="applicants-table"
@@ -76,7 +110,7 @@ async function renderPaymentList() {
                             arr.user_payment_id
                           }">
                           ${
-                            arr.status == "Verified"
+                            arr.status == "Verified" || arr.status == "verified"
                               ? '<div class="text-green-700 hover:font-semibold rounded-md hover ">Verified</div>'
                               : arr.status == "Deny"
                               ? '<div class="text-red-700 hover:font-semibold rounded-md">Denied</div>'

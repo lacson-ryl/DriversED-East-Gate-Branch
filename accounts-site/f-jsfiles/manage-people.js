@@ -10,6 +10,7 @@ import { encryptData, decryptData } from "../utils/f-webCryptoKeys.js";
 // Initialize modal and its components
 const modal = document.getElementById("myModal");
 const span = document.getElementsByClassName("close")[0];
+const modalTitle = document.getElementById("modal-title");
 const modalDetails = document.getElementById("modal-details");
 
 const modalForm = `
@@ -130,7 +131,7 @@ if (addButton) {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ encryptedWithEncAesKey: encrypting }),
-            }
+            },
           );
           if (response.ok) {
             showBtnResult(submitBtn, true);
@@ -150,7 +151,7 @@ if (addButton) {
           modal.style.display = "none";
         }
       },
-      { once: true }
+      { once: true },
     );
   });
 }
@@ -232,7 +233,7 @@ function loadAccountsTable(data) {
               }</td>
               <td class="px-4 py-2">${account.date_created}</td>
             </tr>
-          `
+          `,
             )
             .join("")}
         </tbody>
@@ -327,6 +328,92 @@ function loadAccountsTable(data) {
     });
   }
 }
+const auditReportBtn = document.getElementById("audit-report-button");
+if (auditReportBtn) {
+  console.log('auditReportBtn is here');
+  auditReportBtn.addEventListener("click", async function (event) {
+    event.preventDefault();
+    modalTitle.innerText = "Audit Report";
+    modalDetails.innerHTML = `
+      <form id="audit-form" class="w-96">
+        <div class="mb-4">
+          <label for="audit-type" class="block text-gray-700 text-sm font-bold mb-2">
+            Audit Type
+          </label>
+          <select
+            class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight hover:border-blue-900 focus:outline-none focus:border-blue-900"
+            id="audit-type" name="auditType">
+            <option value="monthly">Current Month</option>
+            <option value="quarterly">Quarterly (3 months)</option>
+            <option value="bi-yearly">Bi-Yearly (6 months)</option>
+            <option value="yearly">Yearly (12 months)</option>
+          </select>
+        </div>
+        <div class="mb-4">
+          <label for="year-input" class="block text-gray-700 text-sm font-bold mb-2">
+            Year
+          </label>
+          <input
+            class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight hover:border-blue-900 focus:outline-none focus:border-blue-900"
+            id="year-input" name="year" type="text" placeholder="Enter the year: Ex. 2025">
+        </div>
+        <div class="flex items-center">
+          <button id="generate-audit-btn"
+            class="bg-sky-900 hover:bg-red-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+            type="submit">
+            Generate Report
+          </button>
+        </div>
+      </form>
+    `;
+    modal.style.display = "flex";
+    // Attach submit handler after form is injected
+    const auditForm = document.getElementById("audit-form");
+    const auditBtn = document.getElementById("generate-audit-btn");
+    auditForm.addEventListener("submit", async function (e) {
+      e.preventDefault();
+
+      showBtnLoading(auditBtn);
+
+      const period = document.getElementById("audit-type").value;
+      const year = document.getElementById("year-input").value;
+
+      try {
+        const response = await fetch("/account/audit-summary", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ period, year }),
+        });
+
+        if (!response.ok) {
+          showBtnResult(auditBtn, false);
+          alert("Failed to generate audit report");
+        } else {
+          showBtnResult(auditBtn, true);
+          // Response is an Excel file, so we need to download it
+          const blob = await response.blob();
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = "audit_summary.xlsx";
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          window.URL.revokeObjectURL(url);
+        }
+        setTimeout(() => {
+          modalDetails = "";
+          modal.style.display = "none";
+        }, 3000);
+      } catch (err) {
+        console.error("Error generating audit report:", err);
+        alert("Failed to generate audit report. Please try again.");
+      }
+    });
+  });
+}
 
 async function renderInstructorsList() {
   const response = await fetch("/account/api/manage-people/list");
@@ -370,8 +457,8 @@ async function renderInstructorsList() {
             </td>
             <td class="border border-gray-300 px-4 py-2">
             ${arr.instructor_id} - ${arr.instructor_name} - ${
-          arr.rate_per_hour
-        }</td>
+              arr.rate_per_hour
+            }</td>
             <td class="border border-gray-300 px-4 py-2">${
               arr.instructor_type
             }</td>
@@ -435,7 +522,7 @@ async function renderInstructorsList() {
               </button>
             </td>
           </tr>
-        `
+        `,
       )
       .join("");
 
@@ -496,7 +583,7 @@ function filterPayrollByYear(details) {
     const year = document.getElementById("year").value;
     const month_year = `${month} ${year}`;
     const result = details.filter((item) =>
-      item.month_year.includes(month_year)
+      item.month_year.includes(month_year),
     );
 
     if (result.length === 0) {
@@ -592,7 +679,7 @@ function allButton(details) {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
                   body: JSON.stringify({ encryptedWithEncAesKey: encrypting }),
-                }
+                },
               );
               const data = await response.json();
               if (!response.ok) {
@@ -755,7 +842,7 @@ function allButton(details) {
       const editForm = document.getElementById("edit-instructor-form");
       editForm.addEventListener("submit", async (event) => {
         const instructorSubmitBtn = document.getElementById(
-          "instructor-submit-button"
+          "instructor-submit-button",
         );
         event.preventDefault();
         const formData = new FormData(editForm);
@@ -770,7 +857,7 @@ function allButton(details) {
               method: "PUT",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ encryptedWithEncAesKey: encrypting }),
-            }
+            },
           );
           const data = await updateResponse.json();
 
@@ -802,7 +889,7 @@ function allButton(details) {
   });
 
   const instructorTable = document.getElementById(
-    "instructors-current-payroll-table"
+    "instructors-current-payroll-table",
   );
   const backButton = document.getElementById("back-button");
 
@@ -903,7 +990,7 @@ function allButton(details) {
                     "x-delete-token": data.deleteToken,
                   },
                   body: JSON.stringify({ id: accountId }),
-                }
+                },
               );
               if (deleteResponse.ok) {
                 tokenIndicator.innerText = `Successfully Deleted Instructor ID #${rowId}`;
@@ -924,7 +1011,7 @@ function allButton(details) {
               }, 3000);
             }
           },
-          { once: true }
+          { once: true },
         );
       }
 
@@ -938,7 +1025,7 @@ function allButton(details) {
 
 function setupImagePreview(
   inputId = "profile-picture-input",
-  previewId = "profile-picture-preview"
+  previewId = "profile-picture-preview",
 ) {
   const input = document.getElementById(inputId);
   const preview = document.getElementById(previewId);
@@ -957,7 +1044,7 @@ function setupImagePreview(
 
 function renderMonthlyPayrollTable(data) {
   const instructorTable = document.getElementById(
-    "instructors-current-payroll-table"
+    "instructors-current-payroll-table",
   );
   instructorTable.innerHTML = "";
   const details = data;
@@ -997,7 +1084,7 @@ function renderMonthlyPayrollTable(data) {
                 class="monthly-delete-btn bg-blue-700 hover:bg-gradient-to-t from-sky-400 to-sky-800 text-white rounded-md px-2">Delete</button>
             </td>
           </tr>
-        `
+        `,
     )
     .join("");
   instructorTable.innerHTML = `
@@ -1024,12 +1111,12 @@ function renderMonthlyPayrollTable(data) {
 
 async function renderCurrentPayroll(id) {
   const response = await fetch(
-    `/account/api/manage-people/current-payroll/${id}`
+    `/account/api/manage-people/current-payroll/${id}`,
   );
   const data = await response.json();
 
   const currentPayrollTable = document.getElementById(
-    "instructors-current-payroll-table"
+    "instructors-current-payroll-table",
   );
 
   if (!response.ok) {
@@ -1063,7 +1150,7 @@ function renderCurrentWeekPayrollTable(data) {
               arr.rate_per_hour * arr.attended_hours
             }</td>
           </tr>
-        `
+        `,
     )
     .join("");
 
@@ -1120,7 +1207,7 @@ function renderWeeklyPayrollTable(data) {
                 class="instructor-edit-btn bg-blue-700 hover:bg-gradient-to-t from-sky-400 to-sky-800 text-white rounded-md px-2">Edit</button>
             </td>
           </tr>
-        `
+        `,
     )
     .join("");
 

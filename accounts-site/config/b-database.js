@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 import bcrypt from "bcrypt";
 import { renderBase64File } from "../utils-backend/file-converter.js";
 import { fileTypeFromBuffer } from "file-type";
+import { pushUnreadCount } from "../utils-backend/notifStream.js";
 dotenv.config({ path: ".env.production" });
 
 export const pool = mysql
@@ -31,7 +32,7 @@ export async function addPrivKeyForUser(
   role,
   privKey,
   iv,
-  pubKeyWebCrypto
+  pubKeyWebCrypto,
 ) {
   try {
     const query = `
@@ -160,7 +161,7 @@ export async function userSearch(id) {
       `SELECT *
       FROM attendance
       WHERE creator_id = ? AND created_by= 'user'`,
-      [id]
+      [id],
     );
     const courseAttendance = await Promise.all(
       resultII.map(async (row) => ({
@@ -179,9 +180,9 @@ export async function userSearch(id) {
         hours: row.hours_attended,
         certificate_file: await renderBase64File(
           row.certificate_file,
-          row.certificate_file_type
+          row.certificate_file_type,
         ),
-      }))
+      })),
     );
     return { profile, courseList, courseAttendance };
   } catch (error) {
@@ -307,7 +308,7 @@ export async function checkEmail(email) {
       FROM user 
       WHERE user_email = ?
       `,
-      [email]
+      [email],
     );
 
     return rows[0];
@@ -327,7 +328,7 @@ export async function adminCheckEmail(email) {
       FROM admin_account 
       WHERE user_email = ?
       `,
-      [email]
+      [email],
     );
     return rows[0];
   } catch (error) {
@@ -345,7 +346,7 @@ export async function saveUser(newUser) {
       INSERT INTO user (user_name, user_email, user_password, isVerify)
       VALUES (?, ?, ?, ?)
       `,
-      [name, email, password, verify]
+      [name, email, password, verify],
     );
     return result.insertId;
   } catch (error) {
@@ -385,7 +386,7 @@ export async function saveAdminAccount(newUser) {
       INSERT INTO admin_account ( user_email, user_password, account_role, admin_name, isVerify)
       VALUES (?, ?, ?, ?, ?)
       `,
-      [user_email, user_password, account_role, admin_name, isVerify]
+      [user_email, user_password, account_role, admin_name, isVerify],
     );
     return result.insertId;
   } catch (error) {
@@ -489,7 +490,7 @@ export async function updateUserCredential(userId, account_role, value, type) {
     console.log(
       `${
         type.charAt(0).toUpperCase() + type.slice(1)
-      } updated for user ID: ${userId}`
+      } updated for user ID: ${userId}`,
     );
   } catch (error) {
     console.error(`Error updating ${type} in database:`, error);
@@ -501,7 +502,7 @@ export async function saveChangePasswordRequest(
   userId,
   userType,
   otp,
-  resetType
+  resetType,
 ) {
   const query = `
     INSERT INTO change_password_or_email (user_id, user_type, reset_code, reset_type)
@@ -561,7 +562,7 @@ export async function uploadProfile(
   idCard,
   prn,
   profilePicture,
-  userId
+  userId,
 ) {
   try {
     const [result] = await pool.query(
@@ -589,7 +590,7 @@ export async function uploadProfile(
         idCard,
         prn,
         userId,
-      ]
+      ],
     );
     return result.insertId;
   } catch (error) {
@@ -606,7 +607,7 @@ export async function getProfilewithUserId(id) {
        FROM user_profile
        WHERE user_id = ?
       `,
-      [id]
+      [id],
     );
     const formattedResult = result.map((row) => ({
       ...row,
@@ -629,7 +630,7 @@ export async function updateUserProfile(userID, updatedProfile) {
     `UPDATE user_profile 
     SET ${setClause} 
     WHERE user_id = ?`,
-    values
+    values,
   );
   return result;
 }
@@ -664,12 +665,12 @@ export async function getAllDashboardCounts() {
       pool.query(
         `SELECT COUNT(*) AS count FROM user
        WHERE MONTH(date_created) = ? AND YEAR(date_created) = ?`,
-        [month, year]
+        [month, year],
       ),
       pool.query(
         `SELECT COUNT(*) AS count FROM user
        WHERE YEAR(date_created) = ?`,
-        [year]
+        [year],
       ),
       pool.query(`SELECT COUNT(*) AS count FROM user`),
 
@@ -677,12 +678,12 @@ export async function getAllDashboardCounts() {
       pool.query(
         `SELECT COUNT(*) AS count FROM applications
        WHERE MONTH(created) = ? AND YEAR(created) = ?`,
-        [month, year]
+        [month, year],
       ),
       pool.query(
         `SELECT COUNT(*) AS count FROM applications
        WHERE YEAR(created) = ?`,
-        [year]
+        [year],
       ),
       pool.query(`SELECT COUNT(*) AS count FROM applications`),
 
@@ -691,17 +692,17 @@ export async function getAllDashboardCounts() {
         `SELECT COUNT(*) AS count FROM user_courses
        WHERE program_duration <= total_hours
          AND MONTH(date_completed) = ? AND YEAR(date_completed) = ?`,
-        [month, year]
+        [month, year],
       ),
       pool.query(
         `SELECT COUNT(*) AS count FROM user_courses
        WHERE program_duration <= total_hours
          AND YEAR(date_completed) = ?`,
-        [year]
+        [year],
       ),
       pool.query(
         `SELECT COUNT(*) AS count FROM user_courses
-       WHERE program_duration <= total_hours`
+       WHERE program_duration <= total_hours`,
       ),
 
       // TDC Takers (applications table, transmission = 'onsite')
@@ -709,17 +710,17 @@ export async function getAllDashboardCounts() {
         `SELECT COUNT(*) AS count FROM applications
        WHERE transmission = 'onsite'
          AND MONTH(created) = ? AND YEAR(created) = ?`,
-        [month, year]
+        [month, year],
       ),
       pool.query(
         `SELECT COUNT(*) AS count FROM applications
        WHERE transmission = 'onsite'
          AND YEAR(created) = ?`,
-        [year]
+        [year],
       ),
       pool.query(
         `SELECT COUNT(*) AS count FROM applications
-       WHERE transmission = 'onsite'`
+       WHERE transmission = 'onsite'`,
       ),
 
       // PDC Takers (applications table, transmission = 'Manual' OR 'Automatic')
@@ -727,17 +728,17 @@ export async function getAllDashboardCounts() {
         `SELECT COUNT(*) AS count FROM applications
        WHERE (transmission = 'Manual' OR transmission = 'Automatic')
          AND MONTH(created) = ? AND YEAR(created) = ?`,
-        [month, year]
+        [month, year],
       ),
       pool.query(
         `SELECT COUNT(*) AS count FROM applications
        WHERE (transmission = 'Manual' OR transmission = 'Automatic')
          AND YEAR(created) = ?`,
-        [year]
+        [year],
       ),
       pool.query(
         `SELECT COUNT(*) AS count FROM applications
-       WHERE (transmission = 'Manual' OR transmission = 'Automatic')`
+       WHERE (transmission = 'Manual' OR transmission = 'Automatic')`,
       ),
 
       // Owned Vehicles (vehicle_list table)
@@ -786,7 +787,7 @@ export async function getDayplusTP(month, year) {
   FROM monthly_applicants
   WHERE currMonth = ? AND currYear = ?
   `,
-    [month, year]
+    [month, year],
   );
   // Format currDay to extract the day number only
   const formattedResult = result.map((entry) => ({
@@ -813,7 +814,7 @@ export async function addPaymentMethod(
   methodName,
   availability,
   methodFile,
-  methodFileType
+  methodFileType,
 ) {
   const query = `
     INSERT INTO payment_methods (method_name, availability, method_file, method_file_type)
@@ -851,7 +852,7 @@ export async function editPaymentMethod(methodId, methodName, availability) {
 export async function uploadPaymentMethodFile(
   methodId,
   methodFile,
-  methodFileType
+  methodFileType,
 ) {
   const query = `
     UPDATE payment_methods
@@ -920,7 +921,7 @@ export async function getInstructorScheduleForToday() {
           row.onsite_slots == null ? row.pm_applicant_name : "TDC onsite class",
         date: row.date ? formatDate(row.date) : null,
         profile_picture: await renderBase64File(row.profile_picture),
-      }))
+      })),
     );
     return formattedResult;
   } catch (error) {
@@ -956,7 +957,7 @@ export async function getApplicants() {
         user ON applications.creator_id = user.user_id AND applications.created_by = 'user'
       LEFT JOIN
         admin_account ON applications.creator_id = admin_account.account_id AND applications.created_by = 'admin';
-      `
+      `,
     );
 
     const formattedResult = result.map((row) => ({
@@ -1016,7 +1017,7 @@ async function getApplicantadmin(id) {
         FROM applications
         WHERE application_id = ?
         `,
-    [id]
+    [id],
   );
   const formattedResult = result.map((row) => ({
     ...row,
@@ -1031,7 +1032,7 @@ export async function deleteUserCourse(userId, instructorName, dateStarted) {
   const applicationId = await findApplicationIdByCourse(
     userId,
     instructorName,
-    dateStarted
+    dateStarted,
   );
   if (!applicationId) {
     throw new Error("No application found!");
@@ -1050,7 +1051,7 @@ async function findApplicationIdByCourse(userId, instructorName, dateStarted) {
   // Get instructor_id from instructor_name
   const [instructorRows] = await pool.query(
     "SELECT instructor_id FROM instructor WHERE instructor_name = ?",
-    [instructorName]
+    [instructorName],
   );
   if (instructorRows.length === 0) return null;
   const instructorId = instructorRows[0].instructor_id;
@@ -1059,7 +1060,7 @@ async function findApplicationIdByCourse(userId, instructorName, dateStarted) {
   const [appRows] = await pool.query(
     `SELECT application_id FROM applications
      WHERE creator_id = ? AND instructor_id = ? AND start_date = ?`,
-    [userId, instructorId, dateStarted]
+    [userId, instructorId, dateStarted],
   );
   if (appRows.length === 0) return null;
   return appRows[0].application_id;
@@ -1085,7 +1086,7 @@ export async function deleteApplication(id) {
         DELETE FROM applications
         WHERE application_id = ?
         `,
-        [id]
+        [id],
       );
       console.log("course_id", application.user_course_id);
       // Update availability for startDate and continuation based on AM/PM selection
@@ -1095,7 +1096,7 @@ export async function deleteApplication(id) {
         application.start_date,
         application.start_date_am_pm === "AM" ? false : undefined,
         application.start_date_am_pm === "PM" ? false : undefined,
-        undefined
+        undefined,
       );
 
       await updateAvailability(
@@ -1104,7 +1105,7 @@ export async function deleteApplication(id) {
         application.continuation,
         application.continuation_am_pm === "AM" ? false : undefined,
         application.continuation_am_pm === "PM" ? false : undefined,
-        undefined
+        undefined,
       );
 
       await connection.query(
@@ -1112,7 +1113,7 @@ export async function deleteApplication(id) {
         DELETE FROM attendance
         WHERE user_course_id = ?
         `,
-        [application.user_course_id]
+        [application.user_course_id],
       );
 
       // Update Monthly Applicants
@@ -1124,7 +1125,7 @@ export async function deleteApplication(id) {
         DELETE FROM user_courses
         WHERE course_id = ?
         `,
-        [application.user_course_id]
+        [application.user_course_id],
       );
 
       // Commit the transaction
@@ -1164,7 +1165,7 @@ async function updateMonthlyApplicants(connection, increment = 1) {
       `INSERT INTO monthly_applicants (currDay, currMonth, currYear, totalApplicants)
       VALUES (?, ?, ?, ?)
       ON DUPLICATE KEY UPDATE totalApplicants = totalApplicants + ?`,
-      [currDay, currMonth, currYear, increment, increment]
+      [currDay, currMonth, currYear, increment, increment],
     );
   } catch (error) {
     console.error("Error updating monthly applicants:", error);
@@ -1177,7 +1178,7 @@ export async function getAllPrograms() {
     `
     SELECT *
     FROM program_offers
-    `
+    `,
   );
 
   const formattedResult = await Promise.all(
@@ -1185,9 +1186,9 @@ export async function getAllPrograms() {
       ...row,
       program_cover: await renderBase64File(
         row.program_cover,
-        row.program_cover_file_type
+        row.program_cover_file_type,
       ),
-    }))
+    })),
   );
 
   return formattedResult;
@@ -1200,7 +1201,7 @@ export async function editOneProgram(
   duration,
   fee,
   description,
-  cloneId
+  cloneId,
 ) {
   const [result] = await pool.query(
     `
@@ -1213,7 +1214,7 @@ export async function editOneProgram(
       availability = ?
     WHERE program_id = ?
     `,
-    [id, name, duration, description, fee, availability, cloneId]
+    [id, name, duration, description, fee, availability, cloneId],
   );
   return result;
 }
@@ -1223,7 +1224,7 @@ export async function addProgram(
   status,
   programDuration,
   programFee,
-  programDescription
+  programDescription,
 ) {
   try {
     const [result] = await pool.query(
@@ -1231,7 +1232,7 @@ export async function addProgram(
       INSERT INTO program_offers (program_name, program_duration, program_Description, program_fee, availability)
       VALUES (?, ?, ?, ?, ?)
       `,
-      [programName, programDuration, programDescription, programFee, status]
+      [programName, programDuration, programDescription, programFee, status],
     );
     return result.insertId;
   } catch (error) {
@@ -1263,10 +1264,10 @@ export async function assignPrograms(instructor_id, program_ids) {
     // Fetch existing program_ids for this instructor
     const [existingRows] = await connection.query(
       "SELECT program_id FROM instructor_programs WHERE instructor_id = ?",
-      [instructor_id]
+      [instructor_id],
     );
     const existingProgramIds = new Set(
-      existingRows.map((row) => row.program_id)
+      existingRows.map((row) => row.program_id),
     );
 
     // Filter out already assigned program_ids
@@ -1280,7 +1281,7 @@ export async function assignPrograms(instructor_id, program_ids) {
     if (newValues.length > 0) {
       await connection.query(
         "INSERT INTO instructor_programs (instructor_id, program_id) VALUES ?",
-        [newValues]
+        [newValues],
       );
     }
 
@@ -1308,7 +1309,7 @@ export async function getAssignedPrograms() {
         instructor ON instructor_programs.instructor_id = instructor.instructor_id
       JOIN 
         program_offers ON instructor_programs.program_id = program_offers.program_id
-      `
+      `,
     );
     return result;
   } catch (error) {
@@ -1323,7 +1324,7 @@ export async function unassignPrograms(instructor_id, program_ids) {
     await connection.beginTransaction();
     await connection.query(
       "DELETE FROM instructor_programs WHERE instructor_id = ? AND program_id IN (?)",
-      [instructor_id, program_ids]
+      [instructor_id, program_ids],
     );
     await connection.commit();
   } catch (error) {
@@ -1373,7 +1374,7 @@ export async function deleteProgram(rowID) {
       DELETE FROM program_offers
       WHERE program_id = ?
       `,
-      [rowID]
+      [rowID],
     );
     return result;
   } catch (error) {
@@ -1387,7 +1388,7 @@ export async function getAllCert() {
     `
     SELECT *
     FROM certificates_completion
-    `
+    `,
   );
   return result[0];
 }
@@ -1400,7 +1401,7 @@ export async function editOneCertificate(id, name) {
       certificate_name = ?
     WHERE certificate_id = ?
     `,
-    [id, name, id]
+    [id, name, id],
   );
   return result;
 }
@@ -1412,7 +1413,7 @@ export async function addCertificate(certificateID, certificateName) {
       INSERT INTO certificates_completion (certificate_id, certificate_name)
       VALUES (?, ?)
       `,
-      [certificateID, certificateName]
+      [certificateID, certificateName],
     );
     return result.insertId;
   } catch (error) {
@@ -1443,7 +1444,7 @@ export async function deleteCertificate(rowID) {
       DELETE FROM certificates_completion
       WHERE certificate_id = ?
       `,
-      [rowID]
+      [rowID],
     );
     return result;
   } catch (error) {
@@ -1452,27 +1453,37 @@ export async function deleteCertificate(rowID) {
   }
 }
 
-export async function getPaymentsLogs() {
-  const query = `
-    SELECT 
-      user_payment_id,
-      CASE 
-        WHEN user_id IS NULL THEN '0'
-        ELSE user_id
-      END AS user_id,
-      CASE 
-        WHEN user_id IS NULL THEN 'Admin'
-        ELSE (SELECT user_name FROM user WHERE user_id = user_payments.user_id)
-      END AS user_name,
-      account_name,
-      payment_method,
-      amount,
-      screenshot_receipt,
-      status
-    FROM user_payments
-  `;
+export async function getPaymentsLogs(monthyear = null) {
   try {
-    const [result] = await pool.query(query);
+    if (!monthyear) {
+      // default to current month (YYYY-MM)
+      monthyear = new Date().toISOString().slice(0, 7);
+    }
+
+    const query = `
+      SELECT 
+        up.user_payment_id,
+        CASE 
+          WHEN up.user_id IS NULL THEN '0'
+          ELSE up.user_id
+        END AS user_id,
+        CASE 
+          WHEN up.user_id IS NULL THEN 'Admin'
+          ELSE u.user_name
+        END AS user_name,
+        up.account_name,
+        up.payment_method,
+        up.amount,
+        up.screenshot_receipt,
+        up.status,
+        up.date_created
+      FROM user_payments up
+      LEFT JOIN user u ON u.user_id = up.user_id
+      WHERE DATE_FORMAT(up.date_created, '%Y-%m') = ?
+      ORDER BY up.date_created DESC
+    `;
+
+    const [result] = await pool.query(query, [monthyear]);
     return result;
   } catch (error) {
     console.error("Error fetching payments logs", error);
@@ -1487,7 +1498,7 @@ export async function addPayments(
   amount,
   paymentMethod,
   screenshotReceipt,
-  courseSelect
+  courseSelect,
 ) {
   const query = `
     INSERT INTO user_payments (user_id, account_name, amount, payment_method, screenshot_receipt, course_id)
@@ -1531,7 +1542,7 @@ export async function changePaymentStatus(paymentId, status) {
     // Update the status in the user_payments table
     await connection.query(
       `UPDATE user_payments SET status = ? WHERE user_payment_id = ?`,
-      [status, paymentId]
+      [status, paymentId],
     );
 
     // Determine the value for isPaid based on the status
@@ -1542,7 +1553,7 @@ export async function changePaymentStatus(paymentId, status) {
       `UPDATE user_courses 
        SET isPaid = ? 
        WHERE course_id = (SELECT course_id FROM user_payments WHERE user_payment_id = ?)`,
-      [isPaid, paymentId]
+      [isPaid, paymentId],
     );
 
     const [result] = await connection.query(
@@ -1551,7 +1562,7 @@ export async function changePaymentStatus(paymentId, status) {
       FROM user_payments 
       WHERE user_payment_id = ?
       `,
-      [paymentId]
+      [paymentId],
     );
 
     await connection.commit();
@@ -1572,7 +1583,7 @@ export async function deletePaymentInfo(id) {
       DELETE FROM user_payments
       WHERE user_payment_id = ?
       `,
-      [id]
+      [id],
     );
     return result;
   } catch (error) {
@@ -1590,7 +1601,7 @@ export async function addUserReport(titleReport, detailsReport, userID) {
       INSERT INTO reports_table (report_title, report_details, sender_id)
       VALUES (?, ?, ?)
       `,
-      [titleReport, detailsReport, userID]
+      [titleReport, detailsReport, userID],
     );
 
     // Return the ID of the newly inserted report
@@ -1612,7 +1623,7 @@ export async function getUserReport(userId) {
       WHERE 
         reports_table.sender_id = ?
       `,
-      [userId]
+      [userId],
     );
     const formattedResult = result.map((row) => ({
       ...row,
@@ -1644,7 +1655,7 @@ export async function getAllReports() {
     user 
   ON 
     reports_table.sender_id = user.user_id
-    `
+    `,
   );
   const formattedResult = result.map((row) => ({
     ...row,
@@ -1676,7 +1687,7 @@ export async function getUserPaymentsLogs(userId) {
         ...row,
         date_created: formatDate(row.date_created),
         screenshot_receipt: await renderBase64File(row.screenshot_receipt),
-      }))
+      })),
     );
     return formattedResult;
   } catch (error) {
@@ -1704,7 +1715,7 @@ export async function getAllRequests() {
       user 
   ON 
       requests_table.sender_id = user.user_id
-      `
+      `,
     );
     return result;
   } catch (error) {
@@ -1724,7 +1735,7 @@ export async function getUserDetailReport(reportId) {
       WHERE 
         report_id = ?
       `,
-      [reportId]
+      [reportId],
     );
     const formattedResult = result.map((row) => ({
       ...row,
@@ -1734,7 +1745,7 @@ export async function getUserDetailReport(reportId) {
   } catch (error) {
     console.error(
       "Error fetching user detail report from the database:",
-      error
+      error,
     );
     throw error;
   }
@@ -1761,7 +1772,7 @@ export async function getOneReport(id) {
   WHERE 
     reports_table.report_id = ?
     `,
-    [id]
+    [id],
   );
   const formattedResult = result.map((row) => ({
     ...row,
@@ -1779,7 +1790,7 @@ export async function editUserReport(status, reason, rowId) {
       reason = ?
     WHERE report_id = ?
       `,
-      [status, reason, rowId]
+      [status, reason, rowId],
     );
     const result = await getUserDetailReport(rowId);
     return {
@@ -1812,7 +1823,7 @@ export async function getOneRequest(id) {
   WHERE 
     requests_table.request_id = ?
     `,
-    [id]
+    [id],
   );
   return result[0];
 }
@@ -1825,7 +1836,7 @@ export async function addUserRequest(titleRequest, detailsRequest, userID) {
       INSERT INTO requests_table (request_title, request_details, sender_id)
       VALUES (?, ?, ?)
       `,
-      [titleRequest, detailsRequest, userID]
+      [titleRequest, detailsRequest, userID],
     );
 
     // Return the ID of the newly inserted request
@@ -1847,7 +1858,7 @@ export async function getUserRequest(userId) {
       WHERE 
         requests_table.sender_id = ?
       `,
-      [userId]
+      [userId],
     );
 
     const formattedResult = result.map((row) => ({
@@ -1872,7 +1883,7 @@ export async function getUserDetailRequest(requestId) {
       WHERE 
       request_id = ?
       `,
-      [requestId]
+      [requestId],
     );
     const formattedResult = result.map((row) => ({
       ...row,
@@ -1882,7 +1893,7 @@ export async function getUserDetailRequest(requestId) {
   } catch (error) {
     console.error(
       "Error fetching user detail request from the database:",
-      error
+      error,
     );
     throw error;
   }
@@ -1897,7 +1908,7 @@ export async function editUserRequest(status, reason, rowId) {
       reason = ?
     WHERE request_id = ?
       `,
-      [status, reason, rowId]
+      [status, reason, rowId],
     );
     const result = await getUserDetailRequest(rowId);
     return {
@@ -1916,7 +1927,7 @@ export async function checkInstructorAvailability(instructorId) {
   try {
     const [result] = await pool.query(
       "SELECT date, am_available, pm_available, onsite_slots FROM availability WHERE instructor_id = ?",
-      [instructorId]
+      [instructorId],
     );
 
     // Format the dates in the result
@@ -1955,13 +1966,13 @@ export async function updateAvailability(
   date,
   am,
   pm,
-  onsite
+  onsite,
 ) {
   try {
     // Use the passed-in connection for all queries
     const [existing] = await connection.query(
       "SELECT * FROM availability WHERE instructor_id = ? AND date = ?",
-      [instructorId, date]
+      [instructorId, date],
     );
 
     if (existing.length > 0) {
@@ -1975,12 +1986,12 @@ export async function updateAvailability(
           onsite !== undefined ? onsite : current.onsite_slots,
           instructorId,
           date,
-        ]
+        ],
       );
     } else {
       await connection.query(
         "INSERT INTO availability (instructor_id, date, am_available, pm_available, onsite_slots) VALUES (?, ?, ?, ?, ?)",
-        [instructorId, date, am, pm, onsite]
+        [instructorId, date, am, pm, onsite],
       );
     }
   } catch (error) {
@@ -1993,7 +2004,7 @@ export async function updateOnsiteAvailability(instructorId, date, onsite) {
   try {
     const [existing] = await pool.query(
       "SELECT * FROM availability WHERE instructor_id = ? AND date = ? AND onsite_slots > 0",
-      [instructorId, date]
+      [instructorId, date],
     );
 
     if (existing.length > 0) {
@@ -2007,12 +2018,12 @@ export async function updateOnsiteAvailability(instructorId, date, onsite) {
             : current.onsite_slots,
           instructorId,
           date,
-        ]
+        ],
       );
     } else {
       await pool.query(
         "INSERT INTO availability (instructor_id, date, am_available, pm_available, onsite_slots) VALUES (?, ?, ?)",
-        [instructorId, date, onsite]
+        [instructorId, date, onsite],
       );
     }
   } catch (error) {
@@ -2026,7 +2037,7 @@ async function isSlotTaken(instructorId, date, am, pm) {
   try {
     const [result] = await pool.query(
       "SELECT am_available, pm_available, onsite_slots FROM availability WHERE instructor_id = ? AND date = ?",
-      [instructorId, date]
+      [instructorId, date],
     );
 
     if (result.length === 0) {
@@ -2051,7 +2062,7 @@ async function isOnsiteSlotFull(instructorId, date) {
   try {
     const [result] = await pool.query(
       "SELECT onsite_slots FROM availability WHERE instructor_id = ? AND date = ?",
-      [instructorId, date]
+      [instructorId, date],
     );
 
     // Check if a record exists
@@ -2081,7 +2092,7 @@ export async function applyTDC(
   userid,
   role,
   transmissionType,
-  program_id
+  program_id,
 ) {
   if (role == "admin") {
     userId = 0;
@@ -2092,7 +2103,7 @@ export async function applyTDC(
       instructor,
       startDate,
       startDateAMPM === "AM" ? true : null,
-      startDateAMPM === "PM" ? true : null
+      startDateAMPM === "PM" ? true : null,
     );
     if (startDateSlotTaken == 1 || startDateSlotTaken == 2) {
       throw new Error("Start date slot is already taken.");
@@ -2105,13 +2116,13 @@ export async function applyTDC(
       instructor,
       continuation,
       continuationAMPM === "AM" ? true : null,
-      continuationAMPM === "PM" ? true : null
+      continuationAMPM === "PM" ? true : null,
     );
     if (continuationSlotTaken == 1 || continuationSlotTaken == 2) {
       throw new Error("Continuation date slot is already taken.");
     } else if (continuationSlotTaken == 3) {
       throw new Error(
-        "Selected continuation date is not available for this program"
+        "Selected continuation date is not available for this program",
       );
     }
   } else {
@@ -2122,7 +2133,7 @@ export async function applyTDC(
         error.message === "Selected date is not available for this program."
       ) {
         throw new Error(
-          "Selected start date is not available for this program."
+          "Selected start date is not available for this program.",
         );
       } else if (error.message === "Selected date is full.") {
         throw new Error("Selected start date is full.");
@@ -2139,7 +2150,7 @@ export async function applyTDC(
         error.message === "Selected date is not available for this program."
       ) {
         throw new Error(
-          "Selected continuation date is not available for this program."
+          "Selected continuation date is not available for this program.",
         );
       } else if (error.message === "Selected date is full.") {
         throw new Error("Selected continuation date is full.");
@@ -2155,7 +2166,7 @@ export async function applyTDC(
     const instructorName = await getInstructorwithId(instructor);
     const programs = await getAllPrograms();
     const selectedProgramDetails = programs.find(
-      (program) => program.program_id == program_id
+      (program) => program.program_id == program_id,
     );
 
     try {
@@ -2169,7 +2180,7 @@ export async function applyTDC(
         selectedProgramDetails.program_name,
         selectedProgramDetails.program_duration,
         selectedProgramDetails.program_fee,
-        startDate
+        startDate,
       );
 
       // Insert the application
@@ -2186,7 +2197,7 @@ export async function applyTDC(
           role,
           transmissionType,
           user_course_id,
-        ]
+        ],
       );
 
       // Update availability for the starting date
@@ -2197,7 +2208,7 @@ export async function applyTDC(
           startDate,
           startDateAMPM === "AM" ? true : undefined,
           startDateAMPM === "PM" ? true : undefined,
-          undefined
+          undefined,
         );
 
         // Update availability for the continuation date
@@ -2207,7 +2218,7 @@ export async function applyTDC(
           continuation,
           continuationAMPM === "AM" ? true : undefined,
           continuationAMPM === "PM" ? true : undefined,
-          undefined
+          undefined,
         );
       } else {
         await updateOnsiteAvailability(instructor, startDate, 1);
@@ -2226,7 +2237,7 @@ export async function applyTDC(
         userid,
         role,
         transmissionType,
-        user_course_id
+        user_course_id,
       );
       await updateAttendance(
         connection,
@@ -2236,7 +2247,7 @@ export async function applyTDC(
         userid,
         role,
         transmissionType,
-        user_course_id
+        user_course_id,
       );
 
       // Commit the transaction
@@ -2263,7 +2274,7 @@ export async function addContinuationDate(
   instructor,
   continuationDate,
   dateAMPM,
-  transmissionType
+  transmissionType,
 ) {
   // Get the transmission type for this course
   let transmission;
@@ -2272,7 +2283,7 @@ export async function addContinuationDate(
   } else {
     const [rows] = await pool.query(
       `SELECT transmission FROM attendance WHERE user_course_id = ? LIMIT 1`,
-      [course]
+      [course],
     );
     transmission = rows[0]?.transmission;
   }
@@ -2283,13 +2294,13 @@ export async function addContinuationDate(
       instructor,
       continuationDate,
       dateAMPM === "AM" ? true : null,
-      dateAMPM === "PM" ? true : null
+      dateAMPM === "PM" ? true : null,
     );
     if (continuationSlotTaken == 1 || continuationSlotTaken == 2) {
       throw new Error("Continuation date slot is already taken.");
     } else if (continuationSlotTaken == 3) {
       throw new Error(
-        "Selected Continuation date is not available for this program."
+        "Selected Continuation date is not available for this program.",
       );
     }
   } else {
@@ -2301,7 +2312,7 @@ export async function addContinuationDate(
         error.message === "Selected date is not available for this program."
       ) {
         throw new Error(
-          "Selected continuation date is not available for this program."
+          "Selected continuation date is not available for this program.",
         );
       } else if (error.message === "Selected date is full.") {
         throw new Error("Selected continuation date is full.");
@@ -2324,7 +2335,7 @@ export async function addContinuationDate(
         continuationDate,
         dateAMPM === "AM" ? true : undefined,
         dateAMPM === "PM" ? true : undefined,
-        undefined
+        undefined,
       );
     } else {
       await updateOnsiteAvailability(instructor, continuationDate, 1);
@@ -2338,7 +2349,7 @@ export async function addContinuationDate(
       userID,
       createdBy,
       transmission,
-      course
+      course,
     );
     // Commit the transaction
     await connection.commit();
@@ -2362,13 +2373,13 @@ async function updateAttendance(
   userid,
   role,
   transmission,
-  user_course_id
+  user_course_id,
 ) {
   try {
     await connection.query(
       `INSERT INTO attendance (instructor_id, date, date_am_pm, creator_id, created_by, transmission, user_course_id)
       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [instructor, date, ampm, userid, role, transmission, user_course_id]
+      [instructor, date, ampm, userid, role, transmission, user_course_id],
     );
   } catch (error) {
     console.error("Error updating attendance:", error);
@@ -2384,7 +2395,7 @@ async function updateUserCoursesTable(
   program_name,
   program_duration,
   program_fee,
-  startDate
+  startDate,
 ) {
   try {
     const [result] = await connection.query(
@@ -2397,7 +2408,7 @@ async function updateUserCoursesTable(
         program_duration,
         program_fee,
         startDate,
-      ]
+      ],
     );
     return result.insertId;
   } catch (error) {
@@ -2406,7 +2417,11 @@ async function updateUserCoursesTable(
   }
 }
 
-export async function getAllPdcTdcTakers(type) {
+export async function getAllPdcTdcTakers(type, monthYear = null) {
+  if (!monthYear) {
+    // default to current month
+    monthYear = new Date().toISOString().slice(0, 7);
+  }
   let query = `
   SELECT a.*, 
   CASE 
@@ -2423,17 +2438,18 @@ export async function getAllPdcTdcTakers(type) {
 
   switch (type) {
     case "pdc":
-      query += ` WHERE a.transmission = 'Manual' OR a.transmission = 'Automatic'`;
+      query += ` WHERE (a.transmission = 'Manual' OR a.transmission = 'Automatic')
+                AND DATE_FORMAT(a.date, '%Y-%m') = ?`;
       break;
     case "tdc":
-      query += ` WHERE a.transmission = 'onsite'`;
+      query += ` WHERE a.transmission = 'onsite' AND DATE_FORMAT(a.date, '%Y-%m') = ?`;
       break;
     default:
       break;
   }
 
   try {
-    const [result] = await pool.query(query);
+    const [result] = await pool.query(query, [monthYear]);
     const formattedResult = result.map((row) => ({
       ...row,
       date: formatDate(row.date),
@@ -2449,14 +2465,14 @@ export async function getAllPdcTdcTakers(type) {
 export async function changeUserAttendanceStatus(id, status, hours) {
   const [attendanceRows] = await pool.query(
     `SELECT * FROM attendance WHERE attendance_id = ?`,
-    [id]
+    [id],
   );
   console.log("attendanceRows", attendanceRows);
   const attendanceInfo = attendanceRows[0];
   if (!attendanceInfo) throw new Error("Attendance record not found");
 
   const userCourseRows = await getTraineeCourseInfo(
-    attendanceInfo.user_course_id
+    attendanceInfo.user_course_id,
   );
   const userCourseInfo = userCourseRows[0];
   console.log("userCourseInfo", userCourseInfo);
@@ -2486,11 +2502,11 @@ export async function changeUserAttendanceStatus(id, status, hours) {
 
     await connection.query(
       `UPDATE attendance SET status = ?, hours_attended = ? WHERE attendance_id = ?`,
-      [status, hours, id]
+      [status, hours, id],
     );
     await connection.query(
       `UPDATE user_courses SET ${setters} WHERE course_id = ?`,
-      params
+      params,
     );
 
     await connection.commit();
@@ -2510,7 +2526,7 @@ export async function getUserAttendanceSchedule(userId, role) {
       `SELECT *
       FROM attendance
       WHERE creator_id = ? AND created_by= ?`,
-      [userId, role]
+      [userId, role],
     );
 
     const formattedResult = result.map((row) => ({
@@ -2526,15 +2542,20 @@ export async function getUserAttendanceSchedule(userId, role) {
   }
 }
 
-export async function getAttendanceByInstructorId(id, type) {
+export async function getAttendanceByInstructorId(id, type, monthYear = null) {
+  if (!monthYear) {
+    // default to current month (YYYY-MM)
+    monthYear = new Date().toISOString().slice(0, 7);
+  }
+
   let query = `
     SELECT a.*, 
-    CASE 
-      WHEN a.created_by = 'user' THEN u.user_name 
-      WHEN a.created_by = 'admin' THEN ad.admin_name 
-      ELSE 'Unknown' 
-    END AS creator_name,
-    i.instructor_name
+      CASE 
+        WHEN a.created_by = 'user' THEN u.user_name 
+        WHEN a.created_by = 'admin' THEN ad.admin_name 
+        ELSE 'Unknown' 
+      END AS creator_name,
+      i.instructor_name
     FROM attendance a
     LEFT JOIN user u ON a.creator_id = u.user_id AND a.created_by = 'user'
     LEFT JOIN admin_account ad ON a.creator_id = ad.account_id AND a.created_by = 'admin'
@@ -2543,23 +2564,30 @@ export async function getAttendanceByInstructorId(id, type) {
 
   switch (type) {
     case "pdc":
-      query += ` WHERE a.instructor_id = ? AND (a.transmission = 'Manual' OR a.transmission = 'Automatic')`;
+      query += ` 
+        WHERE a.instructor_id = ? 
+        AND (a.transmission = 'Manual' OR a.transmission = 'Automatic')
+        AND DATE_FORMAT(a.date, '%Y-%m') = ?`;
       break;
     case "tdc":
-      query += ` WHERE a.instructor_id = ? AND a.transmission = 'onsite'`;
+      query += ` 
+        WHERE a.instructor_id = ? 
+        AND a.transmission = 'onsite'
+        AND DATE_FORMAT(a.date, '%Y-%m') = ?`;
       break;
     default:
+      query += ` WHERE a.instructor_id = ? AND DATE_FORMAT(a.date, '%Y-%m') = ?`;
       break;
   }
 
-  const [result] = await pool.query(query, [id]);
+  const [result] = await pool.query(query, [id, monthYear]);
 
   // Extract unique user IDs for profile picture lookup
   const userIds = [
     ...new Set(
       result
         .filter((row) => row.created_by === "user")
-        .map((row) => row.creator_id)
+        .map((row) => row.creator_id),
     ),
   ];
 
@@ -2568,14 +2596,14 @@ export async function getAttendanceByInstructorId(id, type) {
   if (userIds.length > 0) {
     const [profileRows] = await pool.query(
       `SELECT user_id, profile_picture FROM user_profile WHERE user_id IN (?)`,
-      [userIds]
+      [userIds],
     );
 
     profilePicList = await Promise.all(
       profileRows.map(async ({ user_id, profile_picture }) => ({
         user_id,
         profilepic: await renderBase64File(profile_picture),
-      }))
+      })),
     );
   }
 
@@ -2594,7 +2622,7 @@ export async function getInstructors() {
       `SELECT i.*, 
       admin.user_email
       FROM instructor i
-      LEFT JOIN admin_account admin ON i.account_id = admin.account_id`
+      LEFT JOIN admin_account admin ON i.account_id = admin.account_id`,
     );
 
     const formattedResult = await Promise.all(
@@ -2602,9 +2630,9 @@ export async function getInstructors() {
         ...row,
         date_started: formatDate(row.date_started),
         instructor_profile_picture: await renderBase64File(
-          row.instructor_profile_picture
+          row.instructor_profile_picture,
         ),
-      }))
+      })),
     );
     return formattedResult;
   } catch (error) {
@@ -2619,7 +2647,7 @@ export async function getAllAccounts() {
       `SELECT *, 
        NULL AS user_password ,
        DATE_FORMAT(date_created, '%Y-%m-%d %H:%i:%s') AS date_created
-       FROM admin_account`
+       FROM admin_account`,
     );
 
     return result;
@@ -2635,7 +2663,7 @@ export async function getInstructorwithId(id) {
       `SELECT *
       FROM instructor
       WHERE instructor_id = ?`,
-      [id]
+      [id],
     );
 
     const formattedResult = result.map((row) => ({
@@ -2655,7 +2683,7 @@ export async function getInstructorWithAccountId(id) {
       `SELECT *
       FROM instructor
       WHERE account_id = ?`,
-      [id]
+      [id],
     );
 
     const formattedResult = result.map((row) => ({
@@ -2681,7 +2709,7 @@ export async function addInstructor(
   Philhealth,
   accreditaionNumber,
   dateStarted,
-  profilePicture
+  profilePicture,
 ) {
   try {
     const [result] = await pool.query(
@@ -2702,7 +2730,7 @@ export async function addInstructor(
         Pagibig,
         profilePicture,
         accreditaionNumber,
-      ]
+      ],
     );
     return result.insertId;
   } catch (error) {
@@ -2721,7 +2749,7 @@ export async function updateInstructorInfo(userID, updatedProfile) {
     `UPDATE instructor 
     SET ${setClause} 
     WHERE instructor_id = ?`,
-    values
+    values,
   );
   return result;
 }
@@ -2730,7 +2758,7 @@ export async function assignAccountToInstructor(instructorID, prn, accountID) {
   try {
     const [result] = await pool.query(
       `UPDATE instructor SET account_id = ?, prn = ? WHERE instructor_id = ?`,
-      [accountID, prn, instructorID]
+      [accountID, prn, instructorID],
     );
     return result;
   } catch (error) {
@@ -2746,7 +2774,7 @@ export async function getInstructorPayroll(id) {
        FROM instructor_payroll_history iph
        JOIN instructor i ON iph.instructor_id = i.instructor_id
        WHERE iph.instructor_id = ?`,
-      [id]
+      [id],
     );
     const formattedResult = result.map((row) => ({
       ...row,
@@ -2770,7 +2798,7 @@ export async function getCurrentPayroll(id) {
       instructor i ON cwp.instructor_id = i.instructor_id
       WHERE cwp.instructor_id = ?
       `,
-      [id]
+      [id],
     );
     const formattedResult = result.map((row) => ({
       ...row,
@@ -2803,7 +2831,7 @@ export async function getWeeklyPayroll(instructorId) {
         i.instructor_id = ?
       GROUP BY i.instructor_id
       `,
-      [instructorId]
+      [instructorId],
     );
 
     if (result.length === 0) {
@@ -2829,7 +2857,7 @@ export async function getMonthlyPayroll(monthYear) {
       FROM instructor_payroll_history iph
       JOIN instructor i ON iph.instructor_id = i.instructor_id
       WHERE iph.month_year = ?`,
-      [monthYear]
+      [monthYear],
     );
     const formattedResult = result.map((row) => ({
       ...row,
@@ -2849,7 +2877,7 @@ export async function updateCurrentWeekPayroll(
   instructorId,
   attendedHours,
   benefits,
-  ratePerHour
+  ratePerHour,
 ) {
   try {
     // Get the current date
@@ -2870,7 +2898,7 @@ export async function updateCurrentWeekPayroll(
     await pool.query(
       `INSERT INTO current_week_payroll (instructor_id, rate_per_hour, date_start, date_end, attended_hours, benefits)
       VALUES (?, ?, ?, ?, ?)`,
-      [instructorId, ratePerHour, dateStart, dateEnd, attendedHours, benefits]
+      [instructorId, ratePerHour, dateStart, dateEnd, attendedHours, benefits],
     );
   } catch (error) {
     console.error("Error updating current week payroll:", error);
@@ -2900,7 +2928,7 @@ export async function calculateAndInsertWeeklyPayroll() {
                     AND DATE_SUB(CURDATE(), INTERVAL WEEKDAY(CURDATE()) - 5 DAY)
       GROUP BY 
           a.instructor_id;
-      `
+      `,
     );
     return result;
   } catch (error) {
@@ -2934,7 +2962,7 @@ export async function calculateAndInsertMonthlyPayroll() {
                AND LAST_DAY(CURDATE() - INTERVAL 1 MONTH)
       GROUP BY 
           a.instructor_id;
-      `
+      `,
     );
     return result;
   } catch (error) {
@@ -2950,7 +2978,7 @@ export async function deleteInstructor(id) {
       DELETE FROM instructor
       WHERE instructor_id = ?
       `,
-      [id]
+      [id],
     );
     return result;
   } catch (error) {
@@ -2963,7 +2991,7 @@ export async function getInstructorDetailsForApplicants() {
   try {
     const [result] = await pool.query(
       `SELECT instructor_id, instructor_name, instructor_type, isTdcOnsite, isManual, isAutomatic
-      FROM instructor`
+      FROM instructor`,
     );
     return result;
   } catch (error) {
@@ -2972,20 +3000,27 @@ export async function getInstructorDetailsForApplicants() {
   }
 }
 
-// Functions for Completed Courses list
-export async function getCompletedCourseList() {
+export async function getCompletedCourseList(monthyear = null) {
   try {
-    const [result] = await pool.query(`
+    if (!monthyear) {
+      // default to current month
+      monthyear = new Date().toISOString().slice(0, 7);
+    }
+
+    let sql = `
       SELECT uc.*,
-      i.instructor_id AS instructor_id,
-      po.program_id AS program_id,
-      u.user_name AS user_name
+             i.instructor_id AS instructor_id,
+             po.program_id AS program_id,
+             u.user_name AS user_name
       FROM user_courses uc
       LEFT JOIN instructor i ON uc.instructor_name = i.instructor_name
       LEFT JOIN user u ON uc.user_id = u.user_id
       LEFT JOIN program_offers po ON uc.program_name = po.program_name
       WHERE uc.total_hours >= uc.program_duration
-      `);
+        AND DATE_FORMAT(uc.date_completed, '%Y-%m') = ?
+    `;
+
+    const [result] = await pool.query(sql, [monthyear]);
 
     const formattedResult = await Promise.all(
       result.map(async (row) => ({
@@ -2997,9 +3032,9 @@ export async function getCompletedCourseList() {
         grade_sheet: await renderBase64File(row.grade_sheet),
         certificate_file: await renderBase64File(
           row.certificate_file,
-          row.certificate_file_type
+          row.certificate_file_type,
         ),
-      }))
+      })),
     );
     return formattedResult;
   } catch (error) {
@@ -3046,9 +3081,9 @@ export async function getTraineeCourseList(userId) {
         grade_sheet: await renderBase64File(row.grade_sheet),
         certificate_file: await renderBase64File(
           row.certificate_file,
-          row.certificate_file_type
+          row.certificate_file_type,
         ),
-      }))
+      })),
     );
     return formattedResult;
   } catch (error) {
@@ -3100,7 +3135,7 @@ export async function editTraineeCompletedCourseInfo(id, totalHours) {
   try {
     await pool.query(
       `UPDATE user_courses SET total_hours = ? WHERE course_id = ?`,
-      [totalHours, id]
+      [totalHours, id],
     );
     const result = await getTraineeCourseInfo(id);
     return result[0];
@@ -3113,7 +3148,7 @@ export async function editTraineeCompletedCourseInfo(id, totalHours) {
 export async function uploadTraineeCompletionCertificate(
   id,
   fileBuffer,
-  fileType
+  fileType,
 ) {
   const query = `
     UPDATE user_courses
@@ -3164,7 +3199,7 @@ export async function uploadTraineeGradeSheet(id, gradeSheet, grade) {
 export async function deleteTraineeCourseInfo(
   userId,
   dateStarted,
-  continuation
+  continuation,
 ) {
   console.log(
     `userId,
@@ -3172,11 +3207,11 @@ export async function deleteTraineeCourseInfo(
   continuation`,
     userId,
     dateStarted,
-    continuation
+    continuation,
   );
   const [result] = await pool.query(
     `SELECT application_id FROM applications WHERE creator_id = ? AND start_date = ? AND continuation = ?`,
-    [userId, dateStarted, continuation]
+    [userId, dateStarted, continuation],
   );
   console.log("result", result);
   try {
@@ -3191,7 +3226,7 @@ export async function deleteTraineeCourseInfo(
 export async function deleteTraineeAttendance(creatorId, createdBy, courseId) {
   const [result] = await pool.query(
     `SELECT application_id FROM applications WHERE creator_id = ? AND created_by = ? AND user_course_id = ?`,
-    [creatorId, createdBy, courseId]
+    [creatorId, createdBy, courseId],
   );
   console.log("result", result);
   try {
@@ -3219,7 +3254,7 @@ export async function getAllVehicle() {
         ORDER BY repair_date DESC
         LIMIT 1
         `,
-          [vehicle.vehicle_id]
+          [vehicle.vehicle_id],
         );
 
         let repairStatus = "Ready for Use";
@@ -3236,7 +3271,7 @@ export async function getAllVehicle() {
           lto_document:
             (await renderBase64File(
               vehicle.lto_document,
-              vehicle.lto_document_type
+              vehicle.lto_document_type,
             )) || null,
           status: repairStatus,
         };
@@ -3244,7 +3279,7 @@ export async function getAllVehicle() {
         console.error("Error processing vehicle:", vehicle.vehicle_id, err);
         return null; // or handle differently
       }
-    })
+    }),
   );
   return formattedResult;
 }
@@ -3253,7 +3288,7 @@ export async function updateVehicleStatus(id, status) {
   try {
     const [result] = await pool.query(
       `UPDATE vehicle_list SET isRegistered = ? WHERE vehicle_id = ?`,
-      [status, id]
+      [status, id],
     );
     return result;
   } catch (error) {
@@ -3267,7 +3302,7 @@ export async function editOneVehicle(
   vehicleModel,
   year,
   vehicleType,
-  vehicleID
+  vehicleID,
 ) {
   const [result] = await pool.query(
     `
@@ -3279,7 +3314,7 @@ export async function editOneVehicle(
     vehicle_type = ?
     WHERE vehicle_id = ?
     `,
-    [plateNumber, vehicleModel, year, vehicleType, vehicleID]
+    [plateNumber, vehicleModel, year, vehicleType, vehicleID],
   );
   return result;
 }
@@ -3291,7 +3326,7 @@ export async function addVehicle(plateNumber, vehicleModel, year, vehicleType) {
       INSERT INTO vehicle_list (plate_number, vehicle_model, year, vehicle_type)
       VALUES (?, ?, ?, ?)
       `,
-      [plateNumber, vehicleModel, year, vehicleType]
+      [plateNumber, vehicleModel, year, vehicleType],
     );
     return result.insertId;
   } catch (error) {
@@ -3337,7 +3372,7 @@ export async function getVehicleRepairs(vehicleId) {
     FROM vehicle_repairs
     WHERE vehicle_id = ?
     `,
-    [vehicleId]
+    [vehicleId],
   );
   const formattedResult = result.map((row) => ({
     ...row,
@@ -3373,7 +3408,7 @@ export async function getRepairById(repairId) {
       FROM vehicle_repairs
       WHERE repair_id = ?
       `,
-      [repairId]
+      [repairId],
     );
     return result[0];
   } catch (error) {
@@ -3396,7 +3431,7 @@ export async function addVehicleRepair(vehicleId, repairDetails) {
       INSERT INTO vehicle_repairs (${fields.join(", ")})
       VALUES (${placeholders})
       `,
-      values
+      values,
     );
 
     return result.insertId;
@@ -3417,7 +3452,7 @@ export async function updateVehicleRepair(repairId, updatedDetails) {
     `UPDATE vehicle_repairs 
     SET ${setClause} 
     WHERE repair_id = ?`,
-    values
+    values,
   );
   return result;
 }
@@ -3429,7 +3464,7 @@ export async function deleteVehicleRepair(rowID) {
       DELETE FROM vehicle_repairs
       WHERE repair_id = ?
       `,
-      [rowID]
+      [rowID],
     );
     return result;
   } catch (error) {
@@ -3445,7 +3480,7 @@ export async function deleteVehicle(rowID) {
       DELETE FROM vehicle_list
       WHERE vehicle_id = ?
       `,
-      [rowID]
+      [rowID],
     );
     return result;
   } catch (error) {
@@ -3454,16 +3489,36 @@ export async function deleteVehicle(rowID) {
   }
 }
 
+export async function notifCount(userId, role) {
+  try {
+    const [result] = await pool.query(
+      "SELECT COUNT(*) AS unread_count FROM notifications WHERE user_id=? AND user_role=? AND isRead=false",
+      [userId, role],
+    );
+    return result[0].unread_count; // return the number directly
+  } catch (error) {
+    console.error("Error counting notifications", error);
+    throw error;
+  }
+}
+
 export async function addNotification(userId, role, type, message) {
   try {
     const query = `
-    INSERT INTO notifications (user_role, user_id, notif_type, message)
-    VALUES (?, ?, ?, ?)
+      INSERT INTO notifications (user_role, user_id, notif_type, message)
+      VALUES (?, ?, ?, ?)
     `;
-    const [result] = await pool.query(query, [role, userId, type, message]);
-    return result;
+    await pool.query(query, [role, userId, type, message]);
+
+    // Now get updated count
+    const count = await notifCount(userId, role);
+
+    // Push to SSE
+    pushUnreadCount(userId, role, count);
+
+    return { success: true };
   } catch (error) {
-    console.error("Error marking saving this as notification", error);
+    console.error("Error saving notification", error);
     throw error;
   }
 }
@@ -3484,7 +3539,7 @@ export async function getNotifications(userId, role) {
        ORDER BY date_created DESC, notification_id DESC
        LIMIT 20
       `,
-      params
+      params,
     );
 
     // Pass the connection to the helper!
@@ -3508,7 +3563,7 @@ export async function markReadNotifications(connection, userId, role) {
 
   const [result] = await connection.query(
     `UPDATE notifications SET isRead = 1 WHERE ${setters} AND isRead = 0`,
-    params
+    params,
   );
   return result;
 }
@@ -3521,7 +3576,7 @@ export async function saveCertificateToDatabase(courseId, pdfBuffer, fileType) {
         SET certificate_file = ?, certificate_file_type = ?
         WHERE course_id = ?
       `,
-      [pdfBuffer, fileType, courseId]
+      [pdfBuffer, fileType, courseId],
     );
 
     return result;
@@ -3531,4 +3586,148 @@ export async function saveCertificateToDatabase(courseId, pdfBuffer, fileType) {
   }
 }
 
-// request for the public website.
+export async function auditUserPayments(period, year) {
+  try {
+    let query = `
+      SELECT user_payment_id, user_id, account_name, course_id,
+             payment_method, amount, status, date_created
+      FROM user_payments
+      WHERE YEAR(date_created) = ?
+    `;
+    const params = [year];
+
+    if (period === "monthly") {
+      query += " AND MONTH(date_created) = MONTH(CURRENT_DATE)";
+    } else if (period === "quarterly") {
+      query += " AND QUARTER(date_created) = QUARTER(CURRENT_DATE)";
+    } else if (period === "bi-yearly") {
+      query +=
+        " AND QUARTER(date_created) IN (QUARTER(CURRENT_DATE), QUARTER(CURRENT_DATE)-1)";
+    } // yearly → no extra filter
+
+    const [rows] = await pool.query(query, params);
+    return rows;
+  } catch (error) {
+    console.error("Error fetching User Payments", error);
+    throw error;
+  }
+}
+
+export async function auditInstructorPayroll(period, year) {
+  try {
+    let query = `
+      SELECT payroll_id, instructor_id, rate_per_hour, date_start, date_end,
+             attended_hours, gross_income, benefits, net_income, isPaid
+      FROM instructor_payroll_history
+      WHERE YEAR(date_start) = ?
+    `;
+    const params = [year];
+
+    if (period === "monthly") {
+      query += " AND MONTH(date_start) = MONTH(CURRENT_DATE)";
+    } else if (period === "quarterly") {
+      query += " AND QUARTER(date_start) = QUARTER(CURRENT_DATE)";
+    } else if (period === "bi-yearly") {
+      query +=
+        " AND QUARTER(date_start) IN (QUARTER(CURRENT_DATE), QUARTER(CURRENT_DATE)-1)";
+    }
+    // yearly → no extra filter
+
+    const [rows] = await pool.query(query, params);
+    return rows;
+  } catch (error) {
+    console.error("Error fetching Instructor Payroll", error);
+    throw error;
+  }
+}
+
+export async function auditVehicleExpenses(period, year) {
+  try {
+    let query = `
+      SELECT repair_id, vehicle_id, repair_date, mechanic_name, cost, status
+      FROM vehicle_repairs
+      WHERE YEAR(repair_date) = ?
+    `;
+    const params = [year];
+
+    if (period === "monthly") {
+      query += " AND MONTH(repair_date) = MONTH(CURRENT_DATE)";
+    } else if (period === "quarterly") {
+      query += " AND QUARTER(repair_date) = QUARTER(CURRENT_DATE)";
+    } else if (period === "bi-yearly") {
+      query +=
+        " AND QUARTER(repair_date) IN (QUARTER(CURRENT_DATE), QUARTER(CURRENT_DATE)-1)";
+    }
+
+    const [rows] = await pool.query(query, params);
+    return rows;
+  } catch (error) {
+    console.error("Error fetching Vehicle Expenses", error);
+    throw error;
+  }
+}
+
+export async function getAuditSummary(period, year) {
+  try {
+    let query = `
+      SELECT up.month_year,
+             up.total_user_payments,
+             IFNULL(iph.total_payroll, 0) AS total_payroll,
+             IFNULL(ve.vehicle_expenses, 0) AS vehicle_expenses,
+             (up.total_user_payments - (IFNULL(iph.total_payroll,0) + IFNULL(ve.vehicle_expenses,0))) AS net_profit
+      FROM (
+        SELECT DATE_FORMAT(date_created, '%Y-%m') AS month_year,
+               SUM(amount) AS total_user_payments
+        FROM user_payments
+        WHERE YEAR(date_created) = ?
+        GROUP BY DATE_FORMAT(date_created, '%Y-%m')
+      ) up
+      LEFT JOIN (
+        SELECT month_year, SUM(net_income) AS total_payroll
+        FROM instructor_payroll_history
+        GROUP BY month_year
+      ) iph ON up.month_year = iph.month_year
+      LEFT JOIN (
+        SELECT DATE_FORMAT(repair_date, '%Y-%m') AS month_year,
+               SUM(CAST(cost AS DECIMAL(10,2))) AS vehicle_expenses
+        FROM vehicle_repairs
+        WHERE YEAR(repair_date) = ?
+        GROUP BY DATE_FORMAT(repair_date, '%Y-%m')
+      ) ve ON up.month_year = ve.month_year
+    `;
+
+    const params = [year, year];
+
+    if (period === "monthly") {
+      query += " WHERE up.month_year = DATE_FORMAT(CURRENT_DATE, '%Y-%m')";
+    } else if (period === "quarterly") {
+      query +=
+        " WHERE QUARTER(STR_TO_DATE(CONCAT(up.month_year,'-01'), '%Y-%m-%d')) = QUARTER(CURRENT_DATE)";
+    } else if (period === "bi-yearly") {
+      query +=
+        " WHERE QUARTER(STR_TO_DATE(CONCAT(up.month_year,'-01'), '%Y-%m-%d')) IN (QUARTER(CURRENT_DATE), QUARTER(CURRENT_DATE)-1)";
+    }
+
+    query += " ORDER BY up.month_year DESC";
+
+    const [rows] = await pool.query(query, params);
+    return rows;
+  } catch (error) {
+    console.error("Error fetching Audit Summary", error);
+    throw error;
+  }
+}
+
+//const resuI = await auditUserPayments("yearly", 2025);
+//console.log('resuI', resuI);
+//const resuII = await auditInstructorPayroll("bi-yearly", 2025);
+//console.log('resuII', resuII);
+
+//const resuIII = await auditVehicleExpenses("yearly", 2025);
+//console.log('resuIII', resuIII);
+
+//const resuIIII = await getAuditSummary("bi-yearly", 2025);
+//console.log('resuIIII', resuIIII);
+
+//const resuV = await getAuditSummary("yearly", 2025);
+//onsole.log('resuV', resuV);

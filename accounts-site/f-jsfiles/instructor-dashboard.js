@@ -13,9 +13,13 @@ const traineeInfoBox = document.getElementById("trainee-info-box");
 const pdcBtn = document.getElementById("pdc-takers-btn");
 const tdcBtn = document.getElementById("tdc-takers-btn");
 let attendanceList, usersProfilePics;
-async function fetchAttendanceList(type) {
-  const response = await fetch(`/account/api/instructor/attendance-list/${type}`);
 
+const currentMonthYear = new Date().toISOString().slice(0, 7);
+
+async function fetchAttendanceList(type, monthYear = currentMonthYear) {
+  let url = `/account/api/instructor/attendance-list/${type}/${monthYear}`;
+
+  const response = await fetch(url);
   if (!response.ok) {
     modalDetails.innerText = `Cant fetch attendance list right now`;
     modal.style.display = "flex";
@@ -52,7 +56,30 @@ pdcBtn.addEventListener("click", (event) => {
   fetchAttendanceList("pdc");
 });
 
+const filterContainer = document.getElementById("monthyearfiltercontainer");
+if (filterContainer) {
+  // filter form
+  const monthYearFilter = document.getElementById("monthyearfilter");
+  const monthYear = document.getElementById("monthyear");
+  monthYear.value = currentMonthYear; // set default value to current month-year
+
+  monthYearFilter.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const monthYear = document.getElementById("monthyear").value;
+    monthYear.value;
+    fetchAttendanceList(currentType, monthYear);
+  });
+}
+
 function renderAttendanceTable(dataList) {
+  filterContainer.style.display = "flex";
+
+  const attendanceTable = document.getElementById("attendance-table");
+  if (!Array.isArray(dataList) || dataList.length === 0) {
+    attendanceTable.innerHTML =
+      "<p>No attendance data available for this month.</p>";
+    return;
+  }
   // Group data by date
   const groupedData = dataList.reduce((acc, item) => {
     const date = item.date;
@@ -64,8 +91,8 @@ function renderAttendanceTable(dataList) {
   // Sort keys and rebuild as a new object
   const sortedGroupedData = Object.fromEntries(
     Object.entries(groupedData).sort(
-      ([dateA], [dateB]) => new Date(dateA) - new Date(dateB)
-    )
+      ([dateA], [dateB]) => new Date(dateA) - new Date(dateB),
+    ),
   );
 
   // Generate HTML for collapsible sections
@@ -97,8 +124,8 @@ function renderAttendanceTable(dataList) {
                       trainee.status == "Present"
                         ? '<div class="text-green-700 hover:font-semibold rounded-md">Attended</div>'
                         : trainee.status == "Absent"
-                        ? '<div class="text-red-700 hover:font-semibold rounded-md">Absent</div>'
-                        : '<div class="text-gray-700 hover:font-semibold rounded-md">Pending</div>'
+                          ? '<div class="text-red-700 hover:font-semibold rounded-md">Absent</div>'
+                          : '<div class="text-gray-700 hover:font-semibold rounded-md">Pending</div>'
                     }
                   </button>
                 </td>
@@ -115,7 +142,7 @@ function renderAttendanceTable(dataList) {
                   </button>
                 </td>
               </tr>
-            `
+            `,
         )
         .join("");
 
@@ -147,8 +174,8 @@ function renderAttendanceTable(dataList) {
                           trainee.status === "Present"
                             ? '<span class="text-green-700 font-semibold">Attended</span>'
                             : trainee.status === "Absent"
-                            ? '<span class="text-red-700 font-semibold">Absent</span>'
-                            : '<span class="text-gray-600 font-semibold">Pending</span>'
+                              ? '<span class="text-red-700 font-semibold">Absent</span>'
+                              : '<span class="text-gray-600 font-semibold">Pending</span>'
                         }
                       </div>
                     </div>
@@ -207,7 +234,6 @@ function renderAttendanceTable(dataList) {
     .join("");
 
   // Inject the generated HTML into the DOM
-  const attendanceTable = document.getElementById("attendance-table");
   attendanceTable.innerHTML = "";
   attendanceTable.innerHTML = tableHTML;
 
@@ -223,7 +249,7 @@ function attachCollapsibleListeners() {
   collapsibleHeaders.forEach((header) => {
     header.addEventListener("click", () => {
       const content = header.parentElement.querySelector(
-        ".collapsible-content"
+        ".collapsible-content",
       );
 
       const icon = header.querySelector("#collapsible-icon");
@@ -241,7 +267,7 @@ function attachCollapsibleListeners() {
 
       header.setAttribute(
         "aria-expanded",
-        content.classList.contains("expanded")
+        content.classList.contains("expanded"),
       );
 
       // Toggle rotation of the icon
@@ -284,7 +310,7 @@ function allButtons(dataList) {
       const filteredList = filterAttendanceList(
         dataList,
         "attendance_id",
-        rowId
+        rowId,
       );
       console.log("filteredList", filteredList);
       const result = filteredList[0];
@@ -312,7 +338,7 @@ function allButtons(dataList) {
         attendedBtn.classList.add(
           "disabled",
           "cursor-not-allowed",
-          "animate-pulse"
+          "animate-pulse",
         );
         const hoursAttended = document.getElementById("hours-attended").value;
         await changeStatus(rowId, "Present", hoursAttended);
@@ -324,7 +350,7 @@ function allButtons(dataList) {
         absentBtn.classList.add(
           "disabled",
           "cursor-not-allowed",
-          "animate-pulse"
+          "animate-pulse",
         );
         await changeStatus(rowId, "Absent");
       });
@@ -434,13 +460,16 @@ function allButtons(dataList) {
           "click",
           async () => {
             try {
-              const deleteResponse = await fetch(`/account/api/applicant/${id}`, {
-                method: "DELETE",
-                headers: {
-                  "Content-Type": "application/json",
-                  "x-delete-token": data.deleteToken,
+              const deleteResponse = await fetch(
+                `/account/api/applicant/${id}`,
+                {
+                  method: "DELETE",
+                  headers: {
+                    "Content-Type": "application/json",
+                    "x-delete-token": data.deleteToken,
+                  },
                 },
-              });
+              );
               if (deleteResponse.ok) {
                 tokenIndicator.innerText = `Successfully Deleted Applicant ID #${id}`;
                 renderAttendanceTable();
@@ -459,7 +488,7 @@ function allButtons(dataList) {
               }, 3000);
             }
           },
-          { once: true }
+          { once: true },
         );
       }
 
@@ -473,7 +502,7 @@ function allButtons(dataList) {
 
 async function fetchProfile(courseID) {
   const response = await fetch(
-    `/account/api/instructor-dashboard/trainee-info/${courseID}`
+    `/account/api/instructor-dashboard/trainee-info/${courseID}`,
   );
   if (!response.ok) {
     modalDetails.innerText = "Cant fetch trainee info right now";
@@ -623,7 +652,7 @@ function traineesInfo(profile, profilePic) {
       modal.style.display = "flex";
 
       const gradeUploadBtn = document.getElementById(
-        "completion-submit-button"
+        "completion-submit-button",
       );
       document
         .getElementById("grade-completion-upload-form")
@@ -644,7 +673,7 @@ function traineesInfo(profile, profilePic) {
               {
                 method: "POST",
                 body: formData,
-              }
+              },
             );
             const data = await response.json();
             if (response.ok) {
@@ -665,7 +694,7 @@ function traineesInfo(profile, profilePic) {
           }
         });
     },
-    { once: true }
+    { once: true },
   );
 
   // Add event listener for the "Back" button

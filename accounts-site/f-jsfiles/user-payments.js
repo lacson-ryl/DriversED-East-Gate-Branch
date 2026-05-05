@@ -393,7 +393,7 @@ function allButtons(data) {
         `;
       modal.style.display = "flex";
       const uploadForm = document.getElementById("payment-receipt-upload-form");
-      const receiptSubmitbtn = document.getElementById("receipt-submit-button");
+      const receiptSubmitBtn = document.getElementById("receipt-submit-button");
 
       uploadForm.addEventListener(
         "submit",
@@ -401,7 +401,7 @@ function allButtons(data) {
           event.preventDefault();
           const formData = new FormData(uploadForm);
 
-          showBtnLoading(receiptSubmitbtn);
+          showBtnLoading(receiptSubmitBtn);
 
           try {
             const response = await fetch(
@@ -418,14 +418,14 @@ function allButtons(data) {
                 <p class="text-green-700">${responseData.message}</p>
               `;
               notification.style.display = "block"; // Show success notification
-              showBtnResult(receiptSubmitbtn, true);
+              showBtnResult(receiptSubmitBtn, true);
               renderUserPaymentsList();
             } else {
               notification.innerHTML = `
                 <p class="text-red-700">${responseData.error}</p>
               `;
               notification.style.display = "block";
-              showBtnResult(receiptSubmitbtn, false);
+              showBtnResult(receiptSubmitBtn, false);
             }
 
             setTimeout(() => {

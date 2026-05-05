@@ -22,7 +22,7 @@
                     <button id="notif-button" class="relative">
                         <img id="notif-logo" src="/account/f-assets/solid/bell.svg" class="w-7 h-7 inline-block" />
                         <div id="notif-new-indicator"
-                            class="h-3 w-3 rounded-full bg-blue-900 absolute top-2 right-2 transform translate-x-1/2 -translate-y-1/2 animate-pulse">
+                            class="h-3 w-3 rounded-full bg-blue-900 absolute top-2 right-2 transform translate-x-1/2 -translate-y-1/2 animate-pulse hidden">
                         </div>
                     </button>
                 </div>
@@ -37,11 +37,21 @@
             <div class="flex justify-between items-center mr-4 my-2">
                 <h2 class="text-lg ml-4"> Manage Applicant Payments</h2>
                 <div id="notification" class="hidden notification"></div>
-                <button id="add-payment-button"
-                    class="bg-blue-700 flex items-center hover:bg-gradient-to-t from-blue-400 to-blue-800 text-white rounded-lg px-2 py-1">
-                    <IMG src="/account/f-assets/solid/white/plus.svg" class="w-7 h-7" />
-                    <span class="inline-block">Add Payment</span>
-                </button>
+                <div class="flex gap-5">
+                    <form id="monthyearfilter">
+                        <div class="flex flex-row gap-4">
+                            <h3 class="flex items-center justify-center">Month / Year</h3>
+                            <input type="month" id="monthyear" name="monthyear" min="1976-03"
+                             class="border-b-2 border-b-black " />
+                            <button type="submit" class="px-4 py-2 bg-blue-500 hover:bg-blue-800 text-white rounded">Filter</button>
+                        </div>
+                    </form>
+                    <button id="add-payment-button"
+                        class="bg-blue-700 flex items-center hover:bg-gradient-to-t from-blue-400 to-blue-800 text-white rounded-lg px-2 py-1">
+                        <IMG src="/account/f-assets/solid/white/plus.svg" class="w-7 h-7" />
+                        <span class="inline-block">Add Payment</span>
+                    </button>
+                </div>
             </div>
 
             <div id="payments-table" class="mt-3 mb-5 mx-3">

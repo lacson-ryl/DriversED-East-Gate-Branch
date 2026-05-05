@@ -125,6 +125,36 @@ logoutBtn.addEventListener("click", (event) => {
   });
 });
 
+if (!window.notifStreamInitialized) {
+  window.notifStream = new EventSource("/account/api/notifications/stream");
+
+  window.notifStream.onmessage = (event) => {
+    const data = JSON.parse(event.data);
+    updateNotifIndicator(data.unread_count);
+  };
+
+  window.notifStream.onopen = () => {
+    console.log("Notification stream opened");
+  };
+
+  window.notifStream.onerror = (err) => {
+    console.error("Notification stream error:", err);
+  };
+
+  window.notifStreamInitialized = true;
+}
+
+function updateNotifIndicator(unreadCount) {
+  const indicator = document.getElementById("notif-new-indicator");
+  if (!indicator) return;
+
+  if (unreadCount > 0) {
+    indicator.classList.remove("hidden");
+  } else {
+    indicator.classList.add("hidden");
+  }
+}
+
 // Notification logic (position dropdown under bell icon, always on top)
 const notifBtn = document.getElementById("notif-button");
 const notifDropDown = document.getElementById("notificationDropdown");

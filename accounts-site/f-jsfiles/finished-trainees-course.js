@@ -7,14 +7,41 @@ import {
 
 import { openFileViewer } from "../utils/file-helper.js";
 
-async function renderCompletedCourseList() {
-  const response = await fetch("/account/api/completed-course");
+// get current month-year in YYYY-MM format
+const currentMonthYear = new Date().toISOString().slice(0, 7);
+
+async function fetchCompletedCourseData(monthYear = currentMonthYear) {
+  let url = "/account/api/completed-course";
+  if (monthYear) {
+    url += `?monthyear=${encodeURIComponent(monthYear)}`;
+  }
+
+  const response = await fetch(url);
   if (!response.ok) {
     console.error("Failed to fetch data from the server");
     return;
   }
 
   const data = await response.json();
+  renderCompletedCourseList(data);
+}
+
+// initial load with current month
+fetchCompletedCourseData();
+
+// filter form
+const monthYearFilter = document.getElementById("monthyearfilter");
+const monthYear = document.getElementById("monthyear");
+monthYear.value = currentMonthYear; // set default value to current month-year
+
+monthYearFilter.addEventListener("submit", (e) => {
+  e.preventDefault();
+  const monthYear = document.getElementById("monthyear").value;
+  monthYear.value;
+  fetchCompletedCourseData(monthYear);
+});
+
+async function renderCompletedCourseList(data) {
   const certificateTable = document.getElementById("completed-course-table");
 
   certificateTable.innerHTML = `
@@ -131,7 +158,7 @@ async function renderCompletedCourseList() {
                             </button>
                         </td>
                     </tr>
-                    `
+                    `,
                   )
                   .join("")}
             </tbody>
@@ -149,8 +176,6 @@ async function renderCompletedCourseList() {
   //call the button functions.
   allButtons(data);
 }
-
-renderCompletedCourseList();
 
 function filterCompletedCourseList(data, id) {
   return data.filter((item) => item.course_id == id);
@@ -206,7 +231,7 @@ function allButtons(data) {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ totalHours }),
-              }
+              },
             );
             if (response.ok) {
               showBtnResult(editHoursBtn, true);
@@ -256,9 +281,9 @@ function allButtons(data) {
       // Add event listeners for the TDC and PDC buttons
       document.getElementById("tdc").addEventListener("click", function () {
         const url = `/account/certificates-completion-tdc?userId=${encodeURIComponent(
-          userId
+          userId,
         )}&courseId=${encodeURIComponent(
-          courseId
+          courseId,
         )}&instructorId=${encodeURIComponent(instructorId)}`;
         window.open(url, "_blank");
         modal.style.display = "none";
@@ -266,9 +291,9 @@ function allButtons(data) {
 
       document.getElementById("pdc").addEventListener("click", function () {
         const url = `/account/certificates-completion-pdc?userId=${encodeURIComponent(
-          userId
+          userId,
         )}&courseId=${encodeURIComponent(
-          courseId
+          courseId,
         )}&instructorId=${encodeURIComponent(instructorId)}`;
         window.open(url, "_blank");
         modal.style.display = "none";
@@ -276,9 +301,9 @@ function allButtons(data) {
 
       document.getElementById("create").addEventListener("click", function () {
         const url = `/account/certificates-completion/pdc-tdc?userId=${encodeURIComponent(
-          userId
+          userId,
         )}&courseId=${encodeURIComponent(
-          courseId
+          courseId,
         )}&instructorId=${encodeURIComponent(instructorId)}`;
         window.open(url, "_blank");
         modal.style.display = "none";
@@ -313,7 +338,7 @@ function allButtons(data) {
         `;
       modal.style.display = "flex";
       const completedCertBtn = document.getElementById(
-        "completion-submit-button"
+        "completion-submit-button",
       );
       document
         .getElementById("certificate-completion-upload-form")
@@ -332,7 +357,7 @@ function allButtons(data) {
               {
                 method: "POST",
                 body: formData,
-              }
+              },
             );
             if (response.ok) {
               showBtnResult(completedCertBtn, true);
@@ -385,7 +410,7 @@ function allButtons(data) {
       modal.style.display = "flex";
 
       const completedGradeBtn = document.getElementById(
-        "completion-submit-button"
+        "completion-submit-button",
       );
 
       document
@@ -407,7 +432,7 @@ function allButtons(data) {
               {
                 method: "POST",
                 body: formData,
-              }
+              },
             );
             const data = await response.json();
             if (response.ok) {
@@ -500,7 +525,7 @@ function allButtons(data) {
                     "x-delete-token": data.deleteToken,
                   },
                   body: JSON.stringify({ userId, dateStarted, continuation }),
-                }
+                },
               );
               if (deleteResponse.ok) {
                 tokenIndicator.innerText = `Successfully Deleted Course ID #${userId}`;
@@ -520,7 +545,7 @@ function allButtons(data) {
               }, 3000);
             }
           },
-          { once: true }
+          { once: true },
         );
       }
 

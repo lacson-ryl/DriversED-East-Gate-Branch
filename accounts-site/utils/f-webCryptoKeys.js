@@ -5,7 +5,7 @@ export async function generateRawAESKey() {
   const aesKey = await window.crypto.subtle.generateKey(
     { name: "AES-GCM", length: 256 },
     true,
-    ["encrypt", "decrypt"]
+    ["encrypt", "decrypt"],
   );
 
   // Export key as raw bytes (ArrayBuffer)
@@ -48,7 +48,7 @@ export async function decryptData(payload) {
   const rawAESKey = await window.crypto.subtle.decrypt(
     { name: "RSA-OAEP", hash: "SHA-256" },
     privKey,
-    b642ab(encAesKey)
+    b642ab(encAesKey),
   );
 
   // Step 2: Import AES key for use
@@ -57,7 +57,7 @@ export async function decryptData(payload) {
     rawAESKey,
     "AES-GCM",
     false,
-    ["decrypt"]
+    ["decrypt"],
   );
 
   // Step 3: Decrypt actual payload
@@ -68,7 +68,7 @@ export async function decryptData(payload) {
       tagLength: 128,
     },
     aesCryptoKey,
-    b642ab(encryptedData)
+    b642ab(encryptedData),
   );
 
   // Step 4: Convert ArrayBuffer to string and parse JSON
@@ -108,14 +108,15 @@ export async function encryptData(data) {
   const encrypted = await window.crypto.subtle.encrypt(
     { name: "AES-GCM", iv },
     aesKey,
-    encoded
+    encoded,
   );
+  console.log("encrypted", encrypted);
 
   // Encrypt AES key using RSA-OAEP
   const encAESKey = await window.crypto.subtle.encrypt(
     { name: "RSA-OAEP", hash: "SHA-256" },
     serverPubKey,
-    rawKey
+    rawKey,
   );
 
   // In Web Crypto, tag is appended to ciphertext (last 16 bytes)
@@ -124,13 +125,4 @@ export async function encryptData(data) {
     iv: ab2b64(iv),
     encAesKey: ab2b64(encAESKey),
   };
-}
-
-// Helper to convert PEM to ArrayBuffer
-function pemToArrayBuffer(pem) {
-  const b64 = pem.replace(/-----.*-----/g, "").replace(/\s/g, "");
-  const binary = atob(b64);
-  const buf = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) buf[i] = binary.charCodeAt(i);
-  return buf.buffer;
 }
