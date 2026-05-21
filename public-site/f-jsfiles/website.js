@@ -31,9 +31,17 @@ window.addEventListener("scroll", () => {
   if (window.scrollY > 50) {
     navbar.classList.remove("h-32", "bg-opacity-0");
     navbar.classList.add("h-20");
+    if (isMenuOpen) {
+      navMenu.classList.remove("h-24");
+      navMenu.classList.add("h-20");
+    }
   } else {
-    navbar.classList.remove("h-20");
+    navbar.classList.remove("h-24");
     navbar.classList.add("h-32", "bg-opacity-0");
+    if (isMenuOpen) {
+      navMenu.classList.remove("h-20");
+      navMenu.classList.add("h-24");
+    }
   }
 });
 
@@ -223,7 +231,7 @@ const observer = new IntersectionObserver(
   {
     rootMargin: "0px 0px -100px 0px", // Trigger slightly before full visibility
     threshold: 0.1,
-  }
+  },
 );
 
 observer.observe(servicesSection);
@@ -275,7 +283,7 @@ async function renderCourseCards(programList) {
         const instructors = program.instructors
           .map(
             (instructor) =>
-              `<p class="text-sm">${instructor.instructor_name}</p>`
+              `<p class="text-sm">${instructor.instructor_name}</p>`,
           )
           .join("");
 
@@ -380,7 +388,7 @@ async function renderCourseCards(programList) {
 async function renderInstructorCards(instructorList) {
   console.log("instructorList", instructorList);
   const instructorCardWrapper = document.querySelector(
-    ".swiper2 .swiper-wrapper"
+    ".swiper2 .swiper-wrapper",
   );
 
   if (instructorList.error) {
@@ -407,13 +415,17 @@ async function renderInstructorCards(instructorList) {
 
       return `
         <div class="swiper-slide p-2 mb-5">
-          <div class="card flex flex-col items-center gap-10 w-56 h-[25rem] bg-white rounded-xl shadow-md p-4 space-y-3">
-            <img src="${profilePic}" alt="Instructor Profile" class="w-full h-32 object-cover rounded-md">
-            <div class="flex flex-col gap-2">
-              <h1 class="text-lg font-bold text-gray-800 text-center">${instructor.instructor_name}</h1>
-              <p class="text-sm text-gray-700">${instructor.instructor_type}</p>
-              <p class="text-sm text-gray-600">Started: ${instructor.date_started}</p>
-              <p class="text-xs text-gray-600 italic">Mode: <br> ${mode}</p>
+          <div class="card flex flex-col items-center gap-4 w-56 h-auto bg-white rounded-xl shadow-lg p-6 space-y-3 hover:shadow-xl transition">
+            <img src="${profilePic}" alt="Instructor Profile" class="w-32 h-32 rounded-full object-cover border-4 border-amber-300">
+            <div class="flex flex-col gap-2 w-full text-center">
+              <h1 class="text-lg font-bold text-slate-900">${instructor.instructor_name}</h1>
+              <p class="text-sm text-amber-600 font-semibold">${instructor.instructor_type}</p>
+              <p class="text-xs text-slate-600">Since ${instructor.date_started}</p>
+              <div class="flex flex-wrap justify-center gap-2 mt-2">
+                ${instructor.isAutomatic == 1 ? '<span class="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full">Automatic</span>' : ''}
+                ${instructor.isManual == 1 ? '<span class="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">Manual</span>' : ''}
+                ${instructor.isTdcOnsite == 1 ? '<span class="px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full">Onsite</span>' : ''}
+              </div>
             </div>
           </div>
         </div>
@@ -473,17 +485,18 @@ function renderBranchList(branches) {
 
     const li = document.createElement("li");
     li.className =
-      "flex items-center justify-between rounded-xl hover:bg-red-100 py-2 px-4 transition";
+      "flex items-center justify-between rounded-lg hover:bg-amber-50 py-3 px-4 transition cursor-pointer border-l-4 border-l-slate-200 hover:border-l-amber-400";
 
     const labelSpan = document.createElement("span");
-    labelSpan.className = "text-base font-medium text-gray-700 cursor-pointer";
+    labelSpan.className = "text-sm font-medium text-slate-700 cursor-pointer";
     labelSpan.textContent = label;
     labelSpan.onclick = () => setMap(key);
 
     const button = document.createElement("button");
-    button.className = "hidden ml-4 text-sm text-blue-600 hover:underline";
-    button.textContent = "Open in Maps";
-    button.addEventListener("click", () => {
+    button.className = "hidden ml-4 text-xs text-amber-600 hover:text-amber-700 font-semibold transition";
+    button.textContent = "View";
+    button.addEventListener("click", (e) => {
+      e.stopPropagation();
       window.open(data.btnLink, "_blank");
     });
 
@@ -491,11 +504,11 @@ function renderBranchList(branches) {
     branchButtons[key] = button;
 
     const div = document.createElement("div");
-    div.className = "flex items-center gap-3 w-full";
+    div.className = "flex items-center gap-3 w-full justify-between";
     div.appendChild(labelSpan);
+    div.appendChild(button);
 
     li.appendChild(div);
-    li.appendChild(button);
     branchList.appendChild(li);
   });
 }
