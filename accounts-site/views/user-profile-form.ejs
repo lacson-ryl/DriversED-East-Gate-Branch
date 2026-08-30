@@ -10,6 +10,24 @@
         import Dexie from "https://cdn.jsdelivr.net/npm/dexie@3.2.4/dist/dexie.mjs";
         window.Dexie = Dexie;
     </script>
+    <style>
+        /* Custom bounce that runs once for 5s */
+        @keyframes bounce-once {
+            0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+            40% { transform: translateY(-10px); }
+            60% { transform: translateY(-5px); }
+        }
+        .bounce-once {
+            animation: bounce-once 5s ease;
+        }
+
+        /* Desktop hover behavior */
+        @media (hover: hover) {
+            #lock-info:hover + #lock-tooltip {
+            display: block;
+            }
+        }
+    </style>
 </head>
 
 <body class="flex flex-row w-full over">

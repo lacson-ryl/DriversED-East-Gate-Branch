@@ -10,33 +10,50 @@ async function renderDetails() {
   if (!data.userProfileDetails) {
     profileDisplay.innerHTML = `
 <div class="bg-slate-200 p-10 rounded-lg shadow-md w-full max-w-screen-md mx-4 my-2">
-        <h1 class="text-2xl text-center mb-5 font-bold text-blue-900">User Profile</h1>
+        <h1 class="text-2xl text-center mb-5 font-bold text-blue-900">
+        <div class="relative inline-block bounce-once">
+            <!-- Sleek lock icon -->
+            <button id="lock-info" class="p-1">
+                <svg class="w-5 h-5 text-green-600" xmlns="http://www.w3.org/2000/svg" 
+                    fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 11c1.657 0 3-1.343 3-3V6a3 3 0 00-6 0v2c0 1.657 1.343 3 3 3zM5 11h14v10H5V11z"/>
+                </svg>
+            </button>
+
+            <!-- Tooltip -->
+            <div id="lock-tooltip" 
+                class="absolute bottom-full mb-2 hidden bg-gray-800 text-white text-xs rounded px-2 py-1">
+                Your information is secure and private.
+            </div>
+        </div>
+        User Profile</h1>
         <form id="profile-form" enctype="multipart/form-data" class="w-full">
             <div class="flex flex-col md:flex-row mb-4 gap-3">
                 <div class="w-full md:w-1/3">
-                    <label>First Name</label>
+                    <label>First Name <span class="text-red-500 font-semibold">*</span></label>
                     <input id="first-name" name="firstName" type="text"
                         class="shadow-md bg-white appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight hover:border-blue-900 focus:outline-none focus:border-blue-900" />
                 </div>
                 <div class="w-full md:w-1/3">
-                    <label>Middle Name</label>
+                    <label>Middle Name <span class="text-red-500 font-semibold">*</span></label>
                     <input id="middle-name" name="middleName" type="text"
                         class="shadow-md bg-white appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight hover:border-blue-900 focus:outline-none focus:border-blue-900" />
                 </div>
                 <div class="w-full md:w-1/3">
-                    <label>Last Name</label>
+                    <label>Last Name <span class="text-red-500 font-semibold">*</span></label>
                     <input id="last-name" name="lastName" type="text"
                         class="shadow-md bg-white appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight hover:border-blue-900 focus:outline-none focus:border-blue-900" />
                 </div>
             </div>
             <div class="flex flex-col md:flex-row mb-4 gap-3">
                 <div class="">
-                    <label>Phone Number</label>
+                    <label>Phone Number <span class="text-red-500 font-semibold">*</span></label>
                     <input id="phone-number" name="phoneNumber" type="number"
                         class="shadow-md bg-white appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight hover:border-blue-900 focus:outline-none focus:border-blue-900" />
                 </div>
                 <div class="">
-                    <label>Email</label>
+                    <label>Email <span class="text-red-500 font-semibold">*</span></label>
                     <input id="email" name="email" type="email"
                         class="shadow-md bg-white appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight hover:border-blue-900 focus:outline-none focus:border-blue-900" />
                 </div>
@@ -50,7 +67,7 @@ async function renderDetails() {
                     </p>
                 </div>
                 <div class="w-full md:w-2/5">
-                    <label>Birth Date <span class="text-xs font-light">dd/mm/yyyy</span></label>
+                    <label>Birth Date <span class="text-red-500 font-semibold">*</span> <span class="text-xs font-light">dd/mm/yyyy</span></label>
                     <input id="birth-date" name="birthDate" type="date" 
                         class="shadow-md bg-white appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight hover:border-blue-900 focus:outline-none focus:border-blue-900" />
                 </div>
@@ -132,7 +149,8 @@ async function renderDetails() {
         const ageElem = document.getElementById("age");
         if (this.value) {
           ageElem.innerText = Math.floor(
-            (new Date() - new Date(this.value)) / (1000 * 60 * 60 * 24 * 365.25)
+            (new Date() - new Date(this.value)) /
+              (1000 * 60 * 60 * 24 * 365.25),
           );
         } else {
           ageElem.innerText = "";
@@ -173,14 +191,31 @@ async function renderDetails() {
           alert("An error occurred while submitting the profile.");
         }
       },
-      { once: true }
+      { once: true },
     );
   } else {
     const profile = data.userProfileDetails;
 
     profileDisplay.innerHTML = `
     <div class="bg-slate-200 p-10 rounded-lg shadow-md w-full max-w-screen-md mx-4 my-2">
-    <h1 class="text-2xl text-center mb-5 font-bold text-blue-900">User Profile</h1>
+    <h1 class="text-2xl text-center mb-5 font-bold text-blue-900">
+    <div class="relative inline-block bounce-once">
+            <!-- Sleek lock icon -->
+            <button id="lock-info" class="p-1">
+                <svg class="w-5 h-5 text-green-600" xmlns="http://www.w3.org/2000/svg" 
+                    fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 11c1.657 0 3-1.343 3-3V6a3 3 0 00-6 0v2c0 1.657 1.343 3 3 3zM5 11h14v10H5V11z"/>
+                </svg>
+            </button>
+
+            <!-- Tooltip -->
+            <div id="lock-tooltip" 
+                class="absolute bottom-full mb-2 hidden bg-gray-800 text-white text-xs rounded px-2 py-1">
+                Your information is secure and private.
+            </div>
+      </div>
+    User Profile</h1>
     <form id="edit-profile-form" enctype="multipart/form-data" class="w-full">
         <div class="flex flex-col md:flex-row mb-4 gap-3">
             <div class="w-full md:w-1/3">
@@ -364,7 +399,7 @@ async function renderDetails() {
           alert("An error occurred while submitting the profile.", data.error);
         }
       },
-      { once: true }
+      { once: true },
     );
   }
   document
@@ -394,6 +429,17 @@ async function renderDetails() {
         reader.readAsDataURL(file);
       }
     });
+
+  // Mobile tap behavior
+  const lockBtn = document.getElementById("lock-info");
+  const tooltip = document.getElementById("lock-tooltip");
+
+  lockBtn.addEventListener("click", () => {
+    tooltip.classList.toggle("hidden");
+    setTimeout(() => {
+      tooltip.classList.add("hidden");
+    }, 4000); // Hide after 3 seconds
+  });
 }
 
 renderDetails();

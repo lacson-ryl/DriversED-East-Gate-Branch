@@ -7,7 +7,24 @@ function profileDetialsBlank(courseList) {
         <img id="profile-picture-preview"
             class="w-36 h-32 inline-block rounded-md border-2 content-center border-gray-300 mb-4 object-fill"
             src="" alt="Profile Picture Preview">
-        <h1 class="text-2xl text-center mb-5 font-bold text-blue-900">User Profile</h1>
+        <h1 class="text-2xl text-center mb-5 font-bold text-blue-900">
+        <div class="relative inline-block bounce-once">
+            <!-- Sleek lock icon -->
+            <button id="lock-info" class="p-1">
+                <svg class="w-5 h-5 text-green-600" xmlns="http://www.w3.org/2000/svg" 
+                    fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 11c1.657 0 3-1.343 3-3V6a3 3 0 00-6 0v2c0 1.657 1.343 3 3 3zM5 11h14v10H5V11z"/>
+                </svg>
+            </button>
+
+            <!-- Tooltip -->
+            <div id="lock-tooltip" 
+                class="absolute bottom-full mb-2 hidden bg-gray-800 text-white text-xs rounded px-2 py-1">
+                Your information is secure and private.
+            </div>
+        </div> 
+        User Profile</h1>
     </div>
     <div class="flex flex-col md:flex-row mb-4 gap-3">
         <div class="w-full md:w-1/3">
@@ -131,15 +148,12 @@ function profileDetialsBlank(courseList) {
 async function renderDetails() {
   const response = await fetch("/account/api/user-profile");
   const encrypted = await response.json();
-  console.log("encrypted", encrypted);
   const data = await decryptData(encrypted.encrypted);
-  console.log("data", data);
   const profileDisplay = document.getElementById("profile-display");
   const userCourseInfoList = data.userCourseInfoList;
 
   if (!data.userProfileDetails) {
     profileDisplay.innerHTML = profileDetialsBlank(userCourseInfoList);
-    return;
   } else {
     const profile = data.userProfileDetails;
 
@@ -151,7 +165,23 @@ async function renderDetails() {
              src="${
                profile.profile_picture ? profile.profile_picture : ""
              }" alt="Profile Picture Preview">
-        <h1 class="text-2xl text-center mb-5 font-bold text-blue-900">User Profile</h1>
+        <h1 class="text-2xl text-center mb-5 font-bold text-blue-900"><div class="relative inline-block bounce-once">
+            <!-- Sleek lock icon -->
+            <button id="lock-info" class="p-1">
+                <svg class="w-5 h-5 text-green-600" xmlns="http://www.w3.org/2000/svg" 
+                    fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 11c1.657 0 3-1.343 3-3V6a3 3 0 00-6 0v2c0 1.657 1.343 3 3 3zM5 11h14v10H5V11z"/>
+                </svg>
+            </button>
+
+            <!-- Tooltip -->
+            <div id="lock-tooltip" 
+                class="absolute bottom-full mb-2 hidden bg-gray-800 text-white text-xs rounded px-2 py-1">
+                Your information is secure and private.
+            </div>
+        </div>
+        User Profile</h1>
     </div>
     <div class="flex flex-col md:flex-row mb-4 gap-3">
         <div class="w-full md:w-1/3">
@@ -276,6 +306,17 @@ async function renderDetails() {
 </div>
     `;
   }
+
+  // Mobile tap behavior
+  const lockBtn = document.getElementById("lock-info");
+  const tooltip = document.getElementById("lock-tooltip");
+
+  lockBtn.addEventListener("click", () => {
+    tooltip.classList.toggle("hidden");
+    setTimeout(() => {
+      tooltip.classList.add("hidden");
+    }, 4000); // Hide after 3 seconds
+  });
 }
 
 renderDetails();
@@ -319,7 +360,7 @@ function renderUserCourseTaken(courseList) {
             </div>
         </div>
     </div>
-    `
+    `,
     )
     .join("");
 }
