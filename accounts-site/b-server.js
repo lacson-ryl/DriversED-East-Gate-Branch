@@ -465,6 +465,39 @@ router.post(
   },
 );
 
+// send-email for contact-us form
+router.post("/send-email", async (req, res) => {
+  try {
+    const { type, recipient, data } = req.body;
+
+    if (!type || !recipient || !data) {
+      return res.status(400).json({ error: "Missing required fields" });
+    }
+
+    // Send business-facing email
+    const clientEmail = await sendEmail(type, recipient, data);
+
+    // Send user-facing confirmation email
+    const emailConfirmation = await sendEmail(
+      "contact-us-confirmation",
+      data.email,
+      {
+        name: data.name,
+        email: data.email,
+      },
+    );
+
+    res.status(200).json({
+      success: true,
+      businessEmail: clientEmail,
+      confirmationEmail: emailConfirmation,
+    });
+  } catch (err) {
+    console.error("Email error:", err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 router.get("/login-success", authenticateToken, (req, res) => {
   res.render("login-loading", {
     role: req.user.role,
@@ -474,7 +507,7 @@ router.get("/login-success", authenticateToken, (req, res) => {
 router.get("/api/notifications/stream", authenticateToken, (req, res) => {
   const { userId, role } = req.user; // from your JWT
   registerStream(userId, role, res);
-}); 
+});
 
 router.get("/user-registration-form", (req, res) => {
   try {
@@ -1754,7 +1787,7 @@ router.get(
     try {
       // const id = req.params.instructorId;
       const { userId, role } = req.user;
-      const {type, monthYear} = req.params;
+      const { type, monthYear } = req.params;
       const instructor = await getInstructorWithAccountId(userId);
       const instructorId = instructor.instructor_id;
       const { data, userProfilePictures } = await getAttendanceByInstructorId(
@@ -1831,7 +1864,7 @@ router.get(
   authorizeRole("admin"),
   async (req, res) => {
     try {
-      const {type, monthYear} = req.params;
+      const { type, monthYear } = req.params;
       const attendanceList = await getAllPdcTdcTakers(type, monthYear);
       return res.status(200).json(attendanceList);
     } catch (error) {
@@ -2210,116 +2243,112 @@ router.post(
   },
 );
 
-router.put(
-  "/api/manage-people/:id",
-  authenticateToken,
-  async (req, res) => {
-    try {
-      const { userId, role } = req.user;
-      const instructorId = req.params.id;
-      const { encryptedWithEncAesKey } = req.body;
-      const data = await decryptData(encryptedWithEncAesKey, userId, role);
-      console.log("data", data);
+router.put("/api/manage-people/:id", authenticateToken, async (req, res) => {
+  try {
+    const { userId, role } = req.user;
+    const instructorId = req.params.id;
+    const { encryptedWithEncAesKey } = req.body;
+    const data = await decryptData(encryptedWithEncAesKey, userId, role);
+    console.log("data", data);
 
-      const {
-        name,
-        rate,
-        type,
-        onsite,
-        manual,
-        automatic,
-        SSS,
-        Pagibig,
-        Philhealth,
-        accreditationNumber,
-        dateStarted,
-        profile_picture,
-      } = data;
+    const {
+      name,
+      rate,
+      type,
+      onsite,
+      manual,
+      automatic,
+      SSS,
+      Pagibig,
+      Philhealth,
+      accreditationNumber,
+      dateStarted,
+      profile_picture,
+    } = data;
 
-      // Fetch existing user profile from the database
-      const existingInstructor = await getInstructorwithId(instructorId);
+    // Fetch existing user profile from the database
+    const existingInstructor = await getInstructorwithId(instructorId);
 
-      const profilePicture = profile_picture !== null ? profile_picture : null;
+    const profilePicture = profile_picture !== null ? profile_picture : null;
 
-      // Create an object with only the changed fields
-      const updatedProfile = {};
+    // Create an object with only the changed fields
+    const updatedProfile = {};
 
-      if (name && name !== existingInstructor.instructor_name)
-        updatedProfile.instructor_name = name;
+    if (name && name !== existingInstructor.instructor_name)
+      updatedProfile.instructor_name = name;
 
-      if (
-        rate != null &&
-        parseFloat(rate) !== parseFloat(existingInstructor.rate_per_hour)
-      )
-        updatedProfile.rate_per_hour = rate;
+    if (
+      rate != null &&
+      parseFloat(rate) !== parseFloat(existingInstructor.rate_per_hour)
+    )
+      updatedProfile.rate_per_hour = rate;
 
-      if (type && type !== existingInstructor.instructor_type)
-        updatedProfile.instructor_type = type;
+    if (type && type !== existingInstructor.instructor_type)
+      updatedProfile.instructor_type = type;
 
-      if (
-        onsite != null &&
-        parseInt(onsite) !== parseInt(existingInstructor.isTdcOnsite)
-      )
-        updatedProfile.isTdcOnsite = onsite;
+    if (
+      onsite != null &&
+      parseInt(onsite) !== parseInt(existingInstructor.isTdcOnsite)
+    )
+      updatedProfile.isTdcOnsite = onsite;
 
-      if (
-        manual != null &&
-        parseInt(manual) !== parseInt(existingInstructor.isManual)
-      )
-        updatedProfile.isManual = manual;
+    if (
+      manual != null &&
+      parseInt(manual) !== parseInt(existingInstructor.isManual)
+    )
+      updatedProfile.isManual = manual;
 
-      if (
-        automatic != null &&
-        parseInt(automatic) !== parseInt(existingInstructor.isAutomatic)
-      )
-        updatedProfile.isAutomatic = automatic;
+    if (
+      automatic != null &&
+      parseInt(automatic) !== parseInt(existingInstructor.isAutomatic)
+    )
+      updatedProfile.isAutomatic = automatic;
 
-      if (SSS != null && parseFloat(SSS) !== parseFloat(existingInstructor.SSS))
-        updatedProfile.SSS = SSS;
+    if (SSS != null && parseFloat(SSS) !== parseFloat(existingInstructor.SSS))
+      updatedProfile.SSS = SSS;
 
-      if (
-        Pagibig != null &&
-        parseFloat(Pagibig) !== parseFloat(existingInstructor.Pag_ibig)
-      )
-        updatedProfile.Pag_ibig = Pagibig;
+    if (
+      Pagibig != null &&
+      parseFloat(Pagibig) !== parseFloat(existingInstructor.Pag_ibig)
+    )
+      updatedProfile.Pag_ibig = Pagibig;
 
-      if (
-        Philhealth != null &&
-        parseFloat(Philhealth) !== parseFloat(existingInstructor.Philhealth)
-      )
-        updatedProfile.Philhealth = Philhealth;
+    if (
+      Philhealth != null &&
+      parseFloat(Philhealth) !== parseFloat(existingInstructor.Philhealth)
+    )
+      updatedProfile.Philhealth = Philhealth;
 
-      if (
-        accreditationNumber &&
-        accreditationNumber !== existingInstructor.accreditation_number
-      )
-        updatedProfile.accreditation_number = accreditationNumber;
+    if (
+      accreditationNumber &&
+      accreditationNumber !== existingInstructor.accreditation_number
+    )
+      updatedProfile.accreditation_number = accreditationNumber;
 
-      if (
-        dateStarted &&
-        new Date(dateStarted).getTime() !==
-          new Date(existingInstructor.date_started).getTime()
-      )
-        updatedProfile.date_started = dateStarted;
+    if (
+      dateStarted &&
+      new Date(dateStarted).getTime() !==
+        new Date(existingInstructor.date_started).getTime()
+    )
+      updatedProfile.date_started = dateStarted;
 
-      if (profilePicture && profilePicture.buffer)
-        updatedProfile.instructor_profile_picture = profilePicture.buffer;
-      console.log("updatedProfile", updatedProfile);
-      // Check if there are any fields to update
-      if (Object.keys(updatedProfile).length === 0) {
-        return res.status(200).json({ message: "No changes detected." });
-      }
-      await updateInstructorInfo(instructorId, updatedProfile);
-
-      return res
-        .status(200)
-        .json({ message: "Instructor Profile updated successfully!" });
-    } catch (error) {
-      console.error("Error Updating Profile:", error);
-      return res.status(400).json({ error: "Error Updating Profile!" });
+    if (profilePicture && profilePicture.buffer)
+      updatedProfile.instructor_profile_picture = profilePicture.buffer;
+    console.log("updatedProfile", updatedProfile);
+    // Check if there are any fields to update
+    if (Object.keys(updatedProfile).length === 0) {
+      return res.status(200).json({ message: "No changes detected." });
     }
-  },
-);
+    await updateInstructorInfo(instructorId, updatedProfile);
+
+    return res
+      .status(200)
+      .json({ message: "Instructor Profile updated successfully!" });
+  } catch (error) {
+    console.error("Error Updating Profile:", error);
+    return res.status(400).json({ error: "Error Updating Profile!" });
+  }
+});
 
 router.get(
   "/api/manage-people/payroll/:ID",

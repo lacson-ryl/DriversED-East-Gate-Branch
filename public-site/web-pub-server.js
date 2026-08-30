@@ -139,42 +139,78 @@ router.get("/", async (req, res) => {
   }
 });
 
+// GET Contact Us page
 router.get("/contact-us", async (req, res) => {
   try {
     const captchaSiteKey = process.env.RECAPTCHA_SITE_KEY;
-    res.render("contact-us", {
-      captchaSiteKey,
-    });
+    res.render("contact-us", { captchaSiteKey });
   } catch (error) {
-    res.render("error-500", {
-      error,
-    });
+    res.render("error-500", { error });
   }
 });
 
+// POST Contact Us submission
 router.post("/contact/submit", async (req, res) => {
   try {
-    /*
-    const { name, email, phone, subject, message } = req.body;
+    const {
+      name,
+      email,
+      phone,
+      subject,
+      message,
+      "g-recaptcha-response": captchaToken,
+    } = req.body;
 
+    // Basic validation
     if (!name || !email || !subject || !message) {
       return res.status(400).json({ error: "Missing required fields" });
     }
-
     if (!validator.isEmail(email)) {
       return res.status(400).json({ error: "Invalid email address" });
     }
+    if (!captchaToken) {
+      return res.status(400).json({ error: "Captcha token missing" });
+    }
 
-    console.log("Contact form submission:", {
-      name,
-      email,
-      phone: phone || "Not provided",
-      subject,
-      message,
-      timestamp: new Date().toISOString(),
+    // Verify reCAPTCHA with Google
+    const captchaSecret = process.env.RECAPTCHA_SECRET_KEY;
+    const captchaVerify = await fetch(
+      "https://www.google.com/recaptcha/api/siteverify",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: `secret=${captchaSecret}&response=${captchaToken}`,
+      },
+    );
+    const captchaResult = await captchaVerify.json();
+
+    if (!captchaResult.success) {
+      return res.status(400).json({ error: "Captcha verification failed" });
+    }
+
+    // Forward to Accounts service mail API
+    const mailResponse = await fetch("http://nodeapp:8000/account/send-email", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        type: "contact-us",
+        recipient: "support@business.com",
+        data: { name, email, phone, subject, message },
+      }),
     });
-*/
-    res.json({ success: true, message: "This feature is under development." });
+
+    const mailResult = await mailResponse.json();
+
+    if (mailResult.success) {
+      res.json({
+        success: true,
+        message: "Your message has been sent successfully.",
+      });
+    } else {
+      res
+        .status(500)
+        .json({ error: "Failed to send email", details: mailResult.error });
+    }
   } catch (error) {
     console.error("Contact form error:", error);
     res.status(500).json({ error: "Failed to process contact form" });

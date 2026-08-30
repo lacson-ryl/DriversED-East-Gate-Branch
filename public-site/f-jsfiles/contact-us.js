@@ -97,7 +97,7 @@ if (contactForm) {
       const response = await fetch("/public/contact/submit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...data, token }),
+        body: JSON.stringify({ ...data, "g-recaptcha-response": token }),
       });
 
       if (response.ok) {

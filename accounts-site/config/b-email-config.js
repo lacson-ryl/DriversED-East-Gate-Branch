@@ -99,6 +99,41 @@ export async function sendEmail(type, recipient, data) {
         `;
       break;
 
+    case "contact-us":
+      // Expect data to have: name, email, phone, subject, message
+      subject = `New Contact Us Submission - ${data.subject}`;
+      textBody = `
+        You have received a new Contact Us inquiry.
+
+        Name: ${data.name}
+        Email: ${data.email}
+        Phone: ${data.phone || "Not provided"}
+        Subject: ${data.subject}
+        Message:
+        ${data.message}
+
+        Submitted on: ${new Date().toLocaleString()}
+        
+        Best regards,
+        Automated Contact Form
+        `;
+      break;
+
+    case "contact-us-confirmation":
+      // Expect data to have: name, email
+      subject = "We’ve received your message";
+      textBody = `
+        Hi ${data.name},
+
+        Thank you for contacting ${businessName}. We’ve received your message and our team will get back to you shortly.
+
+        Please do not reply to this email directly.
+
+        Best regards,
+        The ${businessName} Team
+        `;
+      break;
+
     default:
       throw new Error("Invalid email type specified.");
   }
