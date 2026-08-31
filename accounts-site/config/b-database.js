@@ -3,7 +3,7 @@ import dotenv from "dotenv";
 import bcrypt from "bcrypt";
 import { renderBase64File } from "../utils-backend/file-converter.js";
 import { fileTypeFromBuffer } from "file-type";
-import { pushUnreadCount } from "../utils-backend/notifStream.js";
+import { pushUnreadCount } from "../utils-backend/notifSocket.js";
 dotenv.config({ path: ".env.production" });
 
 export const pool = mysql

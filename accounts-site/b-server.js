@@ -67,7 +67,6 @@ app.use("/account/utils", express.static(path.join(__dirname, "utils")));
 
 // View engine
 app.set("view engine", "ejs");
-//app.set("views", path.join(__dirname, "views"));
 app.set("views", path.join(process.cwd(), "views"));
 
 app.set("trust proxy", "127.0.0.1");
@@ -112,6 +111,8 @@ app.use((req, res, next) => {
   next();
 });
 
+const isProd = process.env.NODE_ENV === "production";
+
 // Apply the session middleware with dynamic session name
 app.use((req, res, next) => {
   const sessionMiddleware = session({
@@ -122,8 +123,9 @@ app.use((req, res, next) => {
     cookie: {
       maxAge: 3600000,
       httpOnly: true,
-      secure: true, // Requires HTTPS
-      sameSite: "Strict", // Protect against CSRF attacks // (Strict)
+      secure: isProd ? true : false, // Set to true in production
+      sameSite: isProd ? "Strict" : "Lax", // Protect against CSRF attacks // (Strict)
+      path: isProd ? "/account" : "/", // Restrict cookie to /account path in production
     },
   });
 
@@ -169,8 +171,11 @@ app.get(
       { expiresIn: "3h" },
     );
     res.cookie("jwtToken", token, {
-      maxAge: 3 * 60 * 60 * 1000,
+      maxAge: 3600000,
       httpOnly: true,
+      secure: isProd ? true : false, // Set to true in production
+      sameSite: isProd ? "Strict" : "Lax", // Protect against CSRF attacks // (Strict)
+      path: isProd ? "/account" : "/", // Restrict cookie to /account path in production
     });
     res.redirect(`/account/login-success`);
   },
@@ -198,9 +203,11 @@ app.get(
     );
 
     res.cookie("jwtToken", token, {
-      maxAge: 3 * 60 * 60 * 1000,
+      maxAge: 3600000,
       httpOnly: true,
-      secure: true,
+      secure: isProd ? true : false, // Set to true in production
+      sameSite: isProd ? "Strict" : "Lax", // Protect against CSRF attacks // (Strict)
+      path: isProd ? "/account" : "/", // Restrict cookie to /account path in production
     });
     res.redirect(`/account/login-success`);
   },
@@ -251,8 +258,11 @@ app.get(
 
       // Set the JWT as a cookie
       res.cookie("changePasswordToken", token, {
-        httpOnly: true, // Prevent client-side access
-        maxAge: 20 * 60 * 1000, // 20 minutes
+        maxAge: 3600000,
+        httpOnly: true,
+        secure: isProd ? true : false, // Set to true in production
+        sameSite: isProd ? "Strict" : "Lax", // Protect against CSRF attacks // (Strict)
+        path: isProd ? "/account" : "/", // Restrict cookie to /account path in production
       });
 
       res.redirect("/account/change-password-email-option?success=true");
@@ -399,10 +409,11 @@ import { renderBase64File } from "./utils-backend/file-converter.js";
 import { sendEmail } from "./config/b-email-config.js";
 import { v4 as uuidv4 } from "uuid";
 import redis from "./config/b-redis.js";
+import http from "http";
 import { fileTypeFromBuffer } from "file-type";
 import { generateCertificatePDF } from "./utils-backend/generateCertPDF.js";
 import { generateAuditExcel } from "./utils-backend/audit-excel-eport.js";
-import { registerStream } from "./utils-backend/notifStream.js";
+import { initNotifSocket } from "./utils-backend/notifSocket.js";
 
 const router = express.Router();
 
@@ -502,11 +513,6 @@ router.get("/login-success", authenticateToken, (req, res) => {
   res.render("login-loading", {
     role: req.user.role,
   });
-});
-
-router.get("/api/notifications/stream", authenticateToken, (req, res) => {
-  const { userId, role } = req.user; // from your JWT
-  registerStream(userId, role, res);
 });
 
 router.get("/user-registration-form", (req, res) => {
@@ -855,8 +861,11 @@ router.post("/user-login", async (req, res) => {
 
         // Set the JWT token in a cookie
         res.cookie("jwtToken", token, {
-          maxAge: 3 * 60 * 60 * 1000,
+          maxAge: 3600000,
           httpOnly: true,
+          secure: isProd ? true : false, // Set to true in production
+          sameSite: isProd ? "Strict" : "Lax", // Protect against CSRF attacks // (Strict)
+          path: isProd ? "/account" : "/", // Restrict cookie to /account path in production
         });
         return res.status(200).json({
           message: "User login successful",
@@ -1578,8 +1587,11 @@ router.post("/adminlogin", async (req, res) => {
         );
 
         res.cookie("jwtToken", token, {
-          maxAge: 3 * 60 * 60 * 1000,
+          maxAge: 3600000,
           httpOnly: true,
+          secure: isProd ? true : false, // Set to true in production
+          sameSite: isProd ? "Strict" : "Lax", // Protect against CSRF attacks // (Strict)
+          path: isProd ? "/account" : "/", // Restrict cookie to /account path in production
         });
 
         return res.status(200).json({
@@ -3732,8 +3744,11 @@ router.post(
 
       // Set the JWT as a cookie
       res.cookie("changePasswordEmailToken", token, {
-        httpOnly: true, // Prevent client-side access
-        maxAge: 20 * 60 * 1000,
+        maxAge: 3600000,
+        httpOnly: true,
+        secure: isProd ? true : false, // Set to true in production
+        sameSite: isProd ? "Strict" : "Lax", // Protect against CSRF attacks // (Strict)
+        path: isProd ? "/account" : "/", // Restrict cookie to /account path in production
       });
 
       // Return user data (excluding sensitive information)
@@ -4761,6 +4776,9 @@ app.use((req, res, next) => {
   next();
 });
 
-app.listen(PORT, "0.0.0.0", () => {
+const server = http.createServer(app);
+initNotifSocket(server);
+
+server.listen(PORT, "0.0.0.0", () => {
   console.log(`Server is running at ${PORT}`);
 });

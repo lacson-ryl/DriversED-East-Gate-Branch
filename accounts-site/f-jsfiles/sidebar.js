@@ -137,23 +137,30 @@ logoutBtn.addEventListener("click", (event) => {
   });
 });
 
-if (!window.notifStreamInitialized) {
-  window.notifStream = new EventSource("/account/api/notifications/stream");
+if (!window.notifSocketInitialized) {
+  // Connect once per session
+  window.notifSocket = new WebSocket(
+    "ws://localhost:8000/account/notifications/socket",
+  );
 
-  window.notifStream.onmessage = (event) => {
+  window.notifSocket.onopen = () => {
+    console.log("Notification WebSocket opened");
+  };
+
+  window.notifSocket.onmessage = (event) => {
     const data = JSON.parse(event.data);
     updateNotifIndicator(data.unread_count);
   };
 
-  window.notifStream.onopen = () => {
-    console.log("Notification stream opened");
+  window.notifSocket.onerror = (err) => {
+    console.error("Notification WebSocket error:", err);
   };
 
-  window.notifStream.onerror = (err) => {
-    console.error("Notification stream error:", err);
+  window.notifSocket.onclose = () => {
+    console.log("Notification WebSocket closed");
   };
 
-  window.notifStreamInitialized = true;
+  window.notifSocketInitialized = true;
 }
 
 function updateNotifIndicator(unreadCount) {
@@ -162,8 +169,10 @@ function updateNotifIndicator(unreadCount) {
 
   if (unreadCount > 0) {
     indicator.classList.remove("hidden");
+    indicator.textContent = unreadCount;
   } else {
     indicator.classList.add("hidden");
+    indicator.textContent = "";
   }
 }
 
