@@ -3739,3 +3739,99 @@ export async function getAuditSummary(period, year) {
 
 //const resuV = await getAuditSummary("yearly", 2025);
 //onsole.log('resuV', resuV);
+export async function getTickets(userId, role) {
+  const where = role === "admin" ? "" : "WHERE t.createdBy = ?";
+  const params = role === "admin" ? [] : [userId];
+  const [rows] = await pool.query(
+    `SELECT t.id, t.title, t.type, t.createdBy, t.answeredBy, t.createdAt,
+            u.user_name AS creatorName, a.admin_name AS answeredByName
+     FROM tickets t
+     JOIN user u ON u.user_id = t.createdBy
+     LEFT JOIN admin_account a ON a.account_id = t.answeredBy
+     ${where}
+     ORDER BY t.createdAt DESC, t.id DESC`,
+    params,
+  );
+  return rows;
+}
+
+export async function getTicketForUser(ticketId, userId, role) {
+  const where = role === "admin" ? "t.id = ?" : "t.id = ? AND t.createdBy = ?";
+  const params = role === "admin" ? [ticketId] : [ticketId, userId];
+  const [rows] = await pool.query(
+    `SELECT t.id, t.title, t.type, t.createdBy, t.answeredBy, t.createdAt,
+            u.user_name AS creatorName, a.admin_name AS answeredByName
+     FROM tickets t
+     JOIN user u ON u.user_id = t.createdBy
+     LEFT JOIN admin_account a ON a.account_id = t.answeredBy
+     WHERE ${where}`,
+    params,
+  );
+  return rows[0] || null;
+}
+
+export async function createTicket(title, type, userId, text) {
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+    const [ticketResult] = await connection.query(
+      "INSERT INTO tickets (title, type, createdBy) VALUES (?, ?, ?)",
+      [title, type, userId],
+    );
+    const ticketId = ticketResult.insertId;
+    const [messageResult] = await connection.query(
+      "INSERT INTO messages (ticketId, senderId, senderRole, text) VALUES (?, ?, 'user', ?)",
+      [ticketId, userId, text],
+    );
+    await connection.commit();
+    return {
+      ticketId,
+      messageId: messageResult.insertId,
+    };
+  } catch (error) {
+    await connection.rollback();
+    throw error;
+  } finally {
+    connection.release();
+  }
+}
+
+export async function getTicketMessages(ticketId, userId, role, limit, offset) {
+  const ticket = await getTicketForUser(ticketId, userId, role);
+  if (!ticket) return null;
+  const [rows] = await pool.query(
+    `SELECT m.id, m.ticketId, m.senderId, m.senderRole, m.text, m.createdAt,
+            CASE WHEN m.senderRole = 'user' THEN u.user_name ELSE a.admin_name END AS senderName
+     FROM messages m
+     LEFT JOIN user u ON m.senderRole = 'user' AND u.user_id = m.senderId
+     LEFT JOIN admin_account a ON m.senderRole = 'admin' AND a.account_id = m.senderId
+     WHERE m.ticketId = ?
+     ORDER BY m.createdAt DESC, m.id DESC
+     LIMIT ? OFFSET ?`,
+    [ticketId, limit, offset],
+  );
+  return { ticket, messages: rows.reverse() };
+}
+
+export async function addTicketMessage(ticketId, senderId, senderRole, text) {
+  const [result] = await pool.query(
+    "INSERT INTO messages (ticketId, senderId, senderRole, text) VALUES (?, ?, ?, ?)",
+    [ticketId, senderId, senderRole, text],
+  );
+  if (senderRole === "admin") {
+    await pool.query("UPDATE tickets SET answeredBy = ? WHERE id = ?", [
+      senderId,
+      ticketId,
+    ]);
+  }
+  const [rows] = await pool.query(
+    `SELECT m.id, m.ticketId, m.senderId, m.senderRole, m.text, m.createdAt,
+            CASE WHEN m.senderRole = 'user' THEN u.user_name ELSE a.admin_name END AS senderName
+     FROM messages m
+     LEFT JOIN user u ON m.senderRole = 'user' AND u.user_id = m.senderId
+     LEFT JOIN admin_account a ON m.senderRole = 'admin' AND a.account_id = m.senderId
+     WHERE m.id = ?`,
+    [result.insertId],
+  );
+  return rows[0];
+}

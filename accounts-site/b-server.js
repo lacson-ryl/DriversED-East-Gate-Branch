@@ -394,6 +394,11 @@ import {
   getAuditSummary,
   auditInstructorPayroll,
   auditVehicleExpenses,
+  getTickets,
+  getTicketMessages,
+  getTicketForUser,
+  createTicket,
+  addTicketMessage,
 } from "./config/b-database.js";
 
 import {
@@ -413,9 +418,28 @@ import http from "http";
 import { fileTypeFromBuffer } from "file-type";
 import { generateCertificatePDF } from "./utils-backend/generateCertPDF.js";
 import { generateAuditExcel } from "./utils-backend/audit-excel-eport.js";
-import { initNotifSocket } from "./utils-backend/notifSocket.js";
+import { initNotifSocket, pushChatMessage } from "./utils-backend/notifSocket.js";
 
 const router = express.Router();
+
+function parseChatPageValue(value, fallback) {
+  const parsed = Number.parseInt(value, 10);
+  return Number.isInteger(parsed) && parsed >= 0 ? parsed : fallback;
+}
+
+function validateTicketPayload(body) {
+  const { title, type, text } = body;
+  if (
+    typeof title !== "string" ||
+    !title.trim() ||
+    !["report", "request", "inquiry"].includes(type) ||
+    typeof text !== "string" ||
+    !text.trim()
+  ) {
+    return null;
+  }
+  return { title: title.trim(), type, text: text.trim() };
+}
 
 router.post(
   "/api/public-key/share",
@@ -1272,6 +1296,133 @@ router.get(
 );
 
 router.get(
+  "/user-chatbox",
+  authenticateToken,
+  authorizeRole("user"),
+  (req, res) => res.render("user-chatbox"),
+);
+
+router.get(
+  "/admin-chatbox",
+  authenticateToken,
+  authorizeRole("admin"),
+  (req, res) => res.render("admin-chatbox"),
+);
+
+router.get(
+  ["/api/tickets", "/tickets"],
+  authenticateToken,
+  authorizeRole(["user", "admin"]),
+  async (req, res) => {
+  try {
+    res.json(await getTickets(req.user.userId, req.user.role));
+  } catch (error) {
+    console.error("Error fetching tickets:", error);
+    res.status(500).json({ error: "Unable to fetch tickets." });
+  }
+  },
+);
+
+router.post(
+  ["/api/tickets", "/tickets"],
+  authenticateToken,
+  authorizeRole("user"),
+  async (req, res) => {
+    const payload = validateTicketPayload(req.body);
+    if (!payload) {
+      return res
+        .status(400)
+        .json({ error: "Title, type, and initial message are required." });
+    }
+    try {
+      const created = await createTicket(
+        payload.title,
+        payload.type,
+        req.user.userId,
+        payload.text,
+      );
+      const message = await getTicketMessages(
+        created.ticketId,
+        req.user.userId,
+        "user",
+        1,
+        0,
+      );
+      const ticket = await getTicketForUser(
+        created.ticketId,
+        req.user.userId,
+        "user",
+      );
+      pushChatMessage(ticket, message.messages[0]);
+      res.status(201).json({ ticket, message: message.messages[0] });
+    } catch (error) {
+      console.error("Error creating ticket:", error);
+      res.status(500).json({ error: "Unable to create ticket." });
+    }
+  },
+);
+
+router.get(
+  ["/api/tickets/:id/messages", "/tickets/:id/messages"],
+  authenticateToken,
+  authorizeRole(["user", "admin"]),
+  async (req, res) => {
+    const ticketId = Number.parseInt(req.params.id, 10);
+    const limit = Math.min(parseChatPageValue(req.query.limit, 20), 50);
+    const offset = parseChatPageValue(req.query.offset, 0);
+    if (!Number.isInteger(ticketId) || ticketId <= 0) {
+      return res.status(400).json({ error: "Invalid ticket id." });
+    }
+    try {
+      const result = await getTicketMessages(
+        ticketId,
+        req.user.userId,
+        req.user.role,
+        limit,
+        offset,
+      );
+      if (!result) return res.status(404).json({ error: "Ticket not found." });
+      res.json(result);
+    } catch (error) {
+      console.error("Error fetching ticket messages:", error);
+      res.status(500).json({ error: "Unable to fetch messages." });
+    }
+  },
+);
+
+router.post(
+  ["/api/tickets/:id/messages", "/tickets/:id/messages"],
+  authenticateToken,
+  authorizeRole(["user", "admin"]),
+  async (req, res) => {
+    const ticketId = Number.parseInt(req.params.id, 10);
+    const text = typeof req.body.text === "string" ? req.body.text.trim() : "";
+    if (!Number.isInteger(ticketId) || ticketId <= 0 || !text) {
+      return res.status(400).json({ error: "A valid ticket and message are required." });
+    }
+    try {
+      const ticket = await getTicketForUser(
+        ticketId,
+        req.user.userId,
+        req.user.role,
+      );
+      if (!ticket) return res.status(404).json({ error: "Ticket not found." });
+      const message = await addTicketMessage(
+        ticketId,
+        req.user.userId,
+        req.user.role,
+        text,
+      );
+      pushChatMessage(ticket, message);
+      res.status(201).json(message);
+    } catch (error) {
+      console.error("Error adding ticket message:", error);
+      res.status(500).json({ error: "Unable to send message." });
+    }
+  },
+);
+
+router.get(
   "/user-requests",
   authenticateToken,
   authorizeRole("user"),
@@ -2004,6 +2155,7 @@ router.get(
     try {
       const { monthYear } = req.params;
       const applicantlist = await getApplicants(monthYear);
+      console.log('applicantlist', applicantlist);
       res.status(200).json(applicantlist);
     } catch (error) {
       console.error("Error fetching applicants:", error);

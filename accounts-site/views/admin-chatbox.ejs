@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ticket Chat</title>
+  <link href="/account/f-css/output.css" rel="stylesheet">
+</head>
+
+<body data-role="admin" class="flex flex-row w-full bg-slate-100">
+  <div id="sidebar-container"></div>
+  <div class="block ml-ml-250 w-full">
+    <main class=" flex min-h-screen max-h-screen flex-1 flex-col">
+      <header class="border-b bg-white p-4 shadow-sm">
+        <h1 class="text-lg font-semibold text-slate-800">Ticket Chat</h1>
+      </header>
+      <section class="flex min-h-0 flex-1 flex-col gap-4 p-4 md:flex-row">
+        <aside class="flex w-full flex-col rounded-lg bg-white shadow md:w-1/2">
+          <h2 class="border-b p-4 font-semibold">All Tickets</h2>
+          <div id="ticket-list" class="min-h-32 flex-1 overflow-y-auto"></div>
+        </aside>
+        <section class="flex min-h-[28rem] min-w-0 flex-1 flex-col rounded-lg bg-white shadow">
+          <div id="thread-header" class="border-b p-4 font-semibold text-slate-700">Select a ticket</div>
+          <div id="message-list" class="min-h-0 flex-1 overflow-y-auto"></div>
+          <form id="message-form" class="flex gap-2 border-t p-3"><input id="message-input"
+              class="min-w-0 flex-1 rounded border px-3 py-2" placeholder="Reply to the user..." disabled
+              required><button class="rounded bg-sky-900 px-4 py-2 font-semibold text-white disabled:opacity-50"
+              disabled>Send</button></form>
+        </section>
+      </section>
+    </main>
+  </div>
+  <script src="/account/f-jsfiles/sidebar.js"></script>
+  <script type="module" src="/account/f-jsfiles/admin-chatbox.js"></script>
+</body>
+
+</html>

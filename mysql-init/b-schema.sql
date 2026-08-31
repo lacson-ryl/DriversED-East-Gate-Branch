@@ -307,3 +307,28 @@ CREATE TABLE
         pub_key_web_crypto TEXT NOT NULL,
         date_created TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
+
+CREATE TABLE
+    tickets (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        title VARCHAR(255) NOT NULL,
+        type ENUM('report', 'request', 'inquiry') NOT NULL,
+        createdBy INT NOT NULL,
+        answeredBy INT NULL,
+        createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (createdBy) REFERENCES user (user_id),
+        FOREIGN KEY (answeredBy) REFERENCES admin_account (account_id),
+        INDEX idx_tickets_created_by_created_at (createdBy, createdAt)
+    );
+
+CREATE TABLE
+    messages (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        ticketId INT NOT NULL,
+        senderId INT NOT NULL,
+        senderRole ENUM('user', 'admin') NOT NULL,
+        text TEXT NOT NULL,
+        createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (ticketId) REFERENCES tickets (id) ON DELETE CASCADE,
+        INDEX idx_messages_ticket_created_at (ticketId, createdAt, id)
+    );

@@ -46,6 +46,13 @@ const sidebarContent = `
           <span class="sidebar-label">Reports</span>
         </a>
       </li>
+      <li id="chatbox"
+        class="flex justify-items-center items-center rounded-3xl hover:font-bold py-1 px-2 hover:hover-bg-custom">
+        <a class="side-nav-link flex justify-items-center items-center w-full gap-5" href="/account/user-chatbox">
+          <img src="/account/f-assets/solid/white/question-mark-circle.svg" class="side-icons" />
+          <span class="sidebar-label">Chat Box</span>
+        </a>
+      </li>
       <li id="payments"
         class="flex justify-items-center items-center rounded-3xl hover:font-bold py-1 px-2 hover:hover-bg-custom">
         <a class="side-nav-link flex justify-items-center items-center w-full gap-5" href="/account/user-payments">
@@ -119,6 +126,8 @@ const iconMap = {
   "/account/user-dashboard": "/account/f-assets/solid/black/view-grid.svg",
   "/account/user-profile": "/account/f-assets/solid/black/user.svg",
   "/account/user-programs": "/account/f-assets/solid/black/table.svg",
+  "/account/user-chatbox":
+    "/account/f-assets/solid/black/question-mark-circle.svg",
   "/account/user-requests":
     "/account/f-assets/solid/black/question-mark-circle.svg",
   "/account/user-reports":
@@ -161,11 +170,16 @@ if (!window.notifSocketInitialized) {
   
   window.notifSocket.onopen = () => {
     console.log("Notification WebSocket opened");
+    window.dispatchEvent(new Event("ticket-socket-open"));
   };
 
   window.notifSocket.onmessage = (event) => {
     const data = JSON.parse(event.data);
-    updateNotifIndicator(data.unread_count);
+    if (data.type === "chat") {
+      window.dispatchEvent(new CustomEvent("ticket-chat-message", { detail: data }));
+    } else if (data.type === "notif" || data.type === "init") {
+      updateNotifIndicator(data.unread_count);
+    }
   };
 
   window.notifSocket.onerror = (err) => {

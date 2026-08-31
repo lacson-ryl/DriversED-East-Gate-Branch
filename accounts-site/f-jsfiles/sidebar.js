@@ -50,7 +50,7 @@ const sidebarContent = `
                 <span>Certificates</span>
             </a>
         </li>
-        <li id="reports" class="flex flex-row items-center rounded-3xl hover:font-bold py-1 px-2 hover:hover-bg-custom">
+        <li id="payments" class="flex flex-row items-center rounded-3xl hover:font-bold py-1 px-2 hover:hover-bg-custom">
             <a class="side-nav-link flex flex-row items-center w-full gap-5" href="/account/payments">
                 <img src="/account/f-assets/solid/white/cash.svg" class="side-icons" />
                 <span>Payments</span>
@@ -60,6 +60,12 @@ const sidebarContent = `
             <a class="side-nav-link flex flex-row items-center w-full gap-5" href="/account/reports">
                 <img src="/account/f-assets/solid/white/exclamation-circle.svg" class="side-icons" />
                 <span>Reports</span>
+            </a>
+        </li>
+        <li id="chatbox" class="flex flex-row items-center rounded-3xl hover:font-bold py-1 px-2 hover:hover-bg-custom">
+            <a class="side-nav-link flex flex-row items-center w-full gap-5" href="/account/admin-chatbox">
+                <img src="/account/f-assets/solid/white/question-mark-circle.svg" class="side-icons" />
+                <span>Chat Box</span>
             </a>
         </li>
         <li id="logout" class="flex flex-row items-center rounded-3xl hover:font-bold py-1 px-2 hover:hover-bg-custom">
@@ -101,10 +107,12 @@ const iconMap = {
   "/account/programs": "/account/f-assets/solid/black/table.svg",
   "/account/applicants": "/account/f-assets/solid/black/identification.svg",
   "/account/search": "/account/f-assets/solid/black/search-circle.svg",
+  "/account/admin-chatbox":
+    "/account/f-assets/solid/black/question-mark-circle.svg",
   "/account/requests": "/account/f-assets/solid/black/question-mark-circle.svg",
+  "/account/reports": "/account/f-assets/solid/black/exclamation-circle.svg",
   "/account/certificates": "/account/f-assets/solid/black/star.svg",
   "/account/payments": "/account/f-assets/solid/black/cash.svg",
-  "/account/reports": "/account/f-assets/solid/black/exclamation-circle.svg",
   "/account/logout": "/account/f-assets/solid/black/logout.svg",
 };
 
@@ -139,18 +147,32 @@ logoutBtn.addEventListener("click", (event) => {
 
 if (!window.notifSocketInitialized) {
   // Connect once per session
-  window.notifSocket = new WebSocket(
-    "ws://localhost:8000/account/notifications/socket",
-  );
+  const wsProtocol = window.location.protocol === "https:" ? "wss" : "ws";
+  const wsUrl = `${wsProtocol}://${window.location.host}/account/notifications/socket`;
+  window.notifSocket = new WebSocket(wsUrl);
 
   window.notifSocket.onopen = () => {
     console.log("Notification WebSocket opened");
+    window.dispatchEvent(new Event("ticket-socket-open"));
   };
 
   window.notifSocket.onmessage = (event) => {
     const data = JSON.parse(event.data);
-    updateNotifIndicator(data.unread_count);
+    if (data.type === "chat") {
+      window.dispatchEvent(
+        new CustomEvent("ticket-chat-message", { detail: data }),
+      );
+    } else if (data.type === "notif" || data.type === "init") {
+      updateNotifIndicator(data.unread_count);
+    }
   };
+
+  // Heartbeat ping every 30s
+  setInterval(() => {
+    if (window.notifSocket.readyState === WebSocket.OPEN) {
+      window.notifSocket.send(JSON.stringify({ type: "ping" }));
+    }
+  }, 30000);
 
   window.notifSocket.onerror = (err) => {
     console.error("Notification WebSocket error:", err);

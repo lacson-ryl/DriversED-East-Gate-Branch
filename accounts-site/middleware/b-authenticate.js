@@ -7,10 +7,14 @@ const secretKey = process.env.secret_key;
 
 export function authenticateToken(req, res, next) {
   const token = req.cookies.jwtToken;
+  const isChatApi = req.originalUrl.startsWith("/account/api/tickets");
   console.log("Token from cookie:", token);
 
   if (!token) {
     console.log("No token found");
+    if (isChatApi) {
+      return res.status(401).json({ error: "Authentication required." });
+    }
     if (req.originalUrl.startsWith("/account/user")) {
       return res.redirect("/account/user-login?error=token_not_found");
     } else {
@@ -21,6 +25,9 @@ export function authenticateToken(req, res, next) {
   jwt.verify(token, secretKey, (error, user) => {
     if (error) {
       console.log("Token verification failed:", error);
+      if (isChatApi) {
+        return res.status(401).json({ error: "Invalid or expired token." });
+      }
       if (req.originalUrl.startsWith("/account/user")) {
         return res.redirect("/account/user-login?error=invalid_token");
       } else {

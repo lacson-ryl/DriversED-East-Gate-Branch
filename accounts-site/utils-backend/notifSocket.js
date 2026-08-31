@@ -25,6 +25,8 @@ export function initNotifSocket(server) {
       const user = jwt.verify(token, process.env.secret_key);
 
       const key = `${user.userId}:${user.role}`;
+      ws.chatTickets = new Set();
+      ws.chatUser = user;
       clients.set(key, ws);
 
       const count = await notifCount(user.userId, user.role);
@@ -32,11 +34,26 @@ export function initNotifSocket(server) {
 
       ws.send(
         JSON.stringify({
-          type: "init",
+          type: "notif",
           unread_count: count,
         }),
       );
 
+      ws.on("message", (raw) => {
+        let event;
+        try {
+          event = JSON.parse(raw.toString());
+        } catch {
+          return;
+        }
+        if (
+          event.type === "subscribe_chat" &&
+          Number.isInteger(Number(event.ticketId)) &&
+          Number(event.ticketId) > 0
+        ) {
+          ws.chatTickets.add(Number(event.ticketId));
+        }
+      });
       ws.on("close", () => clients.delete(key));
     } catch (err) {
       console.error("WS auth failed:", err.message);
@@ -49,6 +66,22 @@ export function pushUnreadCount(userId, role, count) {
   const key = `${userId}:${role}`;
   const clientWs = clients.get(key);
   if (clientWs && clientWs.readyState === clientWs.OPEN) {
-    clientWs.send(JSON.stringify({ unread_count: count }));
+    clientWs.send(JSON.stringify({ type: "notif", unread_count: count }));
+  }
+}
+
+export function pushChatMessage(ticket, message) {
+  for (const clientWs of clients.values()) {
+    const isAdmin = clientWs.chatUser.role === "admin";
+    const ownsTicket = Number(clientWs.chatUser.userId) === Number(ticket.createdBy);
+    if (
+      clientWs.chatTickets.has(Number(ticket.id)) &&
+      (isAdmin || ownsTicket) &&
+      clientWs.readyState === clientWs.OPEN
+    ) {
+      clientWs.send(
+        JSON.stringify({ type: "chat", ticketId: ticket.id, message }),
+      );
+    }
   }
 }
