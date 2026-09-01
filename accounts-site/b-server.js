@@ -11,6 +11,9 @@ import multer from "multer";
 import sharp from "sharp";
 import fs from "fs";
 import session from "express-session";
+import { RedisStore } from "connect-redis";
+import Redis from "ioredis";
+import redis from "./config/b-redis.js";
 import validator from "validator";
 import axios from "axios";
 import rateLimit from "express-rate-limit";
@@ -113,27 +116,39 @@ app.use((req, res, next) => {
 
 const isProd = process.env.NODE_ENV === "production";
 
-// Apply the session middleware with dynamic session name
-app.use((req, res, next) => {
-  const sessionMiddleware = session({
-    secret: secretKey,
+// Apply ONE global session middleware
+app.use(
+  session({
+    store: new RedisStore({ client: redis }),
+    secret: secretKey || "supersecret",
     resave: false,
-    saveUninitialized: true,
-    name: req.sessionName || "defaultSession", // Dynamically set session name
+    saveUninitialized: false,
+    name: "defaultSession", // base name
     cookie: {
       maxAge: 3600000,
       httpOnly: true,
-      secure: isProd ? true : false, // Set to true in production
-      sameSite: isProd ? "Strict" : "Lax", // Protect against CSRF attacks // (Strict)
-      path: isProd ? "/account" : "/", // Restrict cookie to /account path in production
+      secure: isProd,
+      sameSite: "Lax",
+      path: "/",
     },
-  });
+  }),
+);
 
-  sessionMiddleware(req, res, next);
+// Override cookie name dynamically per request
+app.use((req, res, next) => {
+  if (req.session && req.session.cookie) {
+    req.session.cookie.name = req.sessionName;
+  }
+  next();
 });
 
+// Passport must come AFTER session
 app.use(adminPassport.initialize());
 app.use(adminPassport.session());
+app.use(userPassport.initialize());
+app.use(userPassport.session());
+app.use(changePasswordPassport.initialize());
+app.use(changePasswordPassport.session());
 
 // Admin Google Authentication
 app.get(
@@ -175,14 +190,11 @@ app.get(
       httpOnly: true,
       secure: isProd ? true : false, // Set to true in production
       sameSite: isProd ? "Strict" : "Lax", // Protect against CSRF attacks // (Strict)
-      path: isProd ? "/account" : "/", // Restrict cookie to /account path in production
+      path: "/", // Restrict cookie to /account path in production
     });
     res.redirect(`/account/login-success`);
   },
 );
-
-app.use(userPassport.initialize());
-app.use(userPassport.session());
 
 // User Google Authentication
 app.get(
@@ -206,15 +218,12 @@ app.get(
       maxAge: 3600000,
       httpOnly: true,
       secure: isProd ? true : false, // Set to true in production
-      sameSite: isProd ? "Strict" : "Lax", // Protect against CSRF attacks // (Strict)
-      path: isProd ? "/account" : "/", // Restrict cookie to /account path in production
+      sameSite: "Lax", // Protect against CSRF attacks // (Strict)
+      path: "/", // Restrict cookie to /account path in production
     });
     res.redirect(`/account/login-success`);
   },
 );
-
-app.use(changePasswordPassport.initialize());
-app.use(changePasswordPassport.session());
 
 //Change PAssword Google Authentication
 app.get(
@@ -261,8 +270,8 @@ app.get(
         maxAge: 3600000,
         httpOnly: true,
         secure: isProd ? true : false, // Set to true in production
-        sameSite: isProd ? "Strict" : "Lax", // Protect against CSRF attacks // (Strict)
-        path: isProd ? "/account" : "/", // Restrict cookie to /account path in production
+        sameSite: "Lax", // Protect against CSRF attacks // (Strict)
+        path: "/", // Restrict cookie to /account path in production
       });
 
       res.redirect("/account/change-password-email-option?success=true");
@@ -413,12 +422,14 @@ import { renderBase64File } from "./utils-backend/file-converter.js";
 
 import { sendEmail } from "./config/b-email-config.js";
 import { v4 as uuidv4 } from "uuid";
-import redis from "./config/b-redis.js";
 import http from "http";
 import { fileTypeFromBuffer } from "file-type";
 import { generateCertificatePDF } from "./utils-backend/generateCertPDF.js";
 import { generateAuditExcel } from "./utils-backend/audit-excel-eport.js";
-import { initNotifSocket, pushChatMessage } from "./utils-backend/notifSocket.js";
+import {
+  initNotifSocket,
+  pushChatMessage,
+} from "./utils-backend/notifSocket.js";
 
 const router = express.Router();
 
@@ -888,8 +899,8 @@ router.post("/user-login", async (req, res) => {
           maxAge: 3600000,
           httpOnly: true,
           secure: isProd ? true : false, // Set to true in production
-          sameSite: isProd ? "Strict" : "Lax", // Protect against CSRF attacks // (Strict)
-          path: isProd ? "/account" : "/", // Restrict cookie to /account path in production
+          sameSite: "Lax", // Protect against CSRF attacks // (Strict)
+          path: "/", // Restrict cookie to /account path in production
         });
         return res.status(200).json({
           message: "User login successful",
@@ -1314,12 +1325,12 @@ router.get(
   authenticateToken,
   authorizeRole(["user", "admin"]),
   async (req, res) => {
-  try {
-    res.json(await getTickets(req.user.userId, req.user.role));
-  } catch (error) {
-    console.error("Error fetching tickets:", error);
-    res.status(500).json({ error: "Unable to fetch tickets." });
-  }
+    try {
+      res.json(await getTickets(req.user.userId, req.user.role));
+    } catch (error) {
+      console.error("Error fetching tickets:", error);
+      res.status(500).json({ error: "Unable to fetch tickets." });
+    }
   },
 );
 
@@ -1398,7 +1409,9 @@ router.post(
     const ticketId = Number.parseInt(req.params.id, 10);
     const text = typeof req.body.text === "string" ? req.body.text.trim() : "";
     if (!Number.isInteger(ticketId) || ticketId <= 0 || !text) {
-      return res.status(400).json({ error: "A valid ticket and message are required." });
+      return res
+        .status(400)
+        .json({ error: "A valid ticket and message are required." });
     }
     try {
       const ticket = await getTicketForUser(
@@ -1741,8 +1754,8 @@ router.post("/adminlogin", async (req, res) => {
           maxAge: 3600000,
           httpOnly: true,
           secure: isProd ? true : false, // Set to true in production
-          sameSite: isProd ? "Strict" : "Lax", // Protect against CSRF attacks // (Strict)
-          path: isProd ? "/account" : "/", // Restrict cookie to /account path in production
+          sameSite: "Lax", // Protect against CSRF attacks // (Strict)
+          path: "/", // Restrict cookie to /account path in production
         });
 
         return res.status(200).json({
@@ -2155,7 +2168,7 @@ router.get(
     try {
       const { monthYear } = req.params;
       const applicantlist = await getApplicants(monthYear);
-      console.log('applicantlist', applicantlist);
+      console.log("applicantlist", applicantlist);
       res.status(200).json(applicantlist);
     } catch (error) {
       console.error("Error fetching applicants:", error);
@@ -3899,8 +3912,8 @@ router.post(
         maxAge: 3600000,
         httpOnly: true,
         secure: isProd ? true : false, // Set to true in production
-        sameSite: isProd ? "Strict" : "Lax", // Protect against CSRF attacks // (Strict)
-        path: isProd ? "/account" : "/", // Restrict cookie to /account path in production
+        sameSite: "Lax", // Protect against CSRF attacks // (Strict)
+        path: "/", // Restrict cookie to /account path in production
       });
 
       // Return user data (excluding sensitive information)
