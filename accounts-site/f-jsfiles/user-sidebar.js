@@ -1,13 +1,8 @@
 const sidebarContent = `
 <div id="side-bar"
-  class="flex flex-col fixed top-0 left-0 h-full w-16 md:w-[160px] p-2 bg-sky-950 text-white z-50 transition-all duration-300">
+  class="flex flex-col fixed top-0 left-0 h-full w-[180px] p-2 bg-sky-950 text-white z-50">
 <div class="block mt-1 min-h-14 ">
-    <button id="sidebar-toggle" class="absolute md:hidden top-4 left-4 focus:outline-none">
-      <svg class="w-7 h-7 lg:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-      </svg>
-    </button>
-    <h1 class="text-center border-b-2 border-slate-500 p-2 text-lg font-medium sidebar-label">USER</h1>
+    <h1 class="text-center border-b-2 border-slate-500 p-2 text-lg font-medium">USER</h1>
   </div>
   <div class="block mt-4">
     <ul class="flex flex-col justify-items-center gap-4 font-light text-base">
@@ -15,56 +10,42 @@ const sidebarContent = `
         class="flex justify-items-center items-center rounded-3xl hover:font-bold py-1 px-2 hover:hover-bg-custom ">
         <a class="side-nav-link flex justify-items-center items-center w-full gap-5" href="/account/user-dashboard">
           <img src="/account/f-assets/solid/white/view-grid.svg" class="side-icons" />
-          <span class="sidebar-label">Dashboard</span>
+          <span>Dashboard</span>
         </a>
       </li>
       <li id="profile"
         class="flex justify-items-center items-center rounded-3xl hover:font-bold py-1 px-2 hover:hover-bg-custom ">
         <a class="side-nav-link flex justify-items-center items-center w-full gap-5" href="/account/user-profile">
           <img src="/account/f-assets/solid/white/user.svg" class="side-icons" />
-          <span class="sidebar-label">Profile</span>
+          <span>Profile</span>
         </a>
       </li>
       <li id="programs"
         class="flex justify-items-center items-center rounded-3xl hover:font-bold py-1 px-2 hover:hover-bg-custom">
         <a class="side-nav-link flex justify-items-center items-center w-full gap-5" href="/account/user-programs">
           <img src="/account/f-assets/solid/white/table.svg" class="side-icons" />
-          <span class="sidebar-label">Programs</span>
-        </a>
-      </li>
-      <li id="requests"
-        class="flex justify-items-center items-center rounded-3xl hover:font-bold py-1 px-2 hover:hover-bg-custom">
-        <a class="side-nav-link flex justify-items-center items-center w-full gap-5" href="/account/user-requests">
-          <img src="/account/f-assets/solid/white/question-mark-circle.svg" class="side-icons" />
-          <span class="sidebar-label">Requests</span>
-        </a>
-      </li>
-      <li id="reports"
-        class="flex justify-items-center items-center rounded-3xl hover:font-bold py-1 px-2 hover:hover-bg-custom">
-        <a class="side-nav-link flex justify-items-center items-center w-full gap-5" href="/account/user-reports">
-          <img src="/account/f-assets/solid/white/exclamation-circle.svg" class="side-icons" />
-          <span class="sidebar-label">Reports</span>
+          <span>Programs</span>
         </a>
       </li>
       <li id="chatbox"
         class="flex justify-items-center items-center rounded-3xl hover:font-bold py-1 px-2 hover:hover-bg-custom">
         <a class="side-nav-link flex justify-items-center items-center w-full gap-5" href="/account/user-chatbox">
           <img src="/account/f-assets/solid/white/question-mark-circle.svg" class="side-icons" />
-          <span class="sidebar-label">Chat Box</span>
+          <span>Chat Box</span>
         </a>
       </li>
       <li id="payments"
         class="flex justify-items-center items-center rounded-3xl hover:font-bold py-1 px-2 hover:hover-bg-custom">
         <a class="side-nav-link flex justify-items-center items-center w-full gap-5" href="/account/user-payments">
           <img src="/account/f-assets/solid/white/cash.svg" class="side-icons" />
-          <span class="sidebar-label">Payments</span>
+          <span>Payments</span>
         </a>
       </li>
       <li id="logout"
         class="flex justify-items-center items-center rounded-3xl hover:font-bold py-1 px-2 hover:hover-bg-custom">
         <a class="side-nav-link flex justify-items-center items-center w-full gap-5">
           <img src="/account/f-assets/solid/white/logout.svg" class="side-icons" />
-          <span class="sidebar-label">Logout</span>
+          <span>Logout</span>
         </a>
       </li>
     </ul>
@@ -92,6 +73,87 @@ const sidebarContent = `
 </div>
 `;
 
+const sidebarStyles = document.createElement("style");
+sidebarStyles.textContent = `
+  #side-bar {
+    padding: 1rem .75rem;
+    background: #0B2D4A;
+    box-shadow: 6px 0 24px rgba(11, 45, 74, .12);
+  }
+
+  #side-bar .active-nav {
+    background: #2585F5;
+    color: #fff;
+    box-shadow: 0 8px 18px rgba(37, 133, 245, .22);
+  }
+
+  #side-bar li {
+    transition: background-color .2s ease, transform .2s ease;
+  }
+
+  #side-bar li:hover {
+    transform: translateX(2px);
+  }
+
+  #side-bar .side-nav-link {
+    min-height: 2.25rem;
+  }
+
+  #mobile-sidebar-toggle {
+    display: none;
+  }
+
+  @media (max-width: 767px) {
+    body.user-sidebar-layout {
+      padding-left: 0;
+    }
+
+    #side-bar {
+      transform: translateX(-100%);
+      box-shadow: 10px 0 30px rgba(11, 45, 74, .2);
+      transition: transform .2s ease;
+    }
+
+    #side-bar.mobile-sidebar-open {
+      transform: translateX(0);
+    }
+
+    #mobile-sidebar-toggle {
+      display: inline-flex;
+      width: 2.5rem;
+      height: 2.5rem;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid #dbe7f2;
+      border-radius: .75rem;
+      background: #fff;
+      color: #0B2D4A;
+      box-shadow: 0 6px 18px rgba(11, 45, 74, .14);
+    }
+
+    #mobile-sidebar-toggle svg {
+      width: 1.25rem;
+      height: 1.25rem;
+    }
+
+    #sidebar-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 40;
+      background: rgba(11, 45, 74, .35);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .2s ease;
+    }
+
+    #sidebar-backdrop.is-visible {
+      opacity: 1;
+      pointer-events: auto;
+    }
+  }
+`;
+document.head.appendChild(sidebarStyles);
+
 const sidebarContainer = document.getElementById("sidebar-container");
 if (sidebarContainer) {
   sidebarContainer.innerHTML = sidebarContent;
@@ -100,50 +162,54 @@ if (sidebarContainer) {
 }
 
 const sidebar = document.getElementById("side-bar");
-const toggleBtn = document.getElementById("sidebar-toggle");
-const labels = sidebar.querySelectorAll(".sidebar-label");
+document.body.classList.add("user-sidebar-layout");
 
-toggleBtn.addEventListener("click", () => {
-  if (sidebar.classList.contains("w-16")) {
-    sidebar.classList.remove("w-16");
-    sidebar.classList.add("w-44");
-    labels.forEach((label) => label.classList.remove("hidden"));
+const leftSide = document.getElementById("left-side");
+const notifButton = document.getElementById("notif-button");
+const mobileToggleMarkup = `<button id="mobile-sidebar-toggle" type="button" aria-label="Open navigation" aria-expanded="false"><svg aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" /></svg></button>`;
+
+if (!document.getElementById("mobile-sidebar-toggle")) {
+  if (leftSide && notifButton) {
+    notifButton.insertAdjacentHTML("beforebegin", mobileToggleMarkup);
   } else {
-    sidebar.classList.remove("w-44");
-    sidebar.classList.add("w-16");
-    labels.forEach((label) => label.classList.add("hidden"));
+    document.body.insertAdjacentHTML("afterbegin", mobileToggleMarkup);
   }
-});
-
-const isMobile = window.innerWidth < 768;
-if (isMobile) {
-  labels.forEach((label) => label.classList.add("hidden"));
 }
+document.body.insertAdjacentHTML("afterbegin", `<div id="sidebar-backdrop"></div>`);
+
+const mobileToggle = document.getElementById("mobile-sidebar-toggle");
+const sidebarBackdrop = document.getElementById("sidebar-backdrop");
+
+function setMobileSidebar(open) {
+  sidebar.classList.toggle("mobile-sidebar-open", open);
+  sidebarBackdrop.classList.toggle("is-visible", open);
+  mobileToggle.setAttribute("aria-expanded", String(open));
+  mobileToggle.setAttribute("aria-label", open ? "Close navigation" : "Open navigation");
+}
+
+mobileToggle.addEventListener("click", () => {
+  setMobileSidebar(!sidebar.classList.contains("mobile-sidebar-open"));
+});
+sidebarBackdrop.addEventListener("click", () => setMobileSidebar(false));
+window.addEventListener("resize", () => {
+  if (window.innerWidth >= 768) setMobileSidebar(false);
+});
 
 const currentPath = window.location.pathname;
 const navLinks = document.querySelectorAll(".side-nav-link");
-const iconMap = {
-  "/account/user-dashboard": "/account/f-assets/solid/black/view-grid.svg",
-  "/account/user-profile": "/account/f-assets/solid/black/user.svg",
-  "/account/user-programs": "/account/f-assets/solid/black/table.svg",
-  "/account/user-chatbox":
-    "/account/f-assets/solid/black/question-mark-circle.svg",
-  "/account/user-requests":
-    "/account/f-assets/solid/black/question-mark-circle.svg",
-  "/account/user-reports":
-    "/account/f-assets/solid/black/exclamation-circle.svg",
-  "/account/user-payments": "/account/f-assets/solid/black/cash.svg",
-  "/account/logout": "/account/f-assets/solid/black/logout.svg",
-};
 
 navLinks.forEach((link) => {
   const href = link.getAttribute("href");
   if (href === currentPath) {
     link.parentElement.classList.add("active-nav");
     link.parentElement.classList.remove("hover:hover-bg-custom");
-    const icon = link.querySelector(".side-icons");
-    icon.src = iconMap[href];
   }
+
+  link.addEventListener("click", () => {
+    if (window.innerWidth < 768 && link.parentElement?.id !== "logout") {
+      setMobileSidebar(false);
+    }
+  });
 });
 
 // Logout confirmation logic
@@ -199,9 +265,11 @@ function updateNotifIndicator(unreadCount) {
 
   if (unreadCount > 0) {
     indicator.classList.remove("hidden");
+    indicator.classList.add("flex");
     indicator.textContent = unreadCount;
   } else {
     indicator.classList.add("hidden");
+    indicator.classList.remove("flex");
     indicator.textContent = "";
   }
 }

@@ -1,267 +1,98 @@
 <!DOCTYPE html>
-<html lang="en" class="scroll-smooth overflow-x-auto overflow-y-auto">
+<html lang="en" class="scroll-smooth overflow-x-hidden overflow-y-auto">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard</title>
+    <title>Admin Dashboard | Driver's Ed</title>
     <link href="/account/f-css/output.css" rel="stylesheet">
     <script type="module">
         import Dexie from "https://cdn.jsdelivr.net/npm/dexie@3.2.4/dist/dexie.mjs";
         window.Dexie = Dexie;
     </script>
-    <style>
-        .clock {
-            font-size: 2rem;
-            font-weight: bold;
-        }
-    </style>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root { --admin-navy: #0B2D4A; --admin-blue: #1976D2; --admin-bg: #F4F7FB; --admin-ink: #17324D; }
+        * { box-sizing: border-box; }
+        body { min-width: 0; background: var(--admin-bg); color: var(--admin-ink); font-family: "Montserrat", "Segoe UI", sans-serif; }
+        #main-content { min-width: 0; max-width: 100%; overflow-x: hidden; }
+        .admin-card { border: 1px solid #E2E8F0; border-radius: 1rem; background: #fff; box-shadow: 0 10px 30px rgba(11,45,74,.08); }
+        .admin-stat { border: 1px solid #E2E8F0; border-radius: 1rem; background: #fff; box-shadow: 0 8px 24px rgba(11,45,74,.06); transition: transform .2s ease, box-shadow .2s ease; }
+        .admin-stat:hover { transform: translateY(-2px); box-shadow: 0 14px 30px rgba(11,45,74,.12); }
+        .admin-stat-value { color: var(--admin-navy); font-size: clamp(1.7rem, 3vw, 2.45rem); font-weight: 800; line-height: 1; }
+        #applicantsChart { width: 100% !important; height: 250px !important; }
+        #instructor-schedules > div { min-width: 0; border: 1px solid #E2E8F0; border-radius: 1rem; background: #fff; padding: 1.25rem; box-shadow: 0 8px 24px rgba(11,45,74,.06); }
+        #myModal > div { width: min(100%, 32rem); max-height: min(90vh, 42rem); overflow-y: auto; }
+        #modal-details form { width: 100%; max-width: 28rem; margin-inline: auto; }
+        #modal-details input, #modal-details select { min-width: 0; }
+        @media (max-width: 767px) { #applicantsChart { height: 220px !important; } }
+    </style>
 </head>
 
-<body class="flex flex-row w-full over">
-    <div id="sidebar-container">
-
-    </div>
-    <div id="main-content" class="block ml-ml-250 w-calc space-y-2 animate-fadeIn">
-        <div id="top-bar" class="flex h-15 flex-row w-full sticky shadow-inner bg-white border-b-2 p-4">
-            <div id="left-side" class="flex flex-row gap-4 relative">
-                <div>
-                    <button id="notif-button" class="relative">
-                        <img id="notif-logo" src="/account/f-assets/solid/bell.svg" class="w-7 h-7 inline-block" />
-                        <div id="notif-new-indicator"
-                            class="h-3 w-3 rounded-full bg-blue-900 absolute top-2 right-2 transform translate-x-1/2 -translate-y-1/2 animate-pulse hidden">
-                        </div>
-                    </button>
-                </div>
-                <img id="company-logo" src="/account/f-assets/solid/drivers_ed_logo-no-bg.png" class="w-20 h-8" />
-            </div>
-            <div id="right-side" class="absolute right-4 text-lg">
-                Dashboard
-            </div>
-        </div>
-
-        <div id="content" class="flex flex-col w-full">
-            <div id="time-and-notes" class="flex flex-row gap-4 mt-5 ml-5 p-3">
-                <div class="h-44 w-80">
-                    <div id="date" class="text-3xl font-semibold mb-2 text-blue-500"></div>
-                    <div id="clock" class="text-5xl font-bold text-red-500"></div>
-                </div>
-                <div id="new-applicants-stats" class="h-48 w-full justify-items-end">
-                    <canvas id="applicantsChart" width="940" height="200"
-                        class="outline outline-1 outline-blue-900 px-2 py-1 rounded-md"></canvas>
-                    <div class="mt-2 absolute top-24 right-3">
-                        <button id="prevMonth" class="m-1 p-1 text-xs rounded-md bg-blue-700 text-white">Prev</button>
-                        <button id="nextMonth" class="m-1 p-1 text-xs rounded-md bg-blue-700 text-white">Next</button>
-                    </div>
-                </div>
-            </div>
-            <div class="grid grid-cols-3 gap-x-7 gap-y-4 mt-16 mb-14 ml-5 px-2 text-white text-lg">
-                <!-- Number of Accepted Applicants -->
-                <a>
-                    <div
-                        class="dashboard-placards bg-green-600 flex flex-col bg-opacity-95 shadow-md shadow-green-500/50 rounded-md px-5 py-3 hover:outline hover:outline-2 hover:outline-blue-900">
-                        <h4 class="">Number of Users</h4>
-                        <div class="grid grid-cols-3">
-                            <div class="flex flex-col">
-                                <h2 class="text-base font-normal ml-2">month</h2>
-                                <p class="text-center text-5xl border-r-2 border-gray-200">
-                                    <%= dashboardCounts.newApplicants.month %>
-                                </p>
-                            </div>
-                            <div class="flex flex-col">
-                                <h2 class="text-base font-normal ml-1">year</h2>
-                                <p class="text-center text-5xl border-r-2 border-gray-200">
-                                    <%= dashboardCounts.newApplicants.year %>
-                                </p>
-                            </div>
-                            <div class="flex flex-col">
-                                <h2 class="text-base font-normal ml-2">all</h2>
-                                <p class="text-center text-5xl">
-                                    <%= dashboardCounts.newApplicants.all %>
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                </a>
-
-                <a href="/account/applicants">
-                    <div
-                        class="dashboard-placards flex flex-col bg-cyan-600  bg-opacity-95 shadow-md shadow-cyan-500/50 rounded-md px-5 py-3 hover:outline hover:outline-2 hover:outline-blue-900">
-                        <h4>Number of Accepted Applicants</h4>
-                        <div class="grid grid-cols-3">
-                            <div class="flex flex-col">
-                                <h2 class="text-base font-normal ml-2">month</h2>
-                                <p class="text-center text-5xl border-r-2 border-gray-200">
-                                    <%= dashboardCounts.acceptedApplicants.month %>
-                                </p>
-                            </div>
-                            <div class="flex flex-col">
-                                <h2 class="text-base font-normal ml-1">year</h2>
-                                <p class="text-center text-5xl border-r-2 border-gray-200">
-                                    <%= dashboardCounts.acceptedApplicants.year %>
-                                </p>
-                            </div>
-                            <div class="flex flex-col">
-                                <h2 class="text-base font-normal ml-2">all</h2>
-                                <p class="text-center text-5xl">
-                                    <%= dashboardCounts.acceptedApplicants.all %>
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                </a>
-
-                <!-- Finished Applicants -->
-                <a href="/account/completed-course">
-                    <div
-                        class="dashboard-placards flex flex-col bg-red-600 bg-opacity-95 shadow-md shadow-red-400/50 rounded-md px-5 py-3 hover:outline hover:outline-2 hover:outline-blue-900">
-                        <h4>Finished Applicants</h4>
-                        <div class="grid grid-cols-3">
-                            <div class="flex flex-col">
-                                <h2 class="text-base font-normal ml-2">month</h2>
-                                <p class="text-center text-5xl border-r-2 border-gray-200">
-                                    <%= dashboardCounts.finishedApplicants.month %>
-                                </p>
-                            </div>
-                            <div class="flex flex-col ml-2">
-                                <h2 class="text-base font-normal ml-1">year</h2>
-                                <p class="text-center text-5xl  border-r-2 border-gray-200">
-                                    <%= dashboardCounts.finishedApplicants.year %>
-                                </p>
-                            </div>
-                            <div class="flex flex-col">
-                                <h2 class="text-base font-normal ml-2">all</h2>
-                                <p class="text-center text-5xl">
-                                    <%= dashboardCounts.finishedApplicants.all %>
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                </a>
-
-                <!-- TDC Takers -->
-                <a href="/account/attendance">
-                    <div
-                        class="dashboard-placards flex flex-col bg-sky-900 bg-opacity-95 shadow-md shadow-sky-500/50 rounded-md px-5 py-3 hover:outline hover:outline-2 hover:outline-black">
-                        <h4>TDC Takers</h4>
-
-                        <div class="grid grid-cols-3">
-                            <div class="flex flex-col">
-                                <h2 class="text-base font-normalml-2">month</h2>
-                                <p class="text-center text-5xl border-r-2 border-gray-200">
-                                    <%= dashboardCounts.tdcTakers.month %>
-                                </p>
-                            </div>
-                            <div class="flex flex-col ml-2">
-                                <h2 class="text-base font-normal ml-1">year</h2>
-                                <p class="text-center text-5xl border-r-2 border-gray-200">
-                                    <%= dashboardCounts.tdcTakers.year %>
-                                </p>
-                            </div>
-                            <div class="flex flex-col   ">
-                                <h2 class="text-base font-normal ml-2">all</h2>
-                                <p class="text-center text-5xl">
-                                    <%= dashboardCounts.tdcTakers.all %>
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                </a>
-
-                <!-- PDC Takers -->
-                <a href="/account/attendance">
-                    <div
-                        class="dashboard-placards flex flex-col bg-sky-900 bg-opacity-95 shadow-md shadow-sky-500/50 rounded-md px-5 py-3 hover:outline hover:outline-2 hover:outline-black">
-                        <h4 class="col-span-2">PDC Takers</h4>
-                        <div class="grid grid-cols-3">
-                            <div class="flex flex-col">
-                                <h2 class="text-base font-normal ml-2">month</h2>
-                                <p class="text-center text-5xl border-r-2 border-gray-200">
-                                    <%= dashboardCounts.pdcTakers.month %>
-                                </p>
-                            </div>
-                            <div class="flex flex-col ml-2">
-                                <h2 class="text-base font-normal ml-1">year</h2>
-                                <p class="text-center text-5xl border-r-2 border-gray-200">
-                                    <%= dashboardCounts.pdcTakers.year %>
-                                </p>
-                            </div>
-                            <div class="flex flex-col">
-                                <h2 class="text-base font-normal ml-2">all</h2>
-                                <p class="text-center text-5xl">
-                                    <%= dashboardCounts.pdcTakers.all %>
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                </a>
-
-                <a href="/account/vehicles">
-                    <div
-                        class="dashboard-placards bg-sky-900 s bg-opacity-95 shadow-md shadow-sky-500/50 rounded-md p-5 hover:outline hover:outline-2 hover:outline-black">
-                        <h4">Number of Owned Vehicles</h4>
-                            <p class="text-right text-6xl">
-                                <%= dashboardCounts.ownedVehicles %>
-                            </p>
-                    </div>
-                </a>
-            </div>
-            <h3 class="text-center mt-16 mb-10 text-3xl">Instructor Schedule</h3>
-            <div id="instructor-schedules" class="grid grid-cols-3 gap-x-5 gap-y-7 ml-5 px-2 mb-10 text-black text-lg">
-            </div>
-
-            <div class="flex justify-between items-center mr-4 my-2">
-                <h2 class="text-lg ml-4"> Payment Methods</h2>
-                <div id="notification" class="hidden notification"></div>
-                <button id="add-payment-method-button"
-                    class="bg-blue-700 flex items-center hover:bg-gradient-to-t from-blue-400 to-blue-800 text-white rounded-lg px-2 py-1">
-                    <IMG src="/account/f-assets/solid/white/plus.svg" class="w-7 h-7" />
-                    <span class="inline-block">Payment Method</span>
+<body class="flex min-h-screen w-full flex-row">
+    <div id="sidebar-container" class="z-50"></div>
+    <main id="main-content" class="min-h-screen min-w-0 flex-1 md:ml-[220px]">
+        <header id="top-bar" class="sticky top-0 z-30 flex min-h-[60px] items-center justify-between border-b border-slate-200 bg-white/95 px-5 py-3 shadow-sm backdrop-blur md:px-8">
+            <div id="left-side" class="flex items-center gap-4">
+                <button id="notif-button" class="relative rounded-xl p-2 transition hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500" aria-label="Open notifications">
+                    <img id="notif-logo" src="/account/f-assets/solid/bell.svg" class="h-6 w-6" alt="">
+                    <span id="notif-new-indicator" class="absolute right-1 top-1 hidden min-h-4 min-w-4 items-center justify-center rounded-full bg-blue-600 px-1 text-[10px] font-bold text-white"></span>
                 </button>
+                <img id="company-logo" src="/account/f-assets/solid/drivers_ed_logo-no-bg.png" class="h-8 w-auto object-contain" alt="Driver's Ed">
             </div>
-            <div id="payment-method-table" class="p-4"></div>
-        </div>
-        <%# //cotent %>
-            <div id="myModal" class="fixed inset-0 z-50 items-center justify-center hidden bg-gray-900 bg-opacity-50">
-                <div class="relative bg-white rounded-lg shadow-lg min-w-screen-md max-w-screen-md p-6">
-                    <span
-                        class="close absolute top-0 right-2 text-3xl font-semibold text-gray-700 hover:text-gray-900 cursor-pointer ">&times;</span>
-                    <h2 class="text-xl font-semibold">Payment Method Details</h2>
-                    <p id="modal-details" class="mt-4">the details</p>
+            <div id="right-side" class="text-right">
+                <p class="text-xs font-semibold uppercase tracking-[.18em] text-slate-400">Admin workspace</p>
+                <h1 class="text-base font-bold text-[#0B2D4A] md:text-lg">Dashboard</h1>
+            </div>
+        </header>
+
+        <section id="content" class="mx-auto w-full max-w-[1500px] px-5 pb-12 pt-6 md:px-8">
+            <div class="mb-6 flex flex-col justify-between gap-4 md:flex-row md:items-end">
+                <div>
+                    <p class="mb-1 text-xs font-semibold uppercase tracking-[.2em] text-[#1976D2]">Operations overview</p>
+                    <h2 class="text-3xl font-bold tracking-tight text-[#0B2D4A]">Dashboard</h2>
+                    <p class="mt-1 text-sm text-slate-500">Monitor applicants, training activity, and daily operations.</p>
+                </div>
+                <div id="time-and-notes" class="admin-card flex items-center gap-5 px-4 py-3">
+                    <div><p class="text-[10px] font-bold uppercase tracking-[.16em] text-slate-400">Today</p><div id="date" class="mt-1 text-sm font-bold text-[#0B2D4A]"></div></div>
+                    <div class="border-l border-slate-200 pl-5"><p class="text-[10px] font-bold uppercase tracking-[.16em] text-slate-400">Live time</p><div id="clock" class="mt-1 text-xl font-extrabold text-[#1976D2]"></div></div>
                 </div>
             </div>
-    </div>
-    <%# //main-content %>
-        <script type="module" src="/account/utils/f-webCryptoKeys.js"></script>
-        <script type="module" src="/account/utils/f-keyManager.js"></script>
-        <script type="module" src="/account/utils/modal-feedback.js"></script>
-        <script type="module" src="/account/utils/file-helper.js"></script>
 
-        <script>
+            <div class="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                <a class="admin-stat p-5" href="/account/manage-people"><div class="mb-5 flex items-start justify-between"><div><p class="text-xs font-bold uppercase tracking-wide text-slate-400">Users</p><p class="mt-1 text-sm font-semibold text-[#0B2D4A]">New accounts</p></div><span class="rounded-lg bg-blue-50 px-2.5 py-1 text-xs font-bold text-[#1976D2]">All time</span></div><div class="grid grid-cols-3 divide-x divide-slate-100 text-center"><div><p class="text-[10px] uppercase text-slate-400">Month</p><p class="admin-stat-value mt-2"><%= dashboardCounts.newApplicants.month %></p></div><div><p class="text-[10px] uppercase text-slate-400">Year</p><p class="admin-stat-value mt-2"><%= dashboardCounts.newApplicants.year %></p></div><div><p class="text-[10px] uppercase text-slate-400">All</p><p class="admin-stat-value mt-2"><%= dashboardCounts.newApplicants.all %></p></div></div></a>
+                <a class="admin-stat p-5" href="/account/applicants"><div class="mb-5 flex items-start justify-between"><div><p class="text-xs font-bold uppercase tracking-wide text-slate-400">Applicants</p><p class="mt-1 text-sm font-semibold text-[#0B2D4A]">Accepted applicants</p></div><span class="rounded-lg bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700">Approved</span></div><div class="grid grid-cols-3 divide-x divide-slate-100 text-center"><div><p class="text-[10px] uppercase text-slate-400">Month</p><p class="admin-stat-value mt-2"><%= dashboardCounts.acceptedApplicants.month %></p></div><div><p class="text-[10px] uppercase text-slate-400">Year</p><p class="admin-stat-value mt-2"><%= dashboardCounts.acceptedApplicants.year %></p></div><div><p class="text-[10px] uppercase text-slate-400">All</p><p class="admin-stat-value mt-2"><%= dashboardCounts.acceptedApplicants.all %></p></div></div></a>
+                <a class="admin-stat p-5" href="/account/completed-course"><div class="mb-5 flex items-start justify-between"><div><p class="text-xs font-bold uppercase tracking-wide text-slate-400">Completed</p><p class="mt-1 text-sm font-semibold text-[#0B2D4A]">Finished applicants</p></div><span class="rounded-lg bg-amber-50 px-2.5 py-1 text-xs font-bold text-amber-700">Finished</span></div><div class="grid grid-cols-3 divide-x divide-slate-100 text-center"><div><p class="text-[10px] uppercase text-slate-400">Month</p><p class="admin-stat-value mt-2"><%= dashboardCounts.finishedApplicants.month %></p></div><div><p class="text-[10px] uppercase text-slate-400">Year</p><p class="admin-stat-value mt-2"><%= dashboardCounts.finishedApplicants.year %></p></div><div><p class="text-[10px] uppercase text-slate-400">All</p><p class="admin-stat-value mt-2"><%= dashboardCounts.finishedApplicants.all %></p></div></div></a>
+                <a class="admin-stat p-5" href="/account/attendance"><div class="mb-5 flex items-start justify-between"><div><p class="text-xs font-bold uppercase tracking-wide text-slate-400">Training</p><p class="mt-1 text-sm font-semibold text-[#0B2D4A]">TDC takers</p></div><span class="rounded-lg bg-blue-50 px-2.5 py-1 text-xs font-bold text-[#1976D2]">TDC</span></div><div class="grid grid-cols-3 divide-x divide-slate-100 text-center"><div><p class="text-[10px] uppercase text-slate-400">Month</p><p class="admin-stat-value mt-2"><%= dashboardCounts.tdcTakers.month %></p></div><div><p class="text-[10px] uppercase text-slate-400">Year</p><p class="admin-stat-value mt-2"><%= dashboardCounts.tdcTakers.year %></p></div><div><p class="text-[10px] uppercase text-slate-400">All</p><p class="admin-stat-value mt-2"><%= dashboardCounts.tdcTakers.all %></p></div></div></a>
+                <a class="admin-stat p-5" href="/account/attendance"><div class="mb-5 flex items-start justify-between"><div><p class="text-xs font-bold uppercase tracking-wide text-slate-400">Training</p><p class="mt-1 text-sm font-semibold text-[#0B2D4A]">PDC takers</p></div><span class="rounded-lg bg-indigo-50 px-2.5 py-1 text-xs font-bold text-indigo-700">PDC</span></div><div class="grid grid-cols-3 divide-x divide-slate-100 text-center"><div><p class="text-[10px] uppercase text-slate-400">Month</p><p class="admin-stat-value mt-2"><%= dashboardCounts.pdcTakers.month %></p></div><div><p class="text-[10px] uppercase text-slate-400">Year</p><p class="admin-stat-value mt-2"><%= dashboardCounts.pdcTakers.year %></p></div><div><p class="text-[10px] uppercase text-slate-400">All</p><p class="admin-stat-value mt-2"><%= dashboardCounts.pdcTakers.all %></p></div></div></a>
+                <a class="admin-stat p-5" href="/account/vehicles"><div class="mb-5 flex items-start justify-between"><div><p class="text-xs font-bold uppercase tracking-wide text-slate-400">Fleet</p><p class="mt-1 text-sm font-semibold text-[#0B2D4A]">Owned vehicles</p></div><span class="rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-600">Fleet</span></div><p class="admin-stat-value text-center"><%= dashboardCounts.ownedVehicles %></p><p class="mt-3 text-center text-xs text-slate-400">Total vehicles in the fleet</p></a>
+            </div>
 
-            document.addEventListener('DOMContentLoaded', async () => {
-                console.log('Page loaded, checking admin dashboard access');
+            <section class="admin-card mb-6 p-5 md:p-6">
+                <div class="mb-4 flex flex-col justify-between gap-3 sm:flex-row sm:items-center"><div><p class="text-xs font-bold uppercase tracking-[.18em] text-[#1976D2]">Applicant activity</p><h3 class="mt-1 text-xl font-bold text-[#0B2D4A]">New applicants</h3><p class="mt-1 text-sm text-slate-500">Track daily applicant volume by month.</p></div><div class="flex gap-2"><button id="prevMonth" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-[#0B2D4A] hover:border-[#1976D2]">Previous</button><button id="nextMonth" class="rounded-lg bg-[#1976D2] px-3 py-2 text-xs font-bold text-white hover:bg-[#0B2D4A]">Next</button></div></div>
+                <div class="min-h-[250px] rounded-xl bg-slate-50 p-3"><canvas id="applicantsChart" width="940" height="250"></canvas></div>
+            </section>
 
-                try {
-                    // Load the external script after successful authentication
-                    const indexScript = document.createElement('script');
-                    indexScript.src = '/account/f-jsfiles/admin-dashboard.js';
-                    indexScript.type = "module";
-                    document.body.appendChild(indexScript);
+            <section class="mb-6"><div class="mb-4"><p class="text-xs font-bold uppercase tracking-[.18em] text-[#1976D2]">Today</p><h3 class="mt-1 text-xl font-bold text-[#0B2D4A]">Instructor schedule</h3><p class="mt-1 text-sm text-slate-500">See scheduled applicants and instructor availability.</p></div><div id="instructor-schedules" class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3"></div></section>
 
-                    const sidebarScript = document.createElement('script');
-                    sidebarScript.src = '/account/f-jsfiles/sidebar.js';
-                    document.body.appendChild(sidebarScript);
-
-                } catch (error) {
-                    console.error('Authorization error:', error);
-                    alert("You are not authorized to view this page.");
-                    window.location.href = '/account/adminlogin'; // Redirect to login if not authorized
-                }
-            });
-
-        </script>
+            <section class="admin-card p-5 md:p-6"><div class="mb-4 flex flex-col justify-between gap-3 sm:flex-row sm:items-center"><div><p class="text-xs font-bold uppercase tracking-[.18em] text-[#1976D2]">Configuration</p><h3 class="mt-1 text-xl font-bold text-[#0B2D4A]">Payment methods</h3><p class="mt-1 text-sm text-slate-500">Manage the payment options shown to users.</p></div><div id="notification" class="hidden notification"></div><button id="add-payment-method-button" class="flex items-center gap-2 rounded-lg bg-[#1976D2] px-3 py-2 text-sm font-bold text-white hover:bg-[#0B2D4A]"><img src="/account/f-assets/solid/white/plus.svg" class="h-5 w-5" alt=""><span>Add payment method</span></button></div><div id="payment-method-table" class="overflow-x-auto"></div></section>
+        </section>
+    </main>
+    <div id="myModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/50 p-4"><div class="relative w-full max-w-lg rounded-2xl bg-white p-5 shadow-xl md:p-6"><button class="close absolute right-4 top-3 text-2xl text-slate-400" aria-label="Close">&times;</button><h2 class="text-xl font-bold text-[#0B2D4A]">Payment method details</h2><div id="modal-details" class="mt-4"></div></div></div>
+    <script type="module" src="/account/utils/f-webCryptoKeys.js"></script>
+    <script type="module" src="/account/utils/f-keyManager.js"></script>
+    <script type="module" src="/account/utils/modal-feedback.js"></script>
+    <script type="module" src="/account/utils/file-helper.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const dashboardScript = document.createElement('script');
+            dashboardScript.src = '/account/f-jsfiles/admin-dashboard.js';
+            dashboardScript.type = 'module';
+            document.body.appendChild(dashboardScript);
+            const sidebarScript = document.createElement('script');
+            sidebarScript.src = '/account/f-jsfiles/sidebar.js';
+            document.body.appendChild(sidebarScript);
+        });
+    </script>
 </body>
-
 </html>

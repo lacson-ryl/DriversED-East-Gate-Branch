@@ -38,32 +38,23 @@ const formatDate = (value) => new Date(value).toLocaleString();
 function renderTickets() {
   if (!state.tickets.length) {
     ticketList.innerHTML =
-      '<p class="p-4 text-sm text-slate-500">No tickets yet.</p>';
+      '<p class="p-5 text-sm text-slate-500">No tickets yet.</p>';
     return;
   }
 
-  const rows = state.tickets
-    .map((ticket) => `<tr data-id="${ticket.id}" tabindex="0" role="button" class="ticket-row cursor-pointer border-b hover:bg-sky-50 focus:bg-sky-50 focus:outline-none ${state.ticket?.id === ticket.id ? "bg-sky-50" : ""}">
-          <td class="px-3 py-3 font-semibold">${escapeHtml(ticket.title)}</td>
-          <td class="px-3 py-3"><span class="rounded-full bg-sky-100 px-2 py-1 text-xs font-semibold uppercase text-sky-800">${escapeHtml(ticket.type)}</span></td>
-          <td class="px-3 py-3 text-sm text-slate-600">${escapeHtml(ticket.creatorName || "—")}</td>
-          <td class="px-3 py-3 text-sm text-slate-600">${escapeHtml(ticket.answeredByName || "Unanswered")}</td>
-          <td class="px-3 py-3 text-right text-xs text-slate-500">${formatDate(ticket.createdAt)}</td>
-        </tr>`)
+  const cards = state.tickets
+    .map(
+      (
+        ticket,
+      ) => `<button type="button" data-id="${ticket.id}" class="ticket-row w-full border-b border-slate-100 p-4 text-left transition hover:bg-blue-50 focus:bg-blue-50 focus:outline-none ${state.ticket?.id === ticket.id ? "bg-blue-50 ring-inset ring-2 ring-blue-100" : ""}">
+          <div class="flex items-start justify-between gap-3"><strong class="truncate text-sm text-[#0B2D4A]">${escapeHtml(ticket.title)}</strong><span class="rounded-full bg-blue-50 px-2 py-1 text-[10px] font-bold uppercase text-blue-700">${escapeHtml(ticket.type)}</span></div>
+          <p class="mt-2 text-xs text-slate-500">Created by ${escapeHtml(ticket.creatorName || "You")}</p>
+          <p class="mt-1 text-xs text-slate-400">${escapeHtml(ticket.answeredByName || "Unanswered")} · ${formatDate(ticket.createdAt)}</p>
+        </button>`,
+    )
     .join("");
 
-  ticketList.innerHTML = `<div class="overflow-x-auto"><table class="w-full min-w-[620px] table-fixed text-left text-sm">
-      <thead class="border-b bg-slate-50 text-xs uppercase text-slate-500">
-        <tr>
-          <th class="w-2/5 px-3 py-3">Title</th>
-          <th class="w-1/6 px-3 py-3">Type</th>
-          <th class="w-1/6 px-3 py-3">Created by</th>
-          <th class="w-1/6 px-3 py-3">Answered by</th>
-          <th class="w-1/6 px-3 py-3 text-right">Created</th>
-        </tr>
-      </thead>
-      <tbody>${rows}</tbody>
-    </table></div>`;
+  ticketList.innerHTML = cards;
 }
 
 ticketList.addEventListener("click", (event) => {
@@ -81,12 +72,7 @@ ticketList.addEventListener("keydown", (event) => {
 
 function renderMessage(message) {
   const staffMessage = message.senderRole === "admin";
-  return `<div data-message-id="${message.id}" class="border-b p-3 ${staffMessage ? "bg-red-50" : "even:bg-slate-50"}">
-    <div class="flex items-start justify-between gap-3">
-      <div class="w-full"><div class="text-xs font-semibold text-slate-600">${escapeHtml(message.senderName || message.senderRole)}</div>
-      <div class="mt-1 inline-block max-w-[85%] rounded-lg px-3 py-2 text-left text-sm ${staffMessage ? "border border-amber-400 bg-red-600 text-white" : "bg-slate-100"}">${escapeHtml(message.text)}</div>
-      <div class="mt-1 text-xs text-slate-400">${formatDate(message.createdAt)}</div></div>
-    </div></div>`;
+  return `<div data-message-id="${message.id}" class="flex w-full min-w-0 ${staffMessage ? "justify-start" : "justify-end"}"><div class="flex min-w-0 max-w-[76%] flex-col ${staffMessage ? "items-start" : "items-end"}"><p class="mb-1 max-w-full text-[10px] font-semibold text-slate-400">${escapeHtml(message.senderName || message.senderRole)}</p><div class="chat-new-message ${staffMessage ? "chat-new-message--staff" : "chat-new-message--user"}">${escapeHtml(message.text)}</div><p class="mt-1 max-w-full text-[10px] text-slate-400">${formatDate(message.createdAt)}</p></div></div>`;
 }
 
 function appendMessages(messages, prepend = false) {
@@ -135,7 +121,7 @@ async function selectTicket(id) {
   state.offset = 0;
   state.hasMore = true;
   state.loading = false;
-  header.textContent = `${state.ticket.title} (${state.ticket.type})`;
+  header.innerHTML = `<div class="flex items-center justify-between gap-3"><div><h2 class="font-bold text-[#0B2D4A]">${escapeHtml(state.ticket.title)}</h2><p class="mt-1 text-xs text-slate-500">${escapeHtml(state.ticket.type)} · ${formatDate(state.ticket.createdAt)}</p></div><span class="rounded-full bg-slate-100 px-2 py-1 text-xs text-slate-600">${escapeHtml(state.ticket.answeredByName || "Open")}</span></div>`;
   input.disabled = false;
   form.querySelector("button").disabled = false;
   renderTickets();
@@ -150,13 +136,16 @@ async function loadTickets() {
   const response = await fetch("/account/api/tickets");
   if (!response.ok) {
     const error = await response.json().catch(() => ({}));
-    throw new Error(error.error || `Unable to load tickets (${response.status}).`);
+    throw new Error(
+      error.error || `Unable to load tickets (${response.status}).`,
+    );
   }
   state.tickets = await response.json();
   renderTickets();
   if (!state.tickets.length) {
     header.textContent = "No tickets yet";
-    messageList.innerHTML = '<p class="p-4 text-slate-500">Create or select a ticket to start chatting.</p>';
+    messageList.innerHTML =
+      '<p class="p-4 text-slate-500">Create or select a ticket to start chatting.</p>';
   }
 }
 

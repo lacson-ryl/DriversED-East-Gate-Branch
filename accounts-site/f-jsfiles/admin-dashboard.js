@@ -5,7 +5,7 @@ import {
   showBtnLoading,
   showBtnResult,
 } from "../utils/modal-feedback.js";
-import { openFileViewer } from "../utils/file-helper.js";
+import { openFileViewer, inputImageOnlyCheck } from "../utils/file-helper.js";
 
 //start clock of admin dashboard
 function updateClock() {
@@ -56,7 +56,7 @@ let chart;
 const fetchMonthYear = async (monthName, currYear) => {
   try {
     const response = await fetch(
-      `/account/api/admin-dashboard-time/${monthName}/${currYear}`
+      `/account/api/admin-dashboard-time/${monthName}/${currYear}`,
     );
     const data = await response.json();
     return data;
@@ -159,7 +159,9 @@ let dashboardDetails;
 
 async function fetchDashboardDetails() {
   try {
-    const response = await fetch("/account/api/admin-dashboard/dashboard-details");
+    const response = await fetch(
+      "/account/api/admin-dashboard/dashboard-details",
+    );
     if (!response.ok) {
       const errorData = await response.json();
       console.error("Error fetching dashboard details:", errorData);
@@ -240,7 +242,7 @@ async function renderPaymentMethodsList() {
                   }">Delete</button>
                 </td>
               </tr>
-            `
+            `,
           )
           .join("")}
       </tbody>
@@ -275,7 +277,7 @@ async function renderInstructorsSchedule() {
 
   if (allDatesNull) {
     instructorsSchedules.innerHTML = errorBox(
-      "No schedule for instructors today"
+      "No schedule for instructors today",
     );
     return;
   }
@@ -336,7 +338,7 @@ function paymentButtons(methodList) {
       event.preventDefault();
 
       const modalform = `
-        <form id="add-payment-method-form" class="w-96">
+        <form id="add-payment-method-form" class="w-full max-w-md space-y-1">
           <div class="mb-4">
             <h3 class="text-xl font-semibold mb-3">Method Name</h3>
             <input type="text" id="method-name" name="methodName" class="w-full outline outline-1 outline-gray-300 rounded-md text-lg px-1" placeholder="Enter Method Name" />
@@ -358,9 +360,12 @@ function paymentButtons(methodList) {
 
       modalDetails.innerHTML = modalform;
       modal.style.display = "flex";
+      const methodInput = document.getElementById("method-file");
+
+      methodInput.addEventListener("change", inputImageOnlyCheck);
 
       const methodSubmitBtn = document.getElementById(
-        "payment-method-submit-button"
+        "payment-method-submit-button",
       );
 
       // Event listener for the form submission
@@ -406,7 +411,7 @@ function paymentButtons(methodList) {
       const filteredMethod = filterMethodList(methodList, methodId);
       const modalForm = filteredMethod.map(
         (arr) => `
-        <form id="edit-payment-method-form" class="w-96">
+        <form id="edit-payment-method-form" class="w-full max-w-md space-y-1">
           <div class="mb-4">
             <h3 class="text-xl font-semibold mb-3">Method Name</h3>
             <input type="text" id="method-name" name="method-name" value="${
@@ -426,14 +431,14 @@ function paymentButtons(methodList) {
           </div>
           <button id="edit-payment-method-submit-button" type="submit" class="bg-blue-800 text-white rounded-md px-2">Submit</button>
         </form>
-      `
+      `,
       );
 
       modalDetails.innerHTML = modalForm;
       modal.style.display = "flex";
 
       const editSumbitBtn = document.getElementById(
-        "edit-payment-method-submit-button"
+        "edit-payment-method-submit-button",
       );
 
       document
@@ -456,14 +461,14 @@ function paymentButtons(methodList) {
               showBtnResult(editSumbitBtn, true);
               showNotification(
                 "Payment Method changed successfully!",
-                "success"
+                "success",
               );
               renderPaymentMethodsList();
             } else {
               showBtnResult(editSumbitBtn, false);
               showNotification(
                 "Can't change Payment Method right now!",
-                "error"
+                "error",
               );
             }
           } catch (error) {
@@ -486,7 +491,7 @@ function paymentButtons(methodList) {
       }
 
       modalDetails.innerHTML = `
-        <form id="upload-file-form" class="min-w-96">
+        <form id="upload-file-form" class="w-full max-w-md space-y-1">
           <div class="mb-4">
             <h3 class="text-lg font-semibold mb-3">Upload File for Method ID: ${methodId}</h3>
             <input type="file" id="method-file" name="method-file" accept="image/*" class="w-full rounded-md text-lg px-1" />
@@ -495,6 +500,9 @@ function paymentButtons(methodList) {
         </form>
       `;
       modal.style.display = "flex";
+      const methodInput = document.getElementById("method-file");
+
+      methodInput.addEventListener("change", inputImageOnlyCheck);
       const fileSubmitBtn = document.getElementById("file-submit-button");
 
       document
@@ -509,11 +517,14 @@ function paymentButtons(methodList) {
           const encrypting = await encryptData(formData);
           showBtnLoading(fileSubmitBtn);
           try {
-            const response = await fetch(`/account/api/payment-methods/upload`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ encryptedWithEncAesKey: encrypting }),
-            });
+            const response = await fetch(
+              `/account/api/payment-methods/upload`,
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ encryptedWithEncAesKey: encrypting }),
+              },
+            );
             if (response.ok) {
               showBtnResult(fileSubmitBtn, true);
               alert("File uploaded successfully!");
@@ -578,13 +589,16 @@ function paymentButtons(methodList) {
           "click",
           async () => {
             try {
-              const response = await fetch(`/account/api/payment-methods/${methodId}`, {
-                method: "DELETE",
-                headers: {
-                  "Content-Type": "application/json",
-                  "x-delete-token": data.deleteToken,
+              const response = await fetch(
+                `/account/api/payment-methods/${methodId}`,
+                {
+                  method: "DELETE",
+                  headers: {
+                    "Content-Type": "application/json",
+                    "x-delete-token": data.deleteToken,
+                  },
                 },
-              });
+              );
               if (response.ok) {
                 tokenIndicator.innerText = `Successfully Deleted Method ID no. ${methodId}`;
                 renderPaymentMethodsList();
@@ -603,7 +617,7 @@ function paymentButtons(methodList) {
               }, 3000);
             }
           },
-          { once: true }
+          { once: true },
         );
       }
       tokenIndicator.classList.remove("animate-pulse");

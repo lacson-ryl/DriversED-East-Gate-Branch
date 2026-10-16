@@ -552,11 +552,10 @@ router.get("/login-success", authenticateToken, (req, res) => {
 
 router.get("/user-registration-form", (req, res) => {
   try {
-    res.render("user-registration-form");
+    res.render("user-auth", { authMode: "register", isRegister: true });
   } catch (error) {
-    res.render("error-500", {
-      error,
-    });
+    console.error("Internal Server Error", error);
+    res.render("error-500", { error });
   }
 });
 
@@ -597,10 +596,30 @@ router.post(
       } = await decryptData(encryptedWithEncAesKey, userId, role);
 
       const profilePicture =
-        profile_picture !== null ? profile_picture.buffer : null;
+        profile_picture !== null
+          ? await sharp(profile_picture.buffer)
+              .resize(400, 400, {
+                fit: "cover",
+                position: "center",
+              })
+              .jpeg({
+                quality: 50,
+                mozjpeg: true,
+              })
+              .toBuffer()
+          : null;
       const idCard =
         identification_card_picture !== null
-          ? identification_card_picture.buffer
+          ? await sharp(identification_card_picture.buffer)
+              .resize(1600, 1600, {
+                fit: "inside",
+                withoutEnlargement: true,
+              })
+              .jpeg({
+                quality: 70,
+                mozjpeg: true,
+              })
+              .toBuffer()
           : null;
 
       await uploadProfile(
@@ -864,12 +883,10 @@ router.post("/api/user-registration", async (req, res) => {
 
 router.get("/user-login", async (req, res) => {
   try {
-    res.render("user-login");
+    res.render("user-auth", { authMode: "login", isRegister: false });
   } catch (error) {
     console.error("Internal Server Error", error);
-    res.render("error-500", {
-      error,
-    });
+    res.render("error-500", { error });
   }
 });
 
@@ -1218,12 +1235,26 @@ router.get(
   authorizeRole("user"),
   async (req, res) => {
     try {
-      res.render("user-programs");
+      res.render("user-program-new");
     } catch (error) {
       console.error("Internal Server Error", error);
       res.render("error-500", {
         error,
       });
+    }
+  },
+);
+
+router.get(
+  "/user-program-new",
+  authenticateToken,
+  authorizeRole("user"),
+  (req, res) => {
+    try {
+      res.render("user-program-new");
+    } catch (error) {
+      console.error("Internal Server Error", error);
+      res.render("error-500", { error });
     }
   },
 );
@@ -1310,14 +1341,13 @@ router.get(
   "/user-chatbox",
   authenticateToken,
   authorizeRole("user"),
-  (req, res) => res.render("user-chatbox"),
+  (req, res) => res.render("chatbox-new", { chatRole: "user" }),
 );
-
 router.get(
   "/admin-chatbox",
   authenticateToken,
   authorizeRole("admin"),
-  (req, res) => res.render("admin-chatbox"),
+  (req, res) => res.render("chatbox-new", { chatRole: "admin" }),
 );
 
 router.get(
@@ -1576,13 +1606,26 @@ router.get(
 
 router.get("/user-payments", authenticateToken, (req, res) => {
   try {
-    res.render("user-payment");
+    res.render("user-payment-new");
   } catch (error) {
     res.render("error-500", {
       error,
     });
   }
 });
+
+router.get(
+  "/user-payment-new",
+  authenticateToken,
+  authorizeRole("user"),
+  (req, res) => {
+    try {
+      res.render("user-payment-new");
+    } catch (error) {
+      res.render("error-500", { error });
+    }
+  },
+);
 
 router.get(
   "/api/user-payments/list",
@@ -3146,7 +3189,15 @@ router.get(
   async (req, res) => {
     try {
       const { monthyear } = req.query;
-      const paymentList = await getPaymentsLogs(monthyear);
+      const payments = await getPaymentsLogs(monthyear);
+      const paymentList = await Promise.all(
+        payments.map(async (row) => ({
+          ...row,
+          screenshot_receipt: await renderBase64File(
+            row.screenshot_receipt,
+          ),
+        })),
+      );
       res.status(200).json(paymentList);
     } catch (error) {
       res.status(500).json({ error: "Internal Server Error" });
@@ -4783,6 +4834,7 @@ app.post(
 
       if (type === "database") {
         const user = await getProfilewithUserId(userId);
+        console.log("user", user);
 
         await saveCertificateToDatabase(
           courseId,

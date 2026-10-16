@@ -4,94 +4,458 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <title>Attendance for Trainees</title>
+
     <link href="/account/f-css/output.css" rel="stylesheet">
 
+    <style>
+        /* =========================================
+           ATTENDANCE PAGE ONLY
+           Does NOT modify the sidebar
+        ========================================= */
+
+        #attendance-page {
+            min-height: calc(100vh - 60px);
+            background: #f4f7fb;
+        }
+
+        .attendance-page-header {
+            background: linear-gradient(135deg, #ffffff 0%, #f7fbff 100%);
+            border: 1px solid #e5edf6;
+        }
+
+        .attendance-filter-card {
+            background: #ffffff;
+            border: 1px solid #e4ebf3;
+            box-shadow: 0 4px 18px rgba(15, 23, 42, 0.04);
+        }
+
+        .attendance-type-btn {
+            transition:
+                background-color 0.2s ease,
+                color 0.2s ease,
+                box-shadow 0.2s ease,
+                transform 0.2s ease;
+        }
+
+        .attendance-type-btn:hover {
+            transform: translateY(-1px);
+        }
+
+        .attendance-type-btn.active {
+            background: #075985;
+            color: #ffffff;
+            box-shadow: 0 4px 12px rgba(7, 89, 133, 0.22);
+        }
+
+        .attendance-type-btn:not(.active) {
+            background: #f0f7fc;
+            color: #075985;
+        }
+
+        .attendance-date-section {
+            border: 1px solid #e3ebf4;
+            background: #ffffff;
+            border-radius: 14px;
+            overflow: hidden;
+            margin-bottom: 12px;
+            box-shadow: 0 2px 10px rgba(15, 23, 42, 0.035);
+        }
+
+        .attendance-date-header {
+            width: 100%;
+            border: none;
+            background: #e8f4fc;
+            color: #075985;
+            min-height: 54px;
+            transition:
+                background-color 0.2s ease,
+                color 0.2s ease;
+        }
+
+        .attendance-date-header:hover {
+            background: #dceefa;
+        }
+
+        .attendance-date-header.expanded {
+            background: #0c82c6;
+            color: #ffffff;
+        }
+
+        .attendance-date-content {
+            display: none;
+            background: #ffffff;
+        }
+
+        .attendance-date-content.expanded {
+            display: block;
+            animation: attendanceExpand 0.18s ease-out;
+        }
+
+        @keyframes attendanceExpand {
+            from {
+                opacity: 0;
+                transform: translateY(-4px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .attendance-chevron {
+            transition: transform 0.2s ease;
+        }
+
+        .attendance-chevron.rotated {
+            transform: rotate(180deg);
+        }
+
+        .attendance-table-wrapper {
+            overflow-x: auto;
+        }
+
+        .attendance-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+
+        .attendance-table thead th {
+            background: #f7fafd;
+            color: #64748b;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            white-space: nowrap;
+            padding: 13px 12px;
+            border-bottom: 1px solid #e5edf5;
+        }
+
+        .attendance-table tbody td {
+            padding: 13px 12px;
+            border-bottom: 1px solid #edf2f7;
+            color: #334155;
+            font-size: 13px;
+            white-space: nowrap;
+        }
+
+        .attendance-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .attendance-table tbody tr {
+            transition: background-color 0.15s ease;
+        }
+
+        .attendance-table tbody tr:hover {
+            background: #f8fbfe;
+        }
+
+        .attendance-status {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 74px;
+            padding: 5px 10px;
+            border-radius: 999px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .attendance-status-present {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .attendance-status-absent {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .attendance-status-pending {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .attendance-delete-btn {
+            width: 34px;
+            height: 34px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 9px;
+            background: #fff1f2;
+            transition: all 0.2s ease;
+        }
+
+        .attendance-delete-btn:hover {
+            background: #ffe4e6;
+            transform: translateY(-1px);
+        }
+
+        .attendance-delete-btn img {
+            width: 17px;
+            height: 17px;
+        }
+
+        .attendance-mobile-card {
+            background: #ffffff;
+            border: 1px solid #e5edf5;
+            border-radius: 12px;
+            padding: 14px;
+            margin: 10px;
+        }
+
+        .attendance-mobile-label {
+            color: #94a3b8;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+        }
+
+        .attendance-mobile-value {
+            color: #334155;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .attendance-empty {
+            border: 1px dashed #cbd5e1;
+            background: #ffffff;
+            border-radius: 14px;
+        }
+
+        /* Modal redesign */
+        #myModal {
+            backdrop-filter: blur(3px);
+        }
+
+        #myModal>div {
+            width: min(94%, 520px);
+            min-width: 0 !important;
+            max-width: 520px !important;
+            border-radius: 18px;
+            border: 1px solid #e5edf5;
+        }
+
+        #title-details {
+            color: #0f172a;
+        }
+
+        #modal-details {
+            color: #475569;
+        }
+    </style>
 </head>
 
-<body class="flex flex-row w-full">
-    <div id="sidebar-container">
-    </div>
-    <div id="main-content" class="block ml-ml-250 w-calc animate-fadeIn space-y-2">
-        <div id="top-bar" class="flex h-15 flex-row w-full sticky shadow-inner bg-white border-b-2 p-4">
-            <div id="left-side" class="flex flex-row gap-4 relative">
-                <div>
-                    <button id="notif-button" class="relative">
-                        <img id="notif-logo" src="/account/f-assets/solid/bell.svg" class="w-7 h-7 inline-block" />
-                        <div id="notif-new-indicator"
-                            class="h-3 w-3 rounded-full bg-blue-900 absolute top-2 right-2 transform translate-x-1/2 -translate-y-1/2 animate-pulse hidden">
-                        </div>
-                    </button>
+<body class="flex flex-row w-full bg-slate-50">
+
+    <!-- DO NOT MODIFY:
+         Existing sidebar is still loaded by sidebar.js -->
+    <div id="sidebar-container"></div>
+
+    <!-- Main Content -->
+    <div id="main-content" class="block ml-ml-250 w-calc animate-fadeIn">
+
+        <!-- Existing top bar -->
+        <header id="top-bar"
+            class="sticky top-0 z-30 flex min-h-[60px] items-center justify-between border-b border-slate-200 bg-white/95 px-5 py-3 shadow-sm backdrop-blur md:px-8">
+            <div id="left-side" class="flex items-center gap-4">
+                <button id="notif-button"
+                    class="relative rounded-xl p-2 transition hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    aria-label="Open notifications">
+                    <img id="notif-logo" src="/account/f-assets/solid/bell.svg" class="h-6 w-6" alt="">
+                    <span id="notif-new-indicator"
+                        class="absolute right-1 top-1 hidden min-h-4 min-w-4 items-center justify-center rounded-full bg-blue-600 px-1 text-[10px] font-bold text-white"></span>
+                </button>
+                <img id="company-logo" src="/account/f-assets/solid/drivers_ed_logo-no-bg.png"
+                    class="h-8 w-auto object-contain" alt="Driver's Ed">
+            </div>
+            <div id="right-side" class="text-right">
+                <p class="text-xs font-semibold uppercase tracking-[.18em] text-slate-400">Admin workspace</p>
+                <h1 class="text-base font-bold text-[#0B2D4A] md:text-lg">Manage Attendance</h1>
+            </div>
+        </header>
+
+
+        <!-- Attendance page -->
+        <main id="attendance-page" class="w-full px-3 sm:px-5 lg:px-7 py-5">
+
+            <!-- Page heading -->
+            <section class="attendance-page-header rounded-2xl px-5 py-5 md:px-7 md:py-6 mb-5">
+
+                <div class="flex flex-col gap-1">
+
+                    <p class="text-xs font-bold tracking-widest text-sky-600 uppercase">
+                        Attendance Management
+                    </p>
+
+                    <h1 class="text-2xl md:text-3xl font-bold text-slate-800">
+                        Manage Applicants
+                    </h1>
+
+                    <p class="text-sm text-slate-500 max-w-2xl">
+                        View, filter, and manage trainee attendance records for PDC and TDC applicants.
+                    </p>
+
                 </div>
-                <img id="company-logo" src="/account/f-assets/solid/drivers_ed_logo-no-bg.png" class="w-20 h-8" />
-            </div>
-            <div id="right-side" class="absolute right-4 text-lg">
-                Attendance
-            </div>
-        </div>
 
-        <div id="content" class="flex flex-col w-full">
-            <div class="flex w-full justify-between pr-4 my-2">
-                <h2 class="text-lg ml-4 my-2"> Manage Applicants</h2>
+            </section>
 
-                <div id="center-side" class="hidden">
-                    <form id="monthyearfilter">
-                        <div class="flex flex-row gap-4">
-                            <h3 class="flex items-center justify-center">Month / Year</h3>
+
+            <!-- Filters -->
+            <section class="attendance-filter-card rounded-2xl p-4 md:p-5 mb-5">
+
+                <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+
+                    <!-- Month / Year -->
+                    <form id="monthyearfilter" class="flex flex-col sm:flex-row sm:items-end gap-3">
+
+                        <div class="flex flex-col gap-1">
+
+                            <label for="monthyear" class="text-xs font-bold text-slate-500 uppercase tracking-wide">
+                                Month / Year
+                            </label>
+
                             <input type="month" id="monthyear" name="monthyear" min="1976-03"
-                                class="border-b-2 border-b-black " />
-                            <button type="submit" class="px-4 py-2 bg-blue-500 text-white rounded">Filter</button>
+                                class="h-10 rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm text-slate-700 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-100" />
+
                         </div>
+
+                        <button type="submit"
+                            class="h-10 px-5 rounded-lg bg-sky-600 hover:bg-sky-700 text-white text-sm font-semibold transition">
+                            Apply Filter
+                        </button>
+
                     </form>
-                </div>
-                
-                <div class="flex gap-2">
-                    <button id="pdc-takers-btn"
-                        class=" bg-sky-900 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg outline-2 outline-offset-2 outline-sky-800 shadow-outline">
-                        PDC
-                    </button>
-                    <button id="tdc-takers-btn"
-                        class=" bg-sky-900 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg outline-2 outline-offset-2 outline-sky-800 shadow-outline">
-                        TDC
-                    </button>
-                </div>
-            </div>
-            <div id="attendance-table" class="mt-3 mb-5 mx-3 ">
 
+
+                    <!-- PDC / TDC -->
+                    <div class="flex flex-col gap-1">
+
+                        <span class="text-xs font-bold text-slate-500 uppercase tracking-wide">
+                            Training Type
+                        </span>
+
+                        <div class="flex items-center gap-1 p-1 rounded-xl bg-slate-100 w-fit">
+
+                            <button id="pdc-takers-btn" type="button"
+                                class="attendance-type-btn active rounded-lg px-5 py-2 text-sm font-bold">
+                                PDC
+                            </button>
+
+                            <button id="tdc-takers-btn" type="button"
+                                class="attendance-type-btn rounded-lg px-5 py-2 text-sm font-bold">
+                                TDC
+                            </button>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <!-- Attendance records -->
+            <section>
+
+                <div class="flex items-center justify-between px-1 mb-3">
+
+                    <div>
+                        <h2 class="text-base md:text-lg font-bold text-slate-800">
+                            Attendance Records
+                        </h2>
+
+                        <p class="text-xs text-slate-500">
+                            Select a date to view the applicants.
+                        </p>
+                    </div>
+
+                </div>
+
+
+                <div id="attendance-table" class="w-full">
+                </div>
+
+            </section>
+
+        </main>
+
+    </div>
+
+
+    <!-- Modal -->
+    <div id="myModal" class="fixed inset-0 z-50 items-center justify-center hidden bg-slate-900/50 p-4">
+
+        <div class="relative bg-white rounded-xl shadow-xl p-6">
+
+            <button
+                class="close absolute top-3 right-4 text-2xl font-semibold text-slate-400 hover:text-slate-700 cursor-pointer"
+                aria-label="Close">
+                &times;
+            </button>
+
+            <h2 id="title-details" class="text-xl font-bold pr-8">
+                Attendance
+            </h2>
+
+            <div id="modal-details" class="mt-4">
+                The details
             </div>
 
         </div>
+
     </div>
-    <div id="myModal" class="fixed inset-0 z-50 items-center justify-center hidden bg-gray-900 bg-opacity-50">
-        <div class="relative bg-white rounded-lg shadow-lg min-w-96 min-w-screen-lg max-w-screen-lg p-6">
-            <span
-                class="close absolute top-0 right-2 text-3xl font-semibold text-gray-700 hover:text-gray-900 cursor-pointer">&times;</span>
-            <h2 id="title-details" class="text-xl font-semibold">Attendance</h2>
-            <div id="modal-details" class="mt-4">The details</div>
-        </div>
-    </div>
+
+
+    <!-- Existing scripts -->
     <script>
 
         document.addEventListener('DOMContentLoaded', async () => {
+
             console.log('Page loaded, checking admin dashboard access');
 
             try {
+
+                /*
+                 * IMPORTANT:
+                 * Keep the existing sidebar.
+                 * This loads your current sidebar implementation
+                 * without changing its appearance.
+                 */
                 const sidebarScript = document.createElement('script');
                 sidebarScript.src = '/account/f-jsfiles/sidebar.js';
                 document.body.appendChild(sidebarScript);
 
+
+                /*
+                 * Attendance functionality
+                 */
                 const tablesScript = document.createElement('script');
                 tablesScript.src = '/account/f-jsfiles/attendance-pdc-tdc.js';
                 document.body.appendChild(tablesScript);
 
             } catch (error) {
+
                 console.error('Authorization error:', error);
+
                 alert("You are not authorized to view this page.");
-                window.location.href = '/account/adminlogin'; // Redirect to login if not authorized
+
+                window.location.href = '/account/adminlogin';
+
             }
+
         });
 
     </script>
+
 </body>
 
 </html>

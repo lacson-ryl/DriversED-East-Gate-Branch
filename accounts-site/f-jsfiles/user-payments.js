@@ -90,14 +90,14 @@ async function renderUserPaymentsForm() {
           showOperationResult(
             modalDetails,
             false,
-            "Sorry! Can't submit payment right now. Please try again later."
+            "Sorry! Can't submit payment right now. Please try again later.",
           );
         } else {
           titleDetails.innerText = "Success Payment";
           showOperationResult(
             modalDetails,
             true,
-            "Payment Added Successfully!"
+            "Payment Added Successfully!",
           );
           paymentForm.reset();
           renderUserPaymentsList(); // Refresh the payment list
@@ -113,7 +113,7 @@ async function renderUserPaymentsForm() {
         modal.style.display = "flex";
       }
     },
-    { once: true }
+    { once: true },
   );
 
   paymentMethodSelect.addEventListener("change", function (event) {
@@ -137,7 +137,7 @@ async function renderUserPaymentsForm() {
           payMethodPrev.classList.add("animate-pulse");
           setTimeout(
             () => payMethodPrev.classList.remove("animate-pulse"),
-            2000
+            2000,
           );
         }, 500);
       }
@@ -153,6 +153,22 @@ function setupImagePreview(inputId, previewId) {
   if (!input || !preview) return;
   input.addEventListener("change", function (event) {
     const file = event.target.files[0];
+    // ✅ enforce image-only
+    if (!file.type.startsWith("image/")) {
+      alert("Only image files are allowed.");
+      event.target.value = ""; // clear invalid selection
+      preview.src = ""; // reset preview
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      // 5MB
+      alert("File size must be under 5MB.");
+      event.target.value = "";
+      preview.src = "";
+      return;
+    }
+
     if (file) {
       const reader = new FileReader();
       reader.onload = function (e) {
@@ -237,15 +253,15 @@ async function renderUserPaymentsList() {
                   arr.status == "Verified"
                     ? '<div class="text-green-700 hover:font-semibold rounded-md hover ">Verified</div>'
                     : arr.status == "Deny"
-                    ? '<div class="text-red-700 hover:font-semibold rounded-md">Denied</div>'
-                    : '<div class="text-gray-700 hover:font-semibold rounded-md">Verifying</div>'
+                      ? '<div class="text-red-700 hover:font-semibold rounded-md">Denied</div>'
+                      : '<div class="text-gray-700 hover:font-semibold rounded-md">Verifying</div>'
                 }</div>
             </td>
             <td class="text-center text-sm border border-gray-300 px-4 py-2">
               ${arr.date_created}
             </td>
           </tr>
-            `
+            `,
       )
       .join("");
 
@@ -313,8 +329,8 @@ async function renderUserPaymentsList() {
                 arr.status === "Verified"
                   ? "bg-green-100 text-green-700"
                   : arr.status === "Deny"
-                  ? "bg-red-100 text-red-700"
-                  : "bg-gray-100 text-gray-700"
+                    ? "bg-red-100 text-red-700"
+                    : "bg-gray-100 text-gray-700"
               }">
                 ${arr.status}
               </div>
@@ -323,7 +339,7 @@ async function renderUserPaymentsList() {
         </div>
       </td>
     </tr>
-  `
+  `,
       )
       .join("");
 
@@ -409,7 +425,7 @@ function allButtons(data) {
               {
                 method: "POST",
                 body: formData,
-              }
+              },
             );
             const responseData = await response.json();
             const notification = document.getElementById("notification");
@@ -436,11 +452,11 @@ function allButtons(data) {
             console.error("Error uploading Template", error);
             showNotification(
               "An error occurred while uploading Template.",
-              "error"
+              "error",
             ); // Show error notification
           }
         },
-        { once: true }
+        { once: true },
       );
     });
   });

@@ -7,6 +7,8 @@ import {
 
 import { encryptData, decryptData } from "../utils/f-webCryptoKeys.js";
 
+import { inputImageOnlyCheck } from "../utils/file-helper.js";
+
 // Initialize modal and its components
 const modal = document.getElementById("myModal");
 const span = document.getElementsByClassName("close")[0];
@@ -14,7 +16,7 @@ const modalTitle = document.getElementById("modal-title");
 const modalDetails = document.getElementById("modal-details");
 
 const modalForm = `
-    <form id="add-instructor-form" enctype="multipart/form-data" class="w-96">
+    <form id="add-instructor-form" enctype="multipart/form-data" class="w-full max-w-2xl space-y-1">
       <div class="mb-4">
         <h3 class="text-xl font-semibold mb-3">Instructor Name</h3>
         <input type="text" id="instructor-name" name="name" required
@@ -208,7 +210,7 @@ function loadAccountsTable(data) {
         </div>
       </div>
       <h2 class="text-xl place-self-center font-bold">All Accounts</h2>
-      <table class="w-full border border-gray-300 rounded-md overflow-hidden">
+      <table class="min-w-[900px] w-full border border-gray-300 rounded-md overflow-hidden text-sm">
         <thead class="bg-gray-100">
           <tr>
             <th class="px-4 py-2 text-left">ID</th>
@@ -330,12 +332,12 @@ function loadAccountsTable(data) {
 }
 const auditReportBtn = document.getElementById("audit-report-button");
 if (auditReportBtn) {
-  console.log('auditReportBtn is here');
+  console.log("auditReportBtn is here");
   auditReportBtn.addEventListener("click", async function (event) {
     event.preventDefault();
     modalTitle.innerText = "Audit Report";
     modalDetails.innerHTML = `
-      <form id="audit-form" class="w-96">
+      <form id="audit-form" class="w-full max-w-md space-y-1">
         <div class="mb-4">
           <label for="audit-type" class="block text-gray-700 text-sm font-bold mb-2">
             Audit Type
@@ -422,7 +424,7 @@ async function renderInstructorsList() {
 
   if (!response.ok) {
     instructorTable.innerHTML = `
-        <table class="mt-3 mb-5 mx-3 text-left justify-items-center table-fixed border-collapse border-2 border-gray-300">
+        <table class="min-w-[900px] mt-3 mb-5 text-left table-fixed border-collapse border-2 border-gray-300">
           <thead>
             <tr>
               <th class="border border-gray-300 px-4 py-2">Failed to render Instructor Table</th>
@@ -432,7 +434,7 @@ async function renderInstructorsList() {
       `;
   } else if (Object.keys(data).length == 0) {
     instructorTable.innerHTML = `
-        <table class="mt-3 mb-5 mx-3 text-left justify-items-center table-fixed border-collapse border-2 border-gray-300">
+        <table class="min-w-[900px] mt-3 mb-5 text-left table-fixed border-collapse border-2 border-gray-300">
           <thead>
             <tr>
               <th class="border border-gray-300 px-4 py-2">No Instructor added yet.</th>
@@ -491,7 +493,7 @@ async function renderInstructorsList() {
               <span class="text-red-500">${arr.Pag_ibig || 0}</span> |
               <span class="text-yellow-500">${arr.Philhealth || 0}</span>
             </td>
-            <td class="border border-gray-300 px-4 py-2">
+            <td class="border border-gray-300 px-2 py-4 flex flex-col items-center justify-center">
               <button data-id="${
                 arr.instructor_id
               }" class="instructor-weekly-payroll-btn hover:bg-gray-200 hover:outline outline-1 outline-black rounded-md px-2">Weekly</button>
@@ -508,7 +510,7 @@ async function renderInstructorsList() {
                   : `<button data-id="${arr.instructor_id}" class="instructor-assign-account-btn bg-blue-700 hover:bg-gradient-to-t from-sky-400 to-sky-800 text-white rounded-md px-2">Assign</button>`
               }
             </td>
-            <td class="border border-gray-300 px-2 py-2">
+            <td class="border border-gray-300 px-2 py-3 flex flex-col items-center justify-center">
               <button data-id="${
                 arr.instructor_id
               }" class="instructor-edit-btn bg-blue-700 hover:bg-gradient-to-t from-sky-400 to-sky-800 text-white rounded-md px-2">
@@ -527,17 +529,17 @@ async function renderInstructorsList() {
       .join("");
 
     instructorTable.innerHTML = `
-        <table id="manage-people-table" class="w-full text-center justify-items-start table-fixed border-collapse border-2 border-gray-300">
+        <table id="manage-people-table" class=" w-full text-center table-fixed border-collapse border-2 border-gray-300 text-sm">
           <thead>
-            <tr class="text-sm">
-              <th class="border border-gray-300 px-2 py-2 w-12">Photo</th>
+            <tr class="text-sm text-center">
+              <th class="border border-gray-300 px-2 py-2 w-16">Photo</th>
               <th class="border border-gray-300 px-4 py-2">ID - Name - Hourly Pay</th>
               <th class="border border-gray-300 px-4 py-2 w-16">Type</th>
-              <th class="border border-gray-300 px-4 py-2 w-24 text-sm">TDC <hr class="border-0"> Onsite</th>
-              <th class="border border-gray-300 px-4 py-2 w-24">Manual</th>
-              <th class="border border-gray-300 px-4 py-2 w-28">Automatic</th>
+              <th class="border border-gray-300 px-4 py-2 w-20 text-sm">TDC <hr class="border-0"> Onsite</th>
+              <th class="border border-gray-300 px-4 py-2 w-20">Manual</th>
+              <th class="border border-gray-300 px-4 py-2 w-24">Automatic</th>
               <th class="border border-gray-300 px-4 py-2 w-32">Date Started</th>
-              <th class="border border-gray-300 px-4 py-2 text-sm">Benefits <hr class="border border-black"> 
+              <th class="border border-gray-300 px-4 py-2 text-sm w-48">Benefits <hr class="border border-black"> 
                 <span class="text-blue-500">SSS<span> | 
                 <span class="text-red-500">Pagibig<span> | 
                 <span class="text-yellow-500">PhilHealth<span></th>
@@ -618,7 +620,7 @@ function allButton(details) {
 
         modalDetails.innerHTML = `
           <p>Create Account for ${filteredData.instructor_name}?</p>
-          <form id="assign-account-form" class="w-96">
+          <form id="assign-account-form" class="w-full max-w-md space-y-1">
             <div class="mb-4">
               <label for="user_name" class="block text-gray-700 text-sm font-bold mb-2">
                 NAME
@@ -717,7 +719,7 @@ function allButton(details) {
       const data = filterDataById(details, "instructor_id", originalId);
 
       modalDetails.innerHTML = `
-            <form id="edit-instructor-form" enctype="multipart/form-data" class="w-96">
+            <form id="edit-instructor-form" enctype="multipart/form-data" class="w-full max-w-2xl space-y-1">
               <div class="flex flex-row gap-4 mb-4 w-full">
                 <div class="w-32 gap-4 items-center">
                   <img id="profile-picture-preview"
@@ -899,6 +901,7 @@ function allButton(details) {
       const ID = this.getAttribute("data-id");
       const response = await fetch(`/account/api/manage-people/payroll/${ID}`);
       const data = await response.json();
+      console.log("data", data);
 
       if (response.ok) {
         filterPayrollByYear(data);
@@ -1032,6 +1035,7 @@ function setupImagePreview(
   if (!input || !preview) return;
   input.addEventListener("change", function (event) {
     const file = event.target.files[0];
+    inputImageOnlyCheck(event);
     if (file) {
       const reader = new FileReader();
       reader.onload = function (e) {
@@ -1048,6 +1052,7 @@ function renderMonthlyPayrollTable(data) {
   );
   instructorTable.innerHTML = "";
   const details = data;
+  console.log("details", details);
   let tableRows = details
     .map(
       (arr) => `
@@ -1088,15 +1093,15 @@ function renderMonthlyPayrollTable(data) {
     )
     .join("");
   instructorTable.innerHTML = `
-          <table id="monthly-payroll-table" class="w-full text-sm text-center font-normal justify-items-start table-fixed border-collapse border-2 border-gray-300">
+          <table id="monthly-payroll-table" class=" w-full text-sm text-center font-normal table-fixed border-collapse border-2 border-gray-300">
             <thead>
               <tr>
                 <th class="border border-gray-300 px-4 py-2 w-10">ID</th>
-                <th class="border border-gray-300 px-4 py-2">Instructor Name</th>
+                <th class="border border-gray-300 px-4 py-2">Instructor ID</th>
                 <th class="border border-gray-300 px-4 py-2 w-28">Rate / Hour</th>
                 <th class="border border-gray-300 px-4 py-2 w-32">Date</th>
-                <th class="border border-gray-300 px-4 py-2 w-32">Attended Hours</th>
-                <th class="border border-gray-300 px-4 py-2 w-24">Gross Income</th>
+                <th class="border border-gray-300 px-4 py-2 w-36">Attended Hours</th>
+                <th class="border border-gray-300 px-4 py-2 w-36">Gross Income</th>
                 <th class="border border-gray-300 px-4 py-2 w-32">Benefits</th>
                 <th class="border border-gray-300 px-4 py-2 w-28">Net Income</th>
                 <th class="border border-gray-300 px-4 py-2 w-24">Paid</th>
@@ -1155,7 +1160,7 @@ function renderCurrentWeekPayrollTable(data) {
     .join("");
 
   return `
-          <table id="current-week-payroll-table" class="w-full text-sm text-center font-normal justify-items-start table-fixed border-collapse border-2 border-gray-300">
+          <table id="current-week-payroll-table" class="min-w-[850px] w-full text-sm text-center font-normal table-fixed border-collapse border-2 border-gray-300">
             <thead>
               <tr>
                 <th class="border border-gray-300 px-4 py-2">Instructor Name</th>
@@ -1216,15 +1221,15 @@ function renderWeeklyPayrollTable(data) {
           ${renderCurrentWeekPayrollTable(currentWeekPayrollData)}
           
           <p class="mt-5">Weekly History</p>
-          <table id="weekly-payroll-table" class="w-full mt-7 text-sm text-center font-normal justify-items-start table-fixed border-collapse border-2 border-gray-300">
+          <table id="weekly-payroll-table" class="min-w-[1100px] w-full mt-7 text-sm text-center font-normal table-fixed border-collapse border-2 border-gray-300">
             <thead>
               <tr>
                 <th class="border border-gray-300 px-4 py-2 w-10">ID</th>
                 <th class="border border-gray-300 px-4 py-2">Instructor Name - Rate / Hour</th>
                 <th class="border border-gray-300 px-4 py-2 w-32">Date</th>
-                <th class="border border-gray-300 px-4 py-2 w-32">Attended Hours</th>
-                <th class="border border-gray-300 px-4 py-2 w-24">Gross Income</th>
-                <th class="border border-gray-300 px-4 py-2 w-32">Benefits</th>
+                <th class="border border-gray-300 px-4 py-2 w-32">Hours</th>
+                <th class="border border-gray-300 px-4 py-2 w-36">Gross Income</th>
+                <th class="border border-gray-300 px-4 py-2 w-36">Benefits</th>
                 <th class="border border-gray-300 px-4 py-2 w-24">Paid</th>
                 <th class="border border-gray-300 px-4 py-2 w-36">Actions</th>
               </tr>

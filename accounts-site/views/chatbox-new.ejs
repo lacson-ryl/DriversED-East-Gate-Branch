@@ -1,0 +1,170 @@
+<% const isAdmin=chatRole==="admin" ; %>
+    <!DOCTYPE html>
+    <html lang="en" class="overflow-x-hidden">
+
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>
+            <%= isAdmin ? "Admin Support Chat" : "Support Chat" %> | Driver's Ed
+        </title>
+        <link href="/account/f-css/output.css" rel="stylesheet">
+        <style>
+            :root {
+                --chat-navy: #0B2D4A;
+                --chat-blue: #1976D2;
+                --chat-bg: #F4F7FB;
+            }
+
+            body {
+                background: var(--chat-bg);
+                font-family: "Montserrat", "Segoe UI", sans-serif;
+            }
+
+            #chat-new-main {
+                min-width: 0;
+                overflow-x: hidden;
+            }
+
+            .chat-new-card {
+                border: 1px solid #E2E8F0;
+                border-radius: 1rem;
+                background: #fff;
+                box-shadow: 0 10px 30px rgba(11, 45, 74, .08);
+            }
+
+            .chat-new-message {
+                width: fit-content;
+                min-width: 3rem;
+                max-width: min(76%, 52rem);
+                overflow-wrap: anywhere;
+                word-break: break-word;
+                white-space: pre-wrap;
+                border-radius: 1rem;
+                padding: .7rem .9rem;
+                font-size: .875rem;
+                line-height: 1.45;
+            }
+
+            .chat-new-message--staff {
+                background: #0B2D4A;
+                color: #fff;
+            }
+
+            .chat-new-message--user {
+                background: #EFF6FF;
+                color: #17324D;
+            }
+
+            @media (min-width: 1024px) {
+                #ticket-modal {
+                    inset: 7.5rem 2rem auto auto;
+                }
+            }
+        </style>
+    </head>
+
+    <body data-role="<%= chatRole %>" class="flex min-h-screen flex-row">
+        <div id="sidebar-container" class="z-50"></div>
+        <main id="chat-new-main" class="flex min-h-screen min-w-0 flex-1 flex-col <%= isAdmin ? " md:ml-[220px]"
+            : "md:ml-[180px]" %>">
+            <header
+                class="sticky top-0 z-30 flex min-h-[60px] items-center justify-between border-b border-slate-200 bg-white/95 px-5 py-3 shadow-sm backdrop-blur md:px-8">
+                <div id="left-side" class="flex items-center gap-4">
+                    <button id="notif-button"
+                        class="relative rounded-xl p-2 transition hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        aria-label="Open notifications">
+                        <img src="/account/f-assets/solid/bell.svg" class="h-6 w-6" alt="">
+                        <span id="notif-new-indicator"
+                            class="absolute right-1 top-1 hidden min-h-4 min-w-4 items-center justify-center rounded-full bg-blue-600 px-1 text-[10px] font-bold text-white"></span>
+                    </button>
+                    <img src="/account/f-assets/solid/drivers_ed_logo-no-bg.png" class="h-8 w-auto" alt="Driver's Ed">
+                </div>
+                <div class="text-right">
+                    <p class="text-xs font-semibold uppercase tracking-[.18em] text-slate-400">
+                        <%= isAdmin ? "Admin workspace" : "Support center" %>
+                    </p>
+                    <h1 class="font-bold text-[#0B2D4A]">
+                        <%= isAdmin ? "Ticket Chat" : "Support Chat" %>
+                    </h1>
+                </div>
+            </header>
+            <section class="flex min-h-0 flex-1 flex-col max-h-screen px-5 pb-6 pt-6 md:px-8">
+                <div class="mb-5 flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-[.2em] text-[#1976D2]">
+                            <%= isAdmin ? "Support operations" : "Support center" %>
+                        </p>
+                        <h2 class="mt-1 text-3xl font-bold text-[#0B2D4A]">
+                            <%= isAdmin ? "Ticket Chat" : "Support Chat" %>
+                        </h2>
+                        <p class="mt-1 text-sm text-slate-500">
+                            <%= isAdmin ? "Review tickets and respond to client conversations."
+                                : "Create a ticket or continue an existing conversation with our support team." %>
+                        </p>
+                    </div>
+                    <% if (!isAdmin) { %>
+                        <button id="new-ticket-btn"
+                            class="rounded-lg bg-[#1976D2] px-4 py-2.5 text-sm font-bold text-white hover:bg-[#0B2D4A]">New
+                            ticket</button>
+                        <% } %>
+                </div>
+                <div class="grid min-h-0 flex-1 grid-cols-1 gap-5 lg:grid-cols-[minmax(240px,320px)_minmax(0,1fr)]">
+                    <aside class="chat-new-card flex min-h-64 min-w-0 flex-col">
+                        <div class="border-b border-slate-100 p-5">
+                            <h2 class="font-bold text-[#0B2D4A]">
+                                <%= isAdmin ? "All tickets" : "Ticket history" %>
+                            </h2>
+                            <p class="mt-1 text-xs text-slate-500">
+                                <%= isAdmin ? "Client conversations awaiting attention."
+                                    : "Your conversations with support." %>
+                            </p>
+                        </div>
+                        <div id="ticket-list" class="min-h-0 flex-1 overflow-y-auto"></div>
+                    </aside>
+                    <section class="chat-new-card flex min-h-[30rem] min-w-0 flex-col overflow-hidden">
+                        <div id="thread-header" class="border-b border-slate-100 p-5 font-bold text-[#0B2D4A]">Select a
+                            ticket</div>
+                        <div id="message-list" class="max-h-full flex-1 space-y-3 overflow-y-auto p-5"></div>
+                        <form id="message-form" class="flex gap-2 border-t border-slate-100 p-4">
+                            <input id="message-input"
+                                class="min-w-0 flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[#2585F5]"
+                                placeholder="<%= isAdmin ? " Reply to the user..." : "Write a message..." %>" disabled
+                            required>
+                            <button
+                                class="rounded-lg bg-[#1976D2] px-4 py-2 text-sm font-bold text-white disabled:opacity-50"
+                                disabled>Send</button>
+                        </form>
+                    </section>
+                </div>
+            </section>
+        </main>
+        <% if (!isAdmin) { %>
+            <div id="ticket-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4">
+                <form id="ticket-form" class="w-full max-w-md rounded-2xl bg-white p-5 shadow-xl">
+                    <div class="mb-4 flex justify-between">
+                        <h2 class="font-bold text-[#0B2D4A]">New ticket</h2>
+                        <button type="button" id="close-ticket-modal" class="text-3xl font-bold text-slate-500">&times;</button>
+                    </div>
+                    <input id="ticket-title" class="mb-3 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                        placeholder="Title" required>
+                    <select id="ticket-type" class="mb-3 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                        required>
+                        <option value="report">Report</option>
+                        <option value="request">Request</option>
+                        <option value="inquiry">Inquiry</option>
+                    </select>
+                    <textarea id="ticket-message"
+                        class="mb-4 min-h-32 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                        placeholder="Describe your concern..." required></textarea>
+                    <button class="rounded-lg bg-[#1976D2] px-4 py-2 text-sm font-bold text-white">Create
+                        ticket</button>
+                    <p id="ticket-error" class="mt-2 text-sm text-red-600"></p>
+                </form>
+            </div>
+            <% } %>
+                <script src="/account/f-jsfiles/<%= isAdmin ? "sidebar.js" : "user-sidebar.js" %>"></script>
+                <script type="module" src="/account/f-jsfiles/chatbox.js"></script>
+    </body>
+
+    </html>

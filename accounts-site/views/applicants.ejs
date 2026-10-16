@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" class="scroll-smooth overflow-x-auto overflow-y-auto">
+<html lang="en" class="scroll-smooth overflow-x-hidden overflow-y-auto">
 
 <head>
     <meta charset="UTF-8">
@@ -7,17 +7,107 @@
     <title>Admin Manage Applicants</title>
     <link href="/account/f-css/output.css" rel="stylesheet">
     <style>
+        :root {
+            --applicant-navy: #0B2D4A;
+            --applicant-blue: #1976D2;
+            --applicant-bg: #F4F7FB;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            min-width: 0;
+            background: var(--applicant-bg);
+            color: #17324D;
+            font-family: "Montserrat", "Segoe UI", sans-serif;
+        }
+
+        #main-content {
+            min-width: 0;
+            max-width: 100%;
+            overflow-x: hidden;
+        }
+
+        .applicant-card {
+            border: 1px solid #E2E8F0;
+            border-radius: 1rem;
+            background: #fff;
+            box-shadow: 0 10px 30px rgba(11, 45, 74, .08);
+        }
+
+        .applicant-input {
+            margin-top: .35rem;
+            width: 100%;
+            border: 1px solid #E2E8F0;
+            border-radius: .6rem;
+            background: #fff;
+            padding: .65rem .75rem;
+            font-size: .875rem;
+            color: #17324D;
+            outline: none;
+        }
+
+        .applicant-input:focus {
+            border-color: #2585F5;
+            box-shadow: 0 0 0 3px rgba(37, 133, 245, .12);
+        }
+
+        .applicant-action {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: .6rem;
+            padding: .65rem .85rem;
+            font-size: .8rem;
+            font-weight: 700;
+        }
+
+        .applicant-action--primary {
+            background: #1976D2;
+            color: #fff;
+        }
+
+        .applicant-action--secondary {
+            border: 1px solid #D8E2EC;
+            background: #fff;
+            color: #1976D2;
+        }
+
         .calendar {
             display: grid;
-            grid-template-columns: repeat(7, 1fr);
-            gap: 0.5rem;
+            grid-template-columns: repeat(7, minmax(0, 1fr));
+            gap: .45rem;
             text-align: center;
         }
 
         .day {
-            padding: 1rem;
-            border: 1px solid #ccc;
+            min-height: 6.5rem;
+            border: 1px solid #E2E8F0;
+            border-radius: .75rem;
+            padding: .55rem;
+            background: #fff;
             align-items: center;
+        }
+
+        .day.bg-red-50 {
+            background: #F8FAFC;
+            color: #94A3B8;
+        }
+
+        .day.bg-red-100 {
+            background: #FFF7ED;
+        }
+
+        .day.bg-green-100 {
+            border-color: #BBF7D0;
+            background: #F0FDF4;
+        }
+
+        .day.bg-blue-200 {
+            border-color: #BFDBFE;
+            background: #EFF6FF;
         }
 
         .circle {
@@ -43,8 +133,19 @@
         }
 
         .onsite-tdc {
-            background-color: #d69e2e;
+            background-color: #2563EB;
             color: white;
+        }
+
+        @media (max-width: 767px) {
+            .day {
+                min-height: 5.5rem;
+                padding: .4rem;
+            }
+
+            .calendar {
+                gap: .25rem;
+            }
         }
     </style>
 </head>
@@ -52,87 +153,91 @@
 <body class="flex flex-row w-full">
     <div id="sidebar-container">
     </div>
-    <div id="main-content" class="block ml-ml-250 w-calc space-y-2 animate-fadeIn">
-        <div id="top-bar" class="flex h-15 flex-row w-full sticky shadow-inner bg-white border-b-2 p-4">
-            <div id="left-side" class="flex flex-row gap-4 relative">
-                <div>
-                    <button id="notif-button" class="relative">
-                        <img id="notif-logo" src="/account/f-assets/solid/bell.svg" class="w-7 h-7 inline-block" />
-                        <div id="notif-new-indicator"
-                            class="h-3 w-3 rounded-full bg-blue-900 absolute top-2 right-2 transform translate-x-1/2 -translate-y-1/2 animate-pulse hidden">
-                        </div>
-                    </button>
-                </div>
-                <img id="company-logo" src="/account/f-assets/solid/drivers_ed_logo-no-bg.png" class="w-20 h-8" />
+    <main id="main-content" class="min-h-screen min-w-0 flex-1 md:ml-[220px]">
+        <header id="top-bar"
+            class="sticky top-0 flex min-h-[60px] items-center justify-between border-b border-slate-200 bg-white/95 px-5 py-3 shadow-sm backdrop-blur md:px-8">
+            <div id="left-side" class="flex items-center gap-4"><button id="notif-button"
+                    class="relative rounded-xl p-2 transition hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    aria-label="Open notifications"><img id="notif-logo" src="/account/f-assets/solid/bell.svg"
+                        class="h-6 w-6" alt=""><span id="notif-new-indicator"
+                        class="absolute right-1 top-1 hidden min-h-4 min-w-4 items-center justify-center rounded-full bg-blue-600 px-1 text-[10px] font-bold text-white"></span></button><img
+                    id="company-logo" src="/account/f-assets/solid/drivers_ed_logo-no-bg.png" class="h-8 w-auto"
+                    alt="Driver's Ed"></div>
+            <div id="right-side" class="text-right">
+                <p class="text-xs font-semibold uppercase tracking-[.18em] text-slate-400">Admin workspace</p>
+                <h1 class="text-base font-bold text-[#0B2D4A] md:text-lg">Applicants</h1>
             </div>
-            <div id="right-side" class="absolute right-4 text-lg">
-                Applicants
-            </div>
-        </div>
+        </header>
 
-        <div id="content" class="flex flex-col w-full">
-            <div class="flex w-full justify-between pr-4 my-2">
-                <h1 id="announcement" class="text-base ml-4">Announcement</h1>
+        <div id="content" class="mx-auto flex w-full max-w-[1500px] flex-col px-5 pb-12 pt-6 md:px-8">
+            <div class="mb-6 flex flex-col justify-between gap-4 md:flex-row md:items-end">
+                <div>
+                    <p class="mb-1 text-xs font-semibold uppercase tracking-[.2em] text-[#1976D2]">Training operations
+                    </p>
+                    <h2 class="text-3xl font-bold tracking-tight text-[#0B2D4A]">Applicants</h2>
+                    <p id="announcement" class="mt-1 text-sm text-slate-500">Schedule instructor training and review
+                        availability.</p>
+                </div>
                 <a id="edit-profile-btn" href="/account/applicants-list"
-                    class="bg-sky-900 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg focus:outline-none focus:shadow-outline"
-                    value="edit-profile-request">
+                    class="applicant-action applicant-action--secondary" value="edit-profile-request">
                     Applicants List
                 </a>
             </div>
-            <div class="grid grid-rows-1 sm:grid md:grid-cols-3 gap-4">
-                <div class="col-span-1 bg-gray-200 ml-4 p-4 shadow-md rounded-lg">
+            <div class="grid gap-5 lg:grid-cols-[minmax(280px,.75fr)_minmax(0,1.8fr)]">
+                <div class="applicant-card p-5 md:p-6">
                     <form id="applicationForm">
                         <div class="mb-4">
                             <label for="instructoroption"
-                                class="block text-sm font-medium text-gray-700">Instructor</label>
-                            <select id="instructor" name="instructor" required>
+                                class="block text-xs font-semibold text-slate-600">Instructor</label>
+                            <select id="instructor" name="instructor" required class="applicant-input">
                                 <option value="">Select an Instructor</option>
                             </select>
                         </div>
                         <div class="mb-4">
-                            <label for="programoption" class="block text-base font-medium text-gray-700">Program</label>
-                            <select id="program" name="program" required>
+                            <label for="programoption"
+                                class="block text-xs font-semibold text-slate-600">Program</label>
+                            <select id="program" name="program" required class="applicant-input">
                                 <option value="">Select a program</option>
                             </select>
                         </div>
                         <div class="mb-4">
-                            <label for="startDate" class="block text-sm font-medium text-gray-700">Starting Date (first
+                            <label for="startDate" class="block text-xs font-semibold text-slate-600">Starting date
+                                (first
                                 half)</label>
                             <input type="date" id="startDate" name="startDate" required
-                                class="date-input mt-1 block w-full outline outline-1 outline-gray-500 hover:outline-yellow-500 focus:outline-yellow-500 px-1">
-                            <select id="startDateAMPM" name="startDateAMPM" required class="mt-1 block w-full">
+                                class="date-input applicant-input">
+                            <select id="startDateAMPM" name="startDateAMPM" required class="applicant-input">
                                 <option value="AM">AM</option>
                                 <option value="PM">PM</option>
                             </select>
                         </div>
                         <div class="mb-4">
-                            <label for="continuation" class="block text-sm font-medium text-gray-700">Continuation
+                            <label for="continuation" class="block text-xs font-semibold text-slate-600">Continuation
                                 (second half)</label>
                             <input type="date" id="continuation" name="continuation" required
-                                class="date-input mt-1 block w-full outline outline-1 outline-gray-500 hover:outline-yellow-500 focus:outline-yellow-500 px-1">
-                            <select id="continuationAMPM" name="continuationAMPM" required class="mt-1 block w-full">
+                                class="date-input applicant-input">
+                            <select id="continuationAMPM" name="continuationAMPM" required class="applicant-input">
                                 <option value="AM">AM</option>
                                 <option value="PM">PM</option>
                             </select>
                         </div>
                         <div class="mb-4">
                             <label for="transmission"
-                                class="block text-sm font-medium text-gray-700">Transmission</label>
-                            <select id="transmission" name="transmission" required class="mt-1 block w-full">
+                                class="block text-xs font-semibold text-slate-600">Transmission</label>
+                            <select id="transmission" name="transmission" required class="applicant-input">
                                 <option value="manual">Manual</option>
                                 <option value="automatic">Automatic</option>
                             </select>
                         </div>
-                        <div class="flex flex-row justify-between text-center items-center">
-                            <button type="submit"
-                                class="bg-blue-500 text-white px-4 py-2 mt-4 rounded-md hover:bg-blue-700">Submit</button>
-                            <div class="flex flex-col mt-4 gap-3">
+                        <div class="flex flex-row items-center justify-between gap-3 pt-2">
+                            <button type="submit" class="applicant-action applicant-action--primary">Submit</button>
+                            <div class="flex flex-col gap-2">
                                 <a id="setTdcDate"
-                                    class="bg-blue-500 text-white px-3 py-2 rounded-md hover:cursor-pointer hover:bg-blue-700 text-sm md:text-base">
+                                    class="applicant-action applicant-action--secondary hover:cursor-pointer">
                                     Set Date for TDC
                                 </a>
                                 <a id="add-continuation"
-                                    class="bg-blue-500 text-white px-3 py-2 rounded-md hover:cursor-pointer hover:bg-blue-700 text-sm md:text-base">
+                                    class="applicant-action applicant-action--secondary hover:cursor-pointer">
                                     add Continuation
                                 </a>
                             </div>
@@ -140,8 +245,9 @@
                     </form>
                 </div>
                 <!-- Calendar -->
-                <div class="col-span-2 bg-white pt-2 p-4 rounded-lg shadow-md">
-                    <div id="color-stamps-instructions" class="place-content-center flex flex-row gap-4 ml-4">
+                <div class="applicant-card p-5 md:p-6">
+                    <div id="color-stamps-instructions"
+                        class="mb-5 flex flex-wrap gap-3 border-b border-slate-100 pb-4 text-xs text-slate-500">
                         <div class="flex flex-row gap-3">
                             <div class="circle available-am place-self-center">AM</div>
                             <div class="circle available-pm place-self-center">PM</div>
@@ -157,12 +263,10 @@
                         </div>
                     </div>
 
-                    <div class="flex justify-between items-center mb-4">
-                        <button id="prevMonth"
-                            class="w-24 text-center bg-blue-500 hover:bg-blue-700 text-white px-4 py-2 rounded-ss-3xl">Previous</button>
-                        <div id="monthLabel" class="text-xl font-bold"></div>
-                        <button id="nextMonth"
-                            class="w-20 text center bg-blue-500 hover:bg-blue-700 text-white px-4 py-2 rounded-tr-3xl">Next</button>
+                    <div class="mb-4 flex items-center justify-between">
+                        <button id="prevMonth" class="applicant-action applicant-action--secondary">Previous</button>
+                        <div id="monthLabel" class="text-base font-bold text-[#0B2D4A]"></div>
+                        <button id="nextMonth" class="applicant-action applicant-action--secondary">Next</button>
                     </div>
                     <div class="grid grid-cols-7 mt-4 text-center">
                         <div class="pl-1 text-sm">Mon</div>
@@ -173,8 +277,7 @@
                         <div class="pl-1 text-sm">Sat</div>
                         <div class="pl-1 text-sm">Sun</div>
                     </div>
-                    <div id="calendar"
-                        class="grid flex-grow w-full h-auto grid-cols-7 grid-rows-5 gap-px pt-px mt-1 bg-gray-100">
+                    <div id="calendar" class="calendar mt-1">
                     </div>
                 </div>
             </div>
@@ -189,29 +292,29 @@
             </div>
         </div>
 
-    </div>
-    </div>
-    <script type="module" src="/account/utils/modal-feedback.js"></script>
-    <script>
+        </div>
+        </div>
+        <script type="module" src="/account/utils/modal-feedback.js"></script>
+        <script>
 
-        document.addEventListener('DOMContentLoaded', async () => {
-            try {
-                const sidebarScript = document.createElement('script');
-                sidebarScript.src = '/account/f-jsfiles/sidebar.js';
-                document.body.appendChild(sidebarScript);
+            document.addEventListener('DOMContentLoaded', async () => {
+                try {
+                    const sidebarScript = document.createElement('script');
+                    sidebarScript.src = '/account/f-jsfiles/sidebar.js';
+                    document.body.appendChild(sidebarScript);
 
-                const schedulerScript = document.createElement('script');
-                schedulerScript.src = '/account/f-jsfiles/applicant-schedule.js';
-                schedulerScript.type = 'module';
-                document.body.appendChild(schedulerScript);
-            } catch (error) {
-                console.error('Authorization error:', error);
-                alert("You are not authorized to view this page.");
-                window.location.href = '/account/adminlogin'; // Redirect to login if not authorized
-            }
-        });
+                    const schedulerScript = document.createElement('script');
+                    schedulerScript.src = '/account/f-jsfiles/applicant-schedule.js';
+                    schedulerScript.type = 'module';
+                    document.body.appendChild(schedulerScript);
+                } catch (error) {
+                    console.error('Authorization error:', error);
+                    alert("You are not authorized to view this page.");
+                    window.location.href = '/account/adminlogin'; // Redirect to login if not authorized
+                }
+            });
 
-    </script>
+        </script>
 </body>
 
 </html>

@@ -1,5 +1,5 @@
 import { encryptData, decryptData } from "../utils/f-webCryptoKeys.js";
-import { openFileViewer } from "../utils/file-helper.js";
+import { openFileViewer, inputImageOnlyCheck } from "../utils/file-helper.js";
 import {
   showLoadingMessage,
   showOperationResult,
@@ -55,77 +55,77 @@ async function renderPaymentList(data) {
 
   paymentTable.innerHTML = `
         <table id="applicants-table"
-            class=" w-full text-cwenter text-sm justify-items-start table-fixed border-collapse border-2 border-gray-300">
-            <thead class="">
-                <tr>
-                    <th class="border border-gray-300 px-4 py-2 w-12">ID</th>
-                    <th class="border border-gray-300 px-4 py-2">User ID - Name</th>
-                    <th class="border border-gray-300 px-4 py-2">Account Name- Amount</th>
-                    <th class="border border-gray-300 px-4 py-2 w-32">Pay Method </th>
-                    <th class="border border-gray-300 px-4 py-2 w-24">Receipt</th>
-                    <th class="border border-gray-300 px-4 py-2 w-24">Status</th>
-                    <th class="border border-gray-300 px-4 py-2 w-24">Action</th>
+            class="w-full text-left text-sm">
+            <thead>
+              <tr class="border-b border-slate-200">
+                <th class="px-4 py-3">ID</th>
+                <th class="px-4 py-3">User ID / Name</th>
+                <th class="px-4 py-3">Account / Amount</th>
+                <th class="px-4 py-3">Payment method</th>
+                <th class="px-4 py-3">Receipt</th>
+                <th class="px-4 py-3">Status</th>
+                <th class="px-4 py-3">Action</th>
                 </tr>
             </thead>
-            <tbody class="">
+            <tbody class="text-left">
                 ${data
                   .map(
                     (arr) =>
                       `
-                    <tr class="text-left hover:outline outline-1 outline-black">
-                        <td class="border border-gray-300 px-4 py-2">
+                    <tr class="border-b border-slate-100 text-slate-600 transition hover:bg-slate-50">
+                      <td class="px-4 py-3 font-semibold text-[#0B2D4A]">
                              ${arr.user_payment_id} 
                         </td>
-                        <td class="border border-gray-300 px-4 py-2">
+                        <td class="px-4 py-3">
                              ${arr.user_id} - ${arr.user_name}
                         </td>
-                        <td class="border border-gray-300 px-4 py-2">
+                        <td class="px-4 py-3">
                              ${arr.account_name} - ${arr.amount}
                         </td>
-                        <td class="text-center border border-gray-300 px-4 py-2">
+                        <td class="px-4 py-3">
                              ${arr.payment_method} 
                         </td>
-                        <td class="border border-gray-300 px-4 py-2">
-                          <div class="flex flex-row items-center justify-center">
+                        <td class="px-4 py-3">
+                          <div class="flex flex-row items-start gap-2">
                             ${
                               arr.screenshot_receipt
                                 ? `
-                              <a href="javascript:void(0);" class="text-blue-700 hover:underline view-btn" data-id="${arr.user_payment_id}" 
-                              data-file='${arr.screenshot_receipt.data}' data-file-type="image/jpeg">
+                              <a href="javascript:void(0);" class="payments-action payments-action--view view-btn" data-id="${arr.user_payment_id}" 
+                              data-file='${arr.screenshot_receipt}' data-file-type="image/jpeg">
                                   <img src="/account/f-assets/solid/icons_for_buttons/photograph.svg" class="w-6 h-6 reverse-color" />
                                   </a>
   
-                              <button data-id="${arr.user_payment_id}" class="receipt-upload-btn text-yellow-600 rounded-md px-2 hover:underline">
+                              <button data-id="${arr.user_payment_id}" class="payments-action payments-action--upload receipt-upload-btn">
                               <img src="/account/f-assets/solid/icons_for_buttons/upload.svg" class="w-6 h-6 reverse-color" />
                               </button>
                                `
-                                : `<button data-id="${arr.user_payment_id}" class="receipt-upload-btn text-yellow-600 rounded-md px-2 hover:underline">
+                                : `<button data-id="${arr.user_payment_id}" class="payments-action payments-action--upload receipt-upload-btn">
                                 <img src="/account/f-assets/solid/icons_for_buttons/upload.svg" class="w-6 h-6 reverse-color" />
                                 </button>`
                             }
                           </div>
                         </td>
-                        <td class="text-center border border-gray-300 px-4 py-2">
-                          <button class="request-status-btn hover:outline outline-2 outline-gray-500 rounded-md px-1" data-id="${
+                        <td class="px-4 py-3">
+                          <button class="payments-action payments-action--status request-status-btn" data-id="${
                             arr.user_payment_id
                           }">
                           ${
                             arr.status == "Verified" || arr.status == "verified"
                               ? '<div class="text-green-700 hover:font-semibold rounded-md hover ">Verified</div>'
                               : arr.status == "Deny"
-                              ? '<div class="text-red-700 hover:font-semibold rounded-md">Denied</div>'
-                              : '<div class="text-gray-700 hover:font-semibold rounded-md">Verifying</div>'
+                                ? '<div class="text-red-700 hover:font-semibold rounded-md">Denied</div>'
+                                : '<div class="text-gray-700 hover:font-semibold rounded-md">Verifying</div>'
                           }</button>
                         </td>
-                        <td class="border flex flex-row items-center justify-center border-gray-300 px-4 py-2 space-x-2">
+                        <td class="px-4 py-3">
                             <button data-id=" ${arr.user_payment_id}  "
-                                class="payment-delete-btn bg-rose-500 hover:bg-gradient-to-t from-rose-400 to-rose-800 text-white rounded-md p-px">
+                            class="payments-action payments-action--delete payment-delete-btn">
                                   <img src="/account/f-assets/solid/icons_for_buttons/trash.svg" class="w-6 h-6 reverse-colorII" />
                             </button>
                         </td>
   
                     </tr>
-                    `
+                    `,
                   )
                   .join("")}
             </tbody>
@@ -176,7 +176,7 @@ function allButtons(data) {
       <div class="mb-4 flex flex-col space-y-4 md:flex-row md:space-x-4 md:space-y-0">
         <div class="input-container w-1/2">
           <h3 class="text-xl font-semibold mb-3">ID</h3>
-          <input type="number" id="user-id" name="id" value="0" disable 
+          <input type="number" id="user-id" name="id" value="0" readonly 
             class="w-full outline outline-1 outline-gray-300 rounded-md text-lg px-1" placeholder="ID" />
           <p class="info-message text-sm font-normal">This is for the payment paid by client in store that dont have acount, use Search to attach the payment if the client have a account.</p>
         </div>
@@ -220,6 +220,10 @@ function allButtons(data) {
 
       modalDetails.innerHTML = modalform;
       modal.style.display = "flex";
+      const receiptInput = document.getElementById("screenshot-receipt");
+
+      receiptInput.addEventListener("change", inputImageOnlyCheck);
+
       const paymentSumbitBtn = document.getElementById("payment-submit-button");
 
       // Event listener for the form submission
@@ -280,6 +284,9 @@ function allButtons(data) {
           </form>
         `;
       modal.style.display = "flex";
+      const receiptInput = document.getElementById("screenshot-receipt");
+
+      receiptInput.addEventListener("change", inputImageOnlyCheck);
 
       const receiptSubmitBtn = document.getElementById("receipt-submit-button");
 
@@ -293,10 +300,13 @@ function allButtons(data) {
           showBtnLoading(receiptSubmitBtn);
 
           try {
-            const response = await fetch(`/account/api/payments/receipt/${rowId}`, {
-              method: "POST",
-              body: formData,
-            });
+            const response = await fetch(
+              `/account/api/payments/receipt/${rowId}`,
+              {
+                method: "POST",
+                body: formData,
+              },
+            );
             const responseData = await response.json();
             const notification = document.getElementById("notification");
             if (response.ok) {
@@ -322,7 +332,7 @@ function allButtons(data) {
             console.error("Error uploading Template", error);
             showNotification(
               "An error occurred while uploading Template.",
-              "error"
+              "error",
             ); // Show error notification
           }
         });
@@ -446,13 +456,16 @@ function allButtons(data) {
           "click",
           async () => {
             try {
-              const response = await fetch(`/account/api/payments/delete/${rowId}`, {
-                method: "DELETE",
-                headers: {
-                  "Content-Type": "application/json",
-                  "x-delete-token": data.deleteToken,
+              const response = await fetch(
+                `/account/api/payments/delete/${rowId}`,
+                {
+                  method: "DELETE",
+                  headers: {
+                    "Content-Type": "application/json",
+                    "x-delete-token": data.deleteToken,
+                  },
                 },
-              });
+              );
               const result = await response.json();
               if (response.ok && result.success) {
                 tokenIndicator.innerText = `Successfully Deleted Payment ID #${rowId}`;
@@ -473,7 +486,7 @@ function allButtons(data) {
               }, 3000);
             }
           },
-          { once: true }
+          { once: true },
         );
       }
 

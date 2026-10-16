@@ -34,23 +34,147 @@
         </div>
 
         <div id="content" class="flex flex-col w-full">
-            <div class=" mr-4 my-2">
-                <form id="search-form" class="flex flex-row gap-4">
-                    <h2 class="text-lg ml-4">Search User</h2>
-                    <select name="searchOption" id="search-option"
-                        class="border-b-2 border-l-2 border-gray-400 p-1 rounded-md shadow-md">
-                        <option class="" value="">select search option</option>
-                        <option value="user-id">User Id</option>
-                        <option value="user-email">User Email</option>
-                        <option value="user-name">User Name</option>
-                        <option value="user-prn">User PRN</option>
-                    </select>
-                    <input type="text" id="input-user-info" name="userInfo" placeholder="Input user info " required 
-                        class="border-2 border-gray-300 bg-white h-8 pl-4 rounded-lg text-sm focus:outline-none">
-                    <button type="submit" 
-                        class=" bg-blue-700 hover:bg-gradient-to-t from-blue-400 to-blue-800 text-white rounded-lg px-2 py-1">
-                        Search
-                    </button>
+            <div class="mr-4 my-4">
+                <form id="search-form" class="bg-white border border-gray-200 rounded-2xl shadow-sm p-5">
+
+                    <!-- Header -->
+                    <div class="flex items-center justify-between mb-4">
+
+                        <div>
+                            <h2 class="text-lg font-semibold text-gray-800">
+                                Search User
+                            </h2>
+
+                            <p class="text-xs text-gray-500 mt-1">
+                                Find a user by ID, email, name, or PRN.
+                            </p>
+                        </div>
+
+                        <div class="hidden sm:flex items-center gap-2 text-xs text-gray-400">
+                            <span class="w-2 h-2 rounded-full bg-green-500"></span>
+
+                            User Search
+                        </div>
+
+                    </div>
+
+
+                    <!-- Search Controls -->
+                    <div class="flex flex-col lg:flex-row gap-3">
+
+                        <!-- Search Option -->
+                        <div class="relative lg:w-52">
+
+                            <label for="search-option" class="block text-xs font-medium text-gray-600 mb-1.5">
+                                Search by
+                            </label>
+
+                            <select name="searchOption" id="search-option" class="w-full h-10 px-3 pr-8
+                           bg-gray-50
+                           border border-gray-200
+                           rounded-xl
+                           text-sm text-gray-700
+                           focus:outline-none
+                           focus:ring-2
+                           focus:ring-blue-500/20
+                           focus:border-blue-500
+                           transition">
+                                <option value="">
+                                    Select option
+                                </option>
+
+                                <option value="user-id">
+                                    User ID
+                                </option>
+
+                                <option value="user-email">
+                                    User Email
+                                </option>
+
+                                <option value="user-name">
+                                    User Name
+                                </option>
+
+                                <option value="user-prn">
+                                    User PRN
+                                </option>
+                            </select>
+
+                        </div>
+
+
+                        <!-- Search Input -->
+                        <div class="flex-1">
+
+                            <label for="input-user-info" class="block text-xs font-medium text-gray-600 mb-1.5">
+                                Search value
+                            </label>
+
+                            <div class="relative">
+
+                                <!-- Search Icon -->
+                                <svg class="absolute left-3 top-1/2 -translate-y-1/2
+                               w-4 h-4 text-gray-400 pointer-events-none" xmlns="http://www.w3.org/2000/svg"
+                                    fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="m21 21-4.35-4.35m1.35-5.65a7 7 0 1 1-14 0 7 7 0 0 1 14 0Z" />
+                                </svg>
+
+                                <input type="text" id="input-user-info" name="userInfo"
+                                    placeholder="Enter user information..." required class="w-full h-10
+                               pl-10 pr-4
+                               bg-gray-50
+                               border border-gray-200
+                               rounded-xl
+                               text-sm text-gray-700
+                               placeholder:text-gray-400
+                               focus:outline-none
+                               focus:ring-2
+                               focus:ring-blue-500/20
+                               focus:border-blue-500
+                               transition" />
+
+                            </div>
+
+                        </div>
+
+
+                        <!-- Search Button -->
+                        <div class="lg:self-end">
+
+                            <button type="submit" class="w-full lg:w-auto
+                           h-10
+                           px-6
+                           inline-flex
+                           items-center
+                           justify-center
+                           gap-2
+                           bg-blue-600
+                           hover:bg-blue-700
+                           active:bg-blue-800
+                           text-white
+                           text-sm
+                           font-medium
+                           rounded-xl
+                           shadow-sm
+                           hover:shadow
+                           transition-all
+                           duration-150">
+
+                                <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                    stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="m21 21-4.35-4.35m1.35-5.65a7 7 0 1 1-14 0 7 7 0 0 1 14 0Z" />
+                                </svg>
+
+                                Search
+
+                            </button>
+
+                        </div>
+
+                    </div>
+
                 </form>
             </div>
 

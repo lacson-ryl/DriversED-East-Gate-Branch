@@ -1,53 +1,88 @@
 <!DOCTYPE html>
-<html lang="en" class="scroll-smooth overflow-x-auto overflow-y-auto">
+<html lang="en" class="scroll-smooth overflow-x-hidden overflow-y-auto">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>User Profile</title>
+    <title>User Profile | Driver's Ed</title>
     <link href="/account/f-css/output.css" rel="stylesheet">
     <script type="module">
         import Dexie from "https://cdn.jsdelivr.net/npm/dexie@3.2.4/dist/dexie.mjs";
         window.Dexie = Dexie;
     </script>
     <style>
+        :root {
+            --profile-navy: #0B2D4A;
+            --profile-blue: #1976D2;
+            --profile-bg: #F4F7FB;
+        }
+
+        body {
+            min-width: 0;
+            background: var(--profile-bg);
+            font-family: "Montserrat", "Segoe UI", sans-serif;
+        }
+
+        #main-content {
+            min-width: 0;
+            max-width: 100%;
+            overflow-x: hidden;
+        }
+
         /* Custom bounce that runs once for 5s */
         @keyframes bounce-once {
-            0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
-            40% { transform: translateY(-10px); }
-            60% { transform: translateY(-5px); }
+
+            0%,
+            20%,
+            50%,
+            80%,
+            100% {
+                transform: translateY(0);
+            }
+
+            40% {
+                transform: translateY(-10px);
+            }
+
+            60% {
+                transform: translateY(-5px);
+            }
         }
+
         .bounce-once {
             animation: bounce-once 5s ease;
         }
 
         /* Desktop hover behavior */
         @media (hover: hover) {
-            #lock-info:hover + #lock-tooltip {
-            display: block;
+            #lock-info:hover+#lock-tooltip {
+                display: block;
             }
         }
     </style>
 </head>
 
-<body class="flex flex-row w-full over">
+<body class="flex min-h-screen w-full flex-row">
     <div id="sidebar-container">
     </div>
-    <div id="main-content" class="ml-ml-64 h- phone-w-calc md:desktop-w-calc md:ml-[160px] space-y-2 animate-fadeIn">
-        <div id="top-bar" class="flex flex-row w-full sticky shadow-inner bg-white border-b-2 p-4 mb-5 opacity-95">
-            <div id="left-side" class="flex flex-row gap-4 relative">
-                <div>
-                    <button id="notif-button" class="relative">
-                        <img id="notif-logo" src="/account/f-assets/solid/bell.svg" class="w-7 h-7 inline-block" />
-                        <div id="notif-new-indicator"
-                            class="h-3 w-3 rounded-full bg-blue-900 absolute top-2 right-2 transform translate-x-1/2 -translate-y-1/2 animate-pulse hidden">
-                        </div>
-                    </button>
-                </div>
-                <img id="company-logo" src="/account/f-assets/solid/drivers_ed_logo-no-bg.png" class="w-20 h-8" />
+    <div id="main-content" class="min-h-screen min-w-0 flex-1 md:ml-[180px] animate-fadeIn">
+        <div id="top-bar"
+            class="sticky top-0 z-30 flex min-h-[60px] items-center justify-between border-b border-slate-200 bg-white/95 px-5 py-3 shadow-sm backdrop-blur">
+            <div id="left-side" class="flex items-center gap-4">
+                <button id="notif-button"
+                    class="relative rounded-xl p-2 transition hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    aria-label="Open notifications">
+                    <img id="notif-logo" src="/account/f-assets/solid/bell.svg" class="h-6 w-6" alt="" />
+                    <span id="notif-new-indicator"
+                        class="absolute right-1 top-1 hidden min-h-4 min-w-4 -translate-y-1/2 translate-x-1/2 items-center justify-center rounded-full bg-blue-600 px-1 text-[10px] font-bold text-white shadow-sm"
+                        aria-live="polite"></span>
+                </button>
+                <img id="company-logo" src="/account/f-assets/solid/drivers_ed_logo-no-bg.png"
+                    class="h-8 w-auto object-contain" alt="Driver's Ed Driving School" />
             </div>
-            <div id="right-side" class="absolute right-4 text-lg">
-                Profile
+            <div id="right-side" class="text-right">
+                <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Client portal</p>
+                <h1 class="text-base font-bold text-[#0B2D4A] md:text-lg">Profile</h1>
             </div>
         </div>
 

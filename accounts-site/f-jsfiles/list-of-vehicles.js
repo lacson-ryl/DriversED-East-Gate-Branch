@@ -4,7 +4,7 @@ import {
   showBtnLoading,
   showBtnResult,
 } from "../utils/modal-feedback.js";
-import { openFileViewer, applyDownloadBtn } from "../utils/file-helper.js";
+import { openFileViewer, applyDownloadBtn, inputImageOnlyCheck } from "../utils/file-helper.js";
 import { encryptData, decryptData } from "../utils/f-webCryptoKeys.js";
 
 const modal = document.getElementById("myModal");
@@ -442,6 +442,9 @@ function allButtons(data) {
         </form>
       `;
       modal.style.display = "flex";
+      const vehicleInput = document.getElementById("vehicle-file");
+
+      vehicleInput.addEventListener("change", inputImageOnlyCheck);
       const vehicleSubmitBtn = document.getElementById("vehicle-submit-button");
 
       document

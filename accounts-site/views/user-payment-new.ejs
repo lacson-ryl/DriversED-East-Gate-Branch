@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en" class="overflow-x-hidden">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payments | Driver's Ed</title>
+    <link href="/account/f-css/output.css" rel="stylesheet">
+    <script type="module">
+        import Dexie from "https://cdn.jsdelivr.net/npm/dexie@3.2.4/dist/dexie.mjs";
+        window.Dexie = Dexie;
+    </script>
+    <style>
+        :root {
+            --navy: #0B2D4A;
+            --blue: #1976D2;
+            --bg: #F4F7FB
+        }
+
+        body {
+            background: var(--bg);
+            font-family: "Montserrat", "Segoe UI", sans-serif
+        }
+
+        #payment-new-main {
+            min-width: 0;
+            overflow-x: hidden
+        }
+
+        .payment-new-card {
+            border: 1px solid #E2E8F0;
+            border-radius: 1rem;
+            background: #fff;
+            box-shadow: 0 10px 30px rgba(11, 45, 74, .08)
+        }
+
+        .payment-new-input {
+            margin-top: .35rem;
+            width: 100%;
+            border: 1px solid #E2E8F0;
+            border-radius: .6rem;
+            background: #fff;
+            padding: .65rem .75rem;
+            font-size: .875rem;
+            color: #17324D;
+            outline: none
+        }
+
+        .payment-new-input:focus {
+            border-color: #2585F5;
+            box-shadow: 0 0 0 3px rgba(37, 133, 245, .12)
+        }
+
+        .payment-new-upload {
+            border: 1px dashed #93C5FD;
+            border-radius: .8rem;
+            background: #EFF6FF;
+            padding: 1rem
+        }
+
+        .payment-new-preview-frame {
+            position: relative;
+            display: flex;
+            min-height: 9rem;
+            max-height: 14rem;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            border: 1px solid #E2E8F0;
+            border-radius: .75rem;
+            background: #F8FAFC
+        }
+
+        .payment-new-preview-frame img {
+            max-height: 12rem;
+            max-width: 100%;
+            object-fit: contain
+        }
+
+        .payment-new-status {
+            display: inline-flex;
+            border-radius: 999px;
+            padding: .25rem .6rem;
+            font-size: .7rem;
+            font-weight: 700
+        }
+
+        .payment-new-status--verified {
+            background: #DCFCE7;
+            color: #15803D
+        }
+
+        .payment-new-status--denied {
+            background: #FEE2E2;
+            color: #B91C1C
+        }
+
+        .payment-new-status--pending {
+            background: #F1F5F9;
+            color: #475569
+        }
+    </style>
+</head>
+
+<body class="flex min-h-screen w-full flex-row">
+    <div id="sidebar-container" class="z-50"></div>
+    <main id="payment-new-main" class="min-h-screen min-w-0 flex-1 md:ml-[180px]">
+        <header
+            class="sticky top-0 z-30 flex min-h-[60px] items-center justify-between border-b border-slate-200 bg-white/95 px-5 py-3 shadow-sm backdrop-blur">
+            <div class="flex items-center gap-4"><button id="notif-button" class="relative rounded-xl p-2"
+                    aria-label="Open notifications"><img src="/account/f-assets/solid/bell.svg" class="h-6 w-6"
+                        alt=""><span id="notif-new-indicator"
+                        class="absolute right-1 top-1 hidden min-h-4 min-w-4 items-center justify-center rounded-full bg-blue-600 px-1 text-[10px] font-bold text-white"></span></button><img
+                    src="/account/f-assets/solid/drivers_ed_logo-no-bg.png" class="h-8 w-auto" alt="Driver's Ed"></div>
+            <div class="text-right">
+                <p class="text-xs font-semibold uppercase tracking-[.18em] text-slate-400">Client portal</p>
+                <h1 class="font-bold text-[#0B2D4A]">Payments</h1>
+            </div>
+        </header>
+        <section class="mx-auto max-w-6xl px-5 pb-12 pt-7 md:px-8">
+            <p class="text-xs font-semibold uppercase tracking-[.2em] text-[#1976D2]">Payment center</p>
+            <h2 class="mt-1 text-3xl font-bold text-[#0B2D4A]">Payments</h2>
+            <p class="mt-1 text-sm text-slate-500">Submit payments and track your payment history.</p>
+            <div class="mt-6 grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(280px,.65fr)]">
+                <section class="payment-new-card p-5 md:p-6">
+                    <h2 class="text-lg font-bold text-[#0B2D4A]">Make a payment</h2>
+                    <p class="mt-1 text-xs text-slate-500">Complete the form below and attach your receipt.</p>
+                    <form id="payment-form" class="mt-5 space-y-4">
+                        <div class="grid gap-4 sm:grid-cols-2"><label
+                                class="text-xs font-semibold text-slate-600">Payment method<select id="payment-method"
+                                    name="paymentMethod" required class="payment-new-input">
+                                    <option value="" disabled selected>Select payment option</option>
+                                </select></label><label class="text-xs font-semibold text-slate-600">Account name<input
+                                    id="account-name" name="accountName" type="text" required
+                                    class="payment-new-input"></label></div><label
+                            class="block text-xs font-semibold text-slate-600">Course<select id="course-select"
+                                name="courseSelect" required class="payment-new-input"></select></label><label
+                            class="block text-xs font-semibold text-slate-600">Amount<input id="amount" name="amount"
+                                type="number" step="0.01" required class="payment-new-input"></label>
+                        <div class="payment-new-upload"><label for="screenshot-receipt"
+                                class="block cursor-pointer text-xs font-semibold text-slate-600"><span class="flex items-center justify-between"><span>Receipt image</span><span class="rounded-md bg-white px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-[#1976D2]">Choose file</span></span><span class="mt-2 block text-xs font-normal text-slate-500">Upload a clear image of your payment receipt.</span><input
+                                    id="screenshot-receipt" name="screenshotReceipt" type="file" accept="image/*"
+                                    class="sr-only"></label><div id="receipt-preview-frame" class="payment-new-preview-frame mt-3 hidden"><img
+                                id="payment-picture-preview" alt="Receipt preview"><button id="view-receipt-preview" type="button"
+                                class="absolute bottom-2 right-2 rounded-md bg-[#0B2D4A] px-2 py-1 text-[10px] font-bold text-white">View large</button></div>
+                        </div><button id="submit-payment-btn" type="submit"
+                            class="rounded-lg bg-[#1976D2] px-5 py-2.5 text-sm font-bold text-white hover:bg-[#0B2D4A]">Submit
+                            payment</button>
+                    </form>
+                </section>
+                <section id="method-preview" class="payment-new-card h-fit p-5 md:p-6">
+                    <div class="flex items-center justify-between">
+                        <h2 class="font-bold text-[#0B2D4A]">Payment method details</h2><button id="download-image"
+                            class="hidden text-xs font-bold text-[#1976D2]">Download</button>
+                    </div><div id="method-preview-frame" class="payment-new-preview-frame mt-4 hidden"><img id="payment-method-preview"
+                        alt="Payment method details"><button id="view-method-preview" type="button"
+                        class="absolute bottom-2 right-2 rounded-md bg-[#0B2D4A] px-2 py-1 text-[10px] font-bold text-white">View large</button></div>
+                </section>
+            </div>
+            <section class="payment-new-card mt-5 p-5 md:p-6">
+                <div class="mb-4">
+                    <h2 class="text-lg font-bold text-[#0B2D4A]">Payment history</h2>
+                    <p id="table-announcement" class="mt-1 text-xs text-slate-500">Your recent payment activity.</p>
+                </div>
+                <div id="user-payments-table" class="overflow-x-auto"></div>
+            </section>
+        </section>
+    </main>
+    <div id="myModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/50 p-4">
+        <div class="relative w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl"><button
+                class="close absolute right-4 top-3 text-2xl text-slate-400" aria-label="Close">&times;</button>
+            <h2 id="title-details" class="text-lg font-bold text-[#0B2D4A]">User Payment</h2>
+            <div id="modal-details" class="mt-4"></div>
+        </div>
+    </div>
+    <div id="preview-modal" class="fixed inset-0 z-[60] hidden items-center justify-center bg-slate-900/75 p-4">
+        <div class="relative flex max-h-[90vh] w-full max-w-4xl items-center justify-center rounded-2xl bg-white p-4 shadow-xl">
+            <button id="close-preview-modal" type="button" class="absolute right-3 top-2 z-10 text-2xl text-slate-400"
+                aria-label="Close image preview">&times;</button>
+            <img id="large-preview-image" class="max-h-[82vh] max-w-full object-contain" alt="Large preview">
+        </div>
+    </div>
+    <script type="module" src="/account/utils/f-webCryptoKeys.js"></script>
+    <script type="module" src="/account/utils/f-keyManager.js"></script>
+    <script type="module" src="/account/utils/modal-feedback.js"></script>
+    <script>document.addEventListener('DOMContentLoaded', () => { const s = document.createElement('script'); s.src = '/account/f-jsfiles/user-sidebar.js'; document.body.appendChild(s); const p = document.createElement('script'); p.src = '/account/f-jsfiles/user-payments-new.js'; p.type = 'module'; document.body.appendChild(p) });</script>
+</body>
+
+</html>

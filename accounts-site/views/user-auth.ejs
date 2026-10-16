@@ -1,0 +1,105 @@
+<% const isRegister = authMode === "register"; %>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= isRegister ? "Create account" : "Sign in" %> | Driver's Ed</title>
+    <link href="/account/f-css/output.css" rel="stylesheet">
+    <style>
+        :root { --auth-navy: #0B2D4A; --auth-blue: #1976D2; --auth-bg: #F4F7FB; }
+        * { box-sizing: border-box; }
+        body { min-height: 100vh; margin: 0; background: var(--auth-bg); color: #17324D; font-family: "Montserrat", "Segoe UI", sans-serif; }
+        .auth-shell { min-height: 100vh; background: linear-gradient(135deg, rgba(11,45,74,.98), rgba(25,118,210,.92)); }
+        .auth-panel { width: min(100%, 31rem); border: 1px solid rgba(226,232,240,.9); border-radius: 1.25rem; background: rgba(255,255,255,.98); box-shadow: 0 24px 70px rgba(11,45,74,.28); }
+        .auth-input { width: 100%; border: 1px solid #D8E2EC; border-radius: .7rem; background: #fff; padding: .75rem .85rem; color: #17324D; outline: none; transition: border-color .2s ease, box-shadow .2s ease; }
+        .auth-input:focus { border-color: #2585F5; box-shadow: 0 0 0 3px rgba(37,133,245,.14); }
+        .auth-input.is-invalid { border-color: #DC2626; box-shadow: 0 0 0 3px rgba(220,38,38,.1); }
+        .auth-error { min-height: 1.25rem; color: #B91C1C; font-size: .75rem; font-weight: 600; }
+        .auth-tab { border-bottom: 2px solid transparent; color: #64748B; font-size: .875rem; font-weight: 700; padding: .7rem .25rem; }
+        .auth-tab.is-active { border-color: var(--auth-blue); color: var(--auth-navy); }
+    </style>
+</head>
+<body>
+    <main class="auth-shell flex min-h-screen items-center justify-center p-5 md:p-8">
+        <section class="auth-panel overflow-hidden">
+            <div class="border-b border-slate-100 px-6 pb-5 pt-7 md:px-8">
+                <div class="flex items-center gap-3">
+                    <img src="/account/f-assets/solid/drivers_ed_logo-no-bg.png" class="h-10 w-auto object-contain" alt="Driver's Ed">
+                    <div><p class="text-[10px] font-bold uppercase tracking-[.2em] text-[#1976D2]">Client portal</p><h1 class="text-xl font-extrabold text-[#0B2D4A]">Driver's Ed</h1></div>
+                </div>
+                <h2 class="mt-7 text-2xl font-extrabold text-[#0B2D4A]"><%= isRegister ? "Create your account" : "Welcome back" %></h2>
+                <p class="mt-1 text-sm text-slate-500"><%= isRegister ? "Register to manage your driving-school journey." : "Sign in to continue to your client portal." %></p>
+                <nav class="mt-6 flex gap-5" aria-label="Account actions"><a href="/account/user-login" class="auth-tab <%= !isRegister ? "is-active" : "" %>">Sign in</a><a href="/account/user-registration-form" class="auth-tab <%= isRegister ? "is-active" : "" %>">Create account</a></nav>
+            </div>
+            <div class="px-6 py-6 md:px-8">
+                <% if (isRegister) { %>
+                <form id="registration-form" novalidate class="space-y-4">
+                    <label class="block text-xs font-bold text-slate-600">Full name<input id="name" name="name" type="text" autocomplete="name" class="auth-input mt-1" placeholder="Juan Dela Cruz" required><span id="name-error" class="auth-error block"></span></label>
+                    <label class="block text-xs font-bold text-slate-600">Email<input id="email" name="email" type="email" autocomplete="email" class="auth-input mt-1" placeholder="you@example.com" required><span id="email-error" class="auth-error block"></span></label>
+                    <label class="block text-xs font-bold text-slate-600">Password<input id="password" name="password" type="password" autocomplete="new-password" class="auth-input mt-1" placeholder="Create a password" required><span id="password-error" class="auth-error block"></span></label>
+                    <button id="register-btn" type="submit" class="w-full rounded-lg bg-[#1976D2] px-4 py-3 text-sm font-bold text-white transition hover:bg-[#0B2D4A]">Create account</button>
+                </form>
+                <button id="google-login-btn" type="button" class="mt-3 w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-[#0B2D4A] hover:bg-slate-50">Register with Google</button>
+                <% } else { %>
+                <form id="userLoginForm" novalidate class="space-y-4">
+                    <label class="block text-xs font-bold text-slate-600">Email<input id="email" type="email" name="email" autocomplete="email" class="auth-input mt-1" placeholder="you@example.com" required><span id="email-error" class="auth-error block"></span></label>
+                    <label class="block text-xs font-bold text-slate-600">Password<input id="password" type="password" name="password" autocomplete="current-password" class="auth-input mt-1" placeholder="Your password" required><span id="password-error" class="auth-error block"></span></label>
+                    <button id="login-btn" type="submit" class="w-full rounded-lg bg-[#1976D2] px-4 py-3 text-sm font-bold text-white transition hover:bg-[#0B2D4A]">Sign in</button>
+                    <div class="flex justify-between gap-3 text-xs font-semibold"><a href="/account/change-password-email-option" class="text-[#1976D2] hover:underline">Forgot password?</a><a href="/public/" class="text-slate-500 hover:text-[#1976D2]">Visit homepage</a></div>
+                </form>
+                <button id="google-login-btn" type="button" class="mt-3 w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-[#0B2D4A] hover:bg-slate-50">Login with Google</button>
+                <% } %>
+                <p id="form-message" class="mt-4 min-h-5 text-center text-sm font-semibold" role="alert"></p>
+            </div>
+        </section>
+    </main>
+    <script type="module">
+        import { validateEmail, validatePersonName, validateRequired } from "/account/utils/f-form-validation.js";
+
+        const isRegister = <%= JSON.stringify(isRegister) %>;
+        const message = document.getElementById("form-message");
+        const showMessage = (text, error = true) => { message.textContent = text; message.className = `mt-4 min-h-5 text-center text-sm font-semibold ${error ? "text-red-600" : "text-emerald-700"}`; };
+        const showFieldError = (input, errorElement, result) => { input.classList.toggle("is-invalid", !result.valid); errorElement.textContent = result.valid ? "" : result.message; return result.valid; };
+
+        document.getElementById("google-login-btn")?.addEventListener("click", () => { window.location.href = "/auth/google/user"; });
+
+        if (isRegister) {
+            const form = document.getElementById("registration-form");
+            form.addEventListener("submit", async (event) => {
+                event.preventDefault();
+                const name = document.getElementById("name");
+                const email = document.getElementById("email");
+                const password = document.getElementById("password");
+                const validName = showFieldError(name, document.getElementById("name-error"), validatePersonName(name.value));
+                const validEmail = showFieldError(email, document.getElementById("email-error"), validateEmail(email.value));
+                const validPassword = showFieldError(password, document.getElementById("password-error"), validateRequired(password.value, "Password is required."));
+                if (!validName || !validEmail || !validPassword) { showMessage("Please correct the highlighted fields."); return; }
+                try {
+                    const response = await fetch("/account/api/user-registration", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: name.value.trim().replace(/\s+/g, " "), email: email.value.trim(), password: password.value }) });
+                    const data = await response.json();
+                    if (!response.ok) throw new Error(data.error || "Unable to register.");
+                    showMessage("Account created. Redirecting to sign in...", false);
+                    window.setTimeout(() => { window.location.href = "/account/user-login"; }, 800);
+                } catch (error) { showMessage(error.message); }
+            });
+        } else {
+            const form = document.getElementById("userLoginForm");
+            form.addEventListener("submit", async (event) => {
+                event.preventDefault();
+                const email = document.getElementById("email");
+                const password = document.getElementById("password");
+                const validEmail = showFieldError(email, document.getElementById("email-error"), validateEmail(email.value));
+                const validPassword = showFieldError(password, document.getElementById("password-error"), validateRequired(password.value, "Password is required."));
+                if (!validEmail || !validPassword) { showMessage("Please enter your email and password."); return; }
+                try {
+                    const response = await fetch("/account/user-login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: email.value.trim(), password: password.value }) });
+                    const data = await response.json();
+                    if (!response.ok) throw new Error(data.error || "Unable to sign in.");
+                    window.location.href = "/account/login-success";
+                } catch (error) { showMessage(error.message); }
+            });
+        }
+    </script>
+</body>
+</html>

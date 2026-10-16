@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth overflow-x-hidden">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Programs | Driver's Ed</title>
+    <link href="/account/f-css/output.css" rel="stylesheet">
+    <style>
+        :root {
+            --program-navy: #0B2D4A;
+            --program-blue: #1976D2;
+            --program-bright: #2585F5;
+            --program-yellow: #FFC400;
+            --program-bg: #F4F7FB;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            min-width: 0;
+            background: var(--program-bg);
+            color: #17324D;
+            font-family: "Montserrat", "Segoe UI", sans-serif;
+        }
+
+        #program-new-main {
+            min-width: 0;
+            max-width: 100%;
+            overflow-x: hidden;
+        }
+
+        .program-new-calendar {
+            display: grid;
+            grid-template-columns: repeat(7, minmax(0, 1fr));
+            gap: .45rem;
+        }
+
+        .program-new-day {
+            min-height: 6.5rem;
+            border: 1px solid #E2E8F0;
+            border-radius: .75rem;
+            padding: .55rem;
+            background: #fff;
+        }
+
+        .program-new-day.is-past {
+            background: #F8FAFC;
+            color: #94A3B8;
+        }
+
+        .program-new-day.is-sunday {
+            background: #FFF7ED;
+        }
+
+        .program-new-day.is-open {
+            border-color: #BBF7D0;
+            background: #F0FDF4;
+        }
+
+        .program-new-day.is-tdc {
+            border-color: #BFDBFE;
+            background: #EFF6FF;
+        }
+
+        .program-new-marker {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 999px;
+            padding: .15rem .35rem;
+            font-size: 10px;
+            font-weight: 700;
+        }
+
+        .program-new-loading {
+            min-height: 22rem;
+            background: linear-gradient(90deg, #F1F5F9 25%, #E2E8F0 50%, #F1F5F9 75%);
+            background-size: 200% 100%;
+            animation: program-new-shimmer 1.2s infinite;
+        }
+
+        .program-new-slot-group {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: .35rem;
+            margin-top: .25rem;
+        }
+
+        .program-new-slot-button {
+            border: 1px solid #E2E8F0;
+            border-radius: .5rem;
+            background: #fff;
+            padding: .5rem .65rem;
+            color: #64748B;
+            font-size: .75rem;
+            font-weight: 700;
+            transition: background-color .18s ease, border-color .18s ease, color .18s ease;
+        }
+
+        .program-new-slot-button:hover,
+        .program-new-slot-button.is-selected {
+            border-color: #2585F5;
+            background: #EFF6FF;
+            color: #1976D2;
+        }
+
+        .program-new-slot-button:focus-visible {
+            outline: 3px solid rgba(37, 133, 245, .28);
+            outline-offset: 2px;
+        }
+
+        @keyframes program-new-calendar-pop {
+            0% {
+                transform: scale(.985);
+                opacity: .72;
+            }
+
+            60% {
+                transform: scale(1.01);
+                opacity: 1;
+            }
+
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .program-new-calendar-pop {
+            animation: program-new-calendar-pop .42s ease-out;
+        }
+
+        @keyframes program-new-shimmer {
+            to {
+                background-position: -200% 0;
+            }
+        }
+
+        @media (max-width:767px) {
+            .program-new-open-label {
+                display: none;
+            }
+
+            .program-new-day {
+                min-height: 5.5rem;
+                padding: .4rem;
+            }
+
+            .program-new-calendar {
+                gap: .25rem;
+            }
+        }
+    </style>
+</head>
+
+<body class="flex min-h-screen w-full flex-row">
+    <div id="sidebar-container" class="z-50"></div>
+    <main id="program-new-main" class="min-h-screen min-w-0 flex-1 md:ml-[180px]">
+        <header
+            class="sticky top-0 z-30 flex min-h-[60px] items-center justify-between border-b border-slate-200 bg-white/95 px-5 py-3 shadow-sm backdrop-blur">
+            <div id="left-side" class="flex items-center gap-4">
+                <button id="notif-button"
+                    class="relative rounded-xl p-2 transition hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    aria-label="Open notifications">
+                    <img id="notif-logo" src="/account/f-assets/solid/bell.svg" class="h-6 w-6" alt="" />
+                    <span id="notif-new-indicator"
+                        class="absolute right-1 top-1 hidden min-h-4 min-w-4 -translate-y-1/2 translate-x-1/2 items-center justify-center rounded-full bg-blue-600 px-1 text-[10px] font-bold text-white shadow-sm"
+                        aria-live="polite"></span>
+                </button>
+                <img id="company-logo" src="/account/f-assets/solid/drivers_ed_logo-no-bg.png"
+                    class="h-8 w-auto object-contain" alt="Driver's Ed Driving School" />
+            </div>
+            <div class="text-right">
+                <p class="text-xs font-semibold uppercase tracking-[.18em] text-slate-400">Client portal</p>
+                <h1 class="text-base font-bold text-[#0B2D4A]">Programs</h1>
+            </div>
+        </header>
+        <section class="mx-auto w-full max-w-[1500px] px-5 pb-12 pt-6 md:px-8">
+            <div class="mb-6">
+                <p class="text-xs font-semibold uppercase tracking-[.2em] text-[#1976D2]">Training scheduler</p>
+                <h2 class="mt-1 text-3xl font-bold tracking-tight text-[#0B2D4A]">Programs</h2>
+                <p class="mt-1 text-sm text-slate-500">Instructor schedules &amp; training availability</p>
+            </div>
+            <div class="grid gap-5 lg:grid-cols-[minmax(0,1.8fr)_minmax(300px,1fr)]">
+                <section
+                    class="order-2 rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_10px_30px_rgba(11,45,74,.08)] lg:order-1 md:p-6">
+                    <div class="mb-5 flex flex-wrap items-end justify-between gap-3">
+                        <div>
+                            <h2 class="text-lg font-bold text-[#0B2D4A]">Instructor availability</h2>
+                            <p id="program-new-calendar-subtitle" class="mt-1 text-xs text-slate-500">Select an
+                                instructor to view their live schedule.</p>
+                        </div>
+                        <div id="program-new-loading-label" class="hidden text-xs font-semibold text-[#1976D2]">Loading
+                            schedule...</div>
+                    </div>
+                    <div class="mb-4 flex items-center justify-between"><button id="program-new-prev" type="button"
+                            class="rounded-lg border border-slate-200 px-3 py-2 text-sm font-bold text-[#1976D2] hover:bg-blue-50"
+                            aria-label="Previous month">&#8592;</button>
+                        <h3 id="program-new-month" class="text-base font-bold text-[#0B2D4A]"></h3><button
+                            id="program-new-next" type="button"
+                            class="rounded-lg border border-slate-200 px-3 py-2 text-sm font-bold text-[#1976D2] hover:bg-blue-50"
+                            aria-label="Next month">&#8594;</button>
+                    </div>
+                    <div
+                        class="mb-2 grid grid-cols-7 text-center text-[10px] font-bold uppercase tracking-wide text-slate-400">
+                        <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
+                    </div>
+                    <div id="program-new-calendar" class="program-new-calendar" aria-live="polite"></div>
+                    <div class="mt-5 flex flex-wrap gap-2 border-t border-slate-100 pt-4 text-[11px] text-slate-500">
+                        <span class="program-new-marker bg-emerald-50 text-emerald-700">AM / PM</span><span>scheduled
+                            PDC markers</span><span class="program-new-marker bg-blue-50 text-blue-700">TDC
+                            slots</span><span>onsite availability</span><span
+                            class="program-new-marker bg-green-50 text-green-700">Open</span><span>no slots
+                            recorded</span>
+                    </div>
+                    <p id="program-new-calendar-error"
+                        class="mt-4 hidden rounded-lg bg-red-50 p-3 text-sm font-semibold text-red-700"></p>
+                </section>
+                <section
+                    class="order-1 h-fit rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_10px_30px_rgba(11,45,74,.08)] lg:order-2 md:p-6">
+                    <div class="mb-5 border-b border-slate-100 pb-4">
+                        <h2 class="text-lg font-bold text-[#0B2D4A]">Schedule training</h2>
+                        <p class="mt-1 text-xs text-slate-500">Select an instructor, program, and preferred training
+                            dates.</p>
+                    </div>
+                    <form id="program-new-application" class="space-y-4"><label
+                            class="block text-xs font-semibold text-slate-600">Instructor<select
+                                id="program-new-instructor" name="instructor" required
+                                class="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-[#2585F5] focus:outline-none focus:ring-2 focus:ring-blue-100">
+                                <option value="">Select an instructor</option>
+                            </select></label><label class="block text-xs font-semibold text-slate-600">Program<select
+                                id="program-new-program" name="program" required
+                                class="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-[#2585F5] focus:outline-none focus:ring-2 focus:ring-blue-100">
+                                <option value="">Select a program</option>
+                            </select></label>
+                        <div class="grid gap-3 sm:grid-cols-2"><label
+                                class="block text-xs font-semibold text-slate-600">Starting date
+                                <input id="program-new-start" name="startDate" type="date" required
+                                class="date-input mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"></label>
+                            <label class="block text-xs font-semibold text-slate-600">Starting slot
+                                <select id="program-new-start-slot" name="startDateAMPM" required class="sr-only">
+                                    <option value="AM">AM</option>
+                                    <option value="PM">PM</option>
+                                </select><span class="program-new-slot-group"
+                                    data-slot-target="program-new-start-slot"><button type="button"
+                                        class="program-new-slot-button is-selected"
+                                        data-slot-value="AM">AM</button><button type="button"
+                                        class="program-new-slot-button" data-slot-value="PM">PM</button></span></label>
+                        </div>
+                        <div class="grid gap-3 sm:grid-cols-2"><label
+                                class="block text-xs font-semibold text-slate-600">Continuation date
+                                <input id="program-new-continuation" name="continuation" type="date" required
+                                class="date-input mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"></label><label
+                                class="block text-xs font-semibold text-slate-600">Continuation slot<select
+                                    id="program-new-continuation-slot" name="continuationAMPM" required class="sr-only">
+                                    <option value="AM">AM</option>
+                                    <option value="PM">PM</option>
+                                </select><span class="program-new-slot-group"
+                                    data-slot-target="program-new-continuation-slot"><button type="button"
+                                        class="program-new-slot-button is-selected"
+                                        data-slot-value="AM">AM</button><button type="button"
+                                        class="program-new-slot-button" data-slot-value="PM">PM</button></span></label>
+                        </div><label class="block text-xs font-semibold text-slate-600">Transmission<select
+                                id="program-new-transmission" name="transmission" required
+                                class="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
+                                <option value="Manual">Manual</option>
+                                <option value="Automatic">Automatic</option>
+                            </select></label>
+                        <div class="flex items-center justify-between gap-3 pt-2"><button id="program-new-submit"
+                                type="submit"
+                                class="rounded-lg bg-[#1976D2] px-4 py-2.5 text-sm font-bold text-white hover:bg-[#0B2D4A] focus:outline-none focus:ring-2 focus:ring-blue-500">Submit</button><button
+                                id="program-new-continuation-open" type="button"
+                                class="rounded-lg border border-slate-200 px-3 py-2.5 text-xs font-bold text-[#1976D2] hover:bg-blue-50">Add
+                                continuation</button></div>
+                    </form>
+                </section>
+            </div>
+            <section
+                class="mt-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_10px_30px_rgba(11,45,74,.08)] md:p-6">
+                <div class="mb-4">
+                    <h2 class="text-lg font-bold text-[#0B2D4A]">Application logs</h2>
+                    <p id="program-new-logs-subtitle" class="mt-1 text-xs text-slate-500">Recent training schedule
+                        applications.</p>
+                </div>
+                <div id="program-new-logs" class="overflow-x-auto"></div>
+            </section>
+        </section>
+    </main>
+    <div id="program-new-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/50 p-4">
+        <div class="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl">
+            <div class="flex items-center justify-between">
+                <h2 class="text-lg font-bold text-[#0B2D4A]">Add continuation</h2><button id="program-new-modal-close"
+                    type="button" class="text-2xl text-slate-400" aria-label="Close">&times;</button>
+            </div>
+            <form id="program-new-continuation-form" class="mt-5 space-y-4"><label
+                    class="block text-xs font-semibold text-slate-600">Instructor<select
+                        id="program-new-modal-instructor" name="instructor" required
+                        class="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"></select></label><label
+                    class="block text-xs font-semibold text-slate-600">Course<select id="program-new-course"
+                        name="courseOption" required
+                        class="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"></select></label><label
+                    class="block text-xs font-semibold text-slate-600">Continuation date<input
+                        id="program-new-modal-date" name="continuationDate" type="date" required
+                        class="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"></label><label
+                    class="block text-xs font-semibold text-slate-600">Slot<select id="program-new-modal-slot"
+                        name="dateAMPM" required
+                        class="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
+                        <option value="AM">AM</option>
+                        <option value="PM">PM</option>
+                    </select></label><button id="program-new-continuation-submit"
+                    class="rounded-lg bg-[#1976D2] px-4 py-2 text-sm font-bold text-white" type="submit">Submit</button>
+            </form>
+        </div>
+    </div>
+    <script>document.addEventListener('DOMContentLoaded', () => { const s = document.createElement('script'); s.src = '/account/f-jsfiles/user-sidebar.js'; document.body.appendChild(s); const p = document.createElement('script'); p.src = '/account/f-jsfiles/user-program-new.js'; p.type = 'module'; document.body.appendChild(p); });</script>
+</body>
+
+</html>

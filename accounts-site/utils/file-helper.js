@@ -19,8 +19,8 @@ export function openFileViewer({ fileData, fileType, title = "File Viewer" }) {
   const content = isImage
     ? `<img src="${blobUrl}" alt="file-preview" />`
     : isPDF
-    ? `<embed src="${blobUrl}" type="${fileType}" width="100%" height="100%" />`
-    : `<p style="color:white;">Unsupported file type: ${fileType}</p>`;
+      ? `<embed src="${blobUrl}" type="${fileType}" width="100%" height="100%" />`
+      : `<p style="color:white;">Unsupported file type: ${fileType}</p>`;
 
   newWindow.document.write(`
     <!DOCTYPE html>
@@ -71,6 +71,7 @@ export function openFileViewer({ fileData, fileType, title = "File Viewer" }) {
 
 function base64ToBlob(base64, mimeType) {
   const parts = base64.split(",");
+  console.log("parts", parts);
   if (parts.length !== 2 || !parts[1]) {
     throw new Error("Invalid base64 format");
   }
@@ -98,3 +99,13 @@ export function applyDownloadBtn(element, file, type, name) {
     document.body.removeChild(link);
   });
 }
+
+export const inputImageOnlyCheck = (event) => {
+  const file = event.target.files[0];
+  // ✅ enforce image-only
+  if (!file.type.startsWith("image/")) {
+    alert("Only image files are allowed.");
+    event.target.value = ""; // clear invalid selection
+    return;
+  }
+};

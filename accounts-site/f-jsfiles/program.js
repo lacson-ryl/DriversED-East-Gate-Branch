@@ -1,4 +1,4 @@
-import { openFileViewer } from "../utils/file-helper.js";
+import { openFileViewer, inputImageOnlyCheck } from "../utils/file-helper.js";
 import {
   showLoadingMessage,
   showOperationResult,
@@ -29,57 +29,57 @@ async function renderProgramList() {
     .map(
       (arr) =>
         `
-      <tr class="text-center hover:outline outline-1 outline-black">
-        <td class="border border-gray-300 px-4 py-2">${arr.program_id}</td>
-        <td class="border border-gray-300 px-4 py-2">${arr.program_name}</td>
-        <td class="border border-gray-300 px-4 py-2">${
+      <tr class="border-b border-slate-100 text-slate-600 transition hover:bg-slate-50">
+        <td class="px-4 py-3 font-semibold text-[#0B2D4A]">${arr.program_id}</td>
+        <td class="px-4 py-3 font-semibold text-[#0B2D4A]">${arr.program_name}</td>
+        <td class="px-4 py-3">${
           arr.program_duration
         } - ${arr.program_fee}</td>
-        <td class="border border-gray-300 px-4 py-2 truncate">${
+        <td class="max-w-40 truncate px-4 py-3">${
           arr.program_description
         }</td>
-        <td class="border border-gray-300 px-4 py-2">
+        <td class="px-4 py-3 ">
             ${
               arr.program_cover
                 ? `<button 
-                  class="view-btn bg-blue-700 hover:bg-gradient-to-t from-sky-400 to-sky-800 text-white rounded-md px-2" 
+                  class="program-action program-action--primary view-btn"
                   data-id="${arr.program_id}" 
                   data-file-type="${arr.program_cover_file_type}">
                   <img src="/account/f-assets/solid/icons_for_buttons/view-boards.svg" class="w-6 h-6 reverse-colorII" />
                   </button>
                   <button data-id="${arr.program_id}"
-                    class="cover-upload-btn bg-rose-700 hover:bg-gradient-to-t from-rose-400 to-rose-800 text-white rounded-md px-2">
+                    class="program-action program-action--warning cover-upload-btn">
                     <img src="/account/f-assets/solid/icons_for_buttons/upload.svg" class="w-6 h-6 reverse-color" />
                   </button>
               `
                 : `
                   <button data-id="${arr.program_id}"
-                    class="cover-upload-btn bg-rose-700 hover:bg-gradient-to-t from-rose-400 to-rose-800 text-white rounded-md px-2">
+                    class="program-action program-action--warning cover-upload-btn">
                     <img src="/account/f-assets/solid/icons_for_buttons/upload.svg" class="w-6 h-6 reverse-color" />
                   </button>
               `
             }
         </td>
-        <td class="border border-gray-300 px-4 py-2">
+        <td class="px-4 py-3">
           ${
             arr.availability === "Available"
               ? '<div class="text-green-600 font-semibold rounded-md px-2">Available</div>'
               : '<div class="text-red-600 font-semibold rounded-md px-2">Unavailable</div>'
           }
         </td>
-        <td class="border border-gray-300 px-4 py-2">
+        <td class="px-4 py-3">
           <button data-id="${arr.program_id}"
-            class="view-unassign-button bg-rose-700 hover:bg-gradient-to-t from-rose-400 to-rose-800 text-white rounded-md px-2">
+            class="program-action program-action--neutral view-unassign-button">
             <img src="/account/f-assets/solid/icons_for_buttons/minus-circle.svg" class="w-6 h-6 reverse-color" />  
           </button>
         </td>
-        <td class="border border-gray-300 px-4 py-2">
+        <td class="px-4 py-3">
           <button data-id="${arr.program_id}"
-            class="program-edit-btn bg-blue-700 hover:bg-gradient-to-t from-sky-400 to-sky-800 text-white rounded-md px-2">
+            class="program-action program-action--primary program-edit-btn">
             <img src="/account/f-assets/solid/icons_for_buttons/pencil.svg" class="w-6 h-6 reverse-color" />
           </button>
           <button data-id="${arr.program_id}"
-            class="program-delete-btn bg-rose-700 hover:bg-gradient-to-t from-rose-400 to-rose-800 text-white rounded-md px-2">
+            class="program-action program-action--danger program-delete-btn">
             <img src="/account/f-assets/solid/icons_for_buttons/trash.svg" class="w-6 h-6 reverse-color" />  
           </button>
         </td>
@@ -89,17 +89,17 @@ async function renderProgramList() {
     .join("");
 
   programTable.innerHTML = `
-      <table id="applicants-table" class="w-full text-left justify-items-start table-fixed border-collapse border-2 border-gray-300">
+      <table id="applicants-table" class="w-full text-left text-sm">
         <thead>
           <tr>
-            <th class="border border-gray-300 px-4 py-2 w-16">ID</th>
-            <th class="border border-gray-300 px-4 py-2">Program Name</th>
-            <th class="border border-gray-300 px-4 py-2 w-36">Duration $ Fee</th>
-            <th class="border border-gray-300 px-4 py-2">Description</th>
-            <th class="border border-gray-300 px-4 py-2 w-32">Cover</th>
-            <th class="border border-gray-300 px-4 py-2 w-32">Availability</th>
-            <th class="border border-gray-300 px-4 py-2 w-28">Instructors</th>
-            <th class="border border-gray-300 px-4 py-2 w-32">Action</th>
+            <th class="px-4 py-3">ID</th>
+            <th class="px-4 py-3">Program name</th>
+            <th class="px-4 py-3">Duration / fee</th>
+            <th class="px-4 py-3 w-20">Description</th>
+            <th class="px-4 py-3">Cover</th>
+            <th class="px-4 py-3">Availability</th>
+            <th class="px-4 py-3">Instructors</th>
+            <th class="px-4 py-3">Actions</th>
           </tr>
         </thead>
         <tbody>${tableRows}</tbody>
@@ -107,7 +107,6 @@ async function renderProgramList() {
     `;
   allButtons(details);
 }
-
 renderProgramList();
 
 //function to filter the list based on the rowid?
@@ -543,6 +542,9 @@ function allButtons(details) {
         </form>
       `;
       modal.style.display = "flex";
+      const programCover = document.getElementById("program-cover");
+
+      programCover.addEventListener("change", inputImageOnlyCheck);
       const coverSubmitBtn = document.getElementById("cover-submit-button");
 
       document

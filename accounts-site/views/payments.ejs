@@ -6,6 +6,115 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Manage Payments</title>
     <link href="/account/f-css/output.css" rel="stylesheet">
+    <style>
+        :root {
+            --payments-navy: #0B2D4A;
+            --payments-blue: #1976D2;
+            --payments-bg: #F4F7FB;
+        }
+
+        body {
+            min-width: 0;
+            background: var(--payments-bg);
+            font-family: "Montserrat", "Segoe UI", sans-serif;
+        }
+
+        #main-content {
+            min-width: 0;
+            max-width: 100%;
+            overflow-x: hidden;
+        }
+
+        .payments-table-frame {
+            max-height: min(68vh, 46rem);
+            overflow: auto;
+            border: 1px solid #E2E8F0;
+            border-radius: 1rem;
+            background: #fff;
+            box-shadow: 0 10px 30px rgba(11, 45, 74, .08);
+        }
+
+        .payments-table-frame table {
+            min-width: 980px;
+        }
+
+        .payments-table-frame th {
+            position: sticky;
+            top: 0;
+            z-index: 1;
+            background: #F8FAFC;
+            color: #64748B;
+            font-size: .7rem;
+            letter-spacing: .04em;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+
+        .payments-table-frame td {
+            white-space: nowrap;
+        }
+
+        .payments-action {
+            display: inline-flex;
+            min-height: 2rem;
+            align-items: center;
+            justify-content: center;
+            border-radius: .5rem;
+            padding: .35rem .6rem;
+            font-size: .75rem;
+            font-weight: 700;
+            transition: background-color .2s ease, color .2s ease;
+        }
+
+        .payments-action--view {
+            background: #EFF6FF;
+            color: #1D4ED8;
+        }
+
+        .payments-action--view:hover {
+            background: #93C5FD;
+            /* darker blue */
+        }
+
+        .payments-action--upload {
+            background: #FFFBEB;
+            color: #B45309;
+        }
+
+        .payments-action--upload:hover {
+            background: #F59E0B;
+            /* darker amber */
+        }
+
+        .payments-action--status {
+            border: 1px solid #CBD5E1;
+            background: #F8FAFC;
+            color: #334155;
+        }
+
+        .payments-action--status:hover {
+            background: #94A3B8;
+            /* darker slate gray */
+        }
+
+        .payments-action--delete {
+            background: #FFF1F2;
+            color: #BE123C;
+        }
+
+        .payments-action--delete:hover {
+            background: #DC2626;
+            /* darker red */
+        }
+
+        /* Smooth transition for hover effect */
+        .payments-action--view,
+        .payments-action--upload,
+        .payments-action--status,
+        .payments-action--delete {
+            transition: background-color 0.25s ease-in-out;
+        }
+    </style>
     <script type="module">
         import Dexie from "https://cdn.jsdelivr.net/npm/dexie@3.2.4/dist/dexie.mjs";
         window.Dexie = Dexie;
@@ -16,45 +125,55 @@
     <div id="sidebar-container">
     </div>
     <div id="main-content" class="block ml-ml-250 w-calc animate-fadeIn space-y-2">
-        <div id="top-bar" class="flex h-15 flex-row w-full sticky shadow-inner bg-white border-b-2 p-4">
-            <div id="left-side" class="flex flex-row gap-4 relative">
-                <div>
-                    <button id="notif-button" class="relative">
-                        <img id="notif-logo" src="/account/f-assets/solid/bell.svg" class="w-7 h-7 inline-block" />
-                        <div id="notif-new-indicator"
-                            class="h-3 w-3 rounded-full bg-blue-900 absolute top-2 right-2 transform translate-x-1/2 -translate-y-1/2 animate-pulse hidden">
-                        </div>
-                    </button>
-                </div>
-                <img id="company-logo" src="/account/f-assets/solid/drivers_ed_logo-no-bg.png" class="w-20 h-8" />
+        <div id="top-bar"
+            class="sticky top-0 z-30 flex min-h-[60px] items-center justify-between border-b border-slate-200 bg-white/95 px-5 py-3 shadow-sm backdrop-blur "md:px-8>
+            <div id="left-side" class="flex items-center gap-4">
+                <button id="notif-button"
+                    class="relative rounded-xl p-2 transition hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    aria-label="Open notifications">
+                    <img id="notif-logo" src="/account/f-assets/solid/bell.svg" class="h-6 w-6" alt="">
+                    <span id="notif-new-indicator"
+                        class="absolute right-1 top-1 hidden min-h-4 min-w-4 items-center justify-center rounded-full bg-blue-600 px-1 text-[10px] font-bold text-white"></span>
+                </button>
+                <img id="company-logo" src="/account/f-assets/solid/drivers_ed_logo-no-bg.png"
+                    class="h-8 w-auto object-contain" alt="Driver's Ed">
             </div>
-            <div id="right-side" class="absolute right-4 text-lg">
-                Payments
+            <div id="right-side" class="text-right">
+                <p class="text-xs font-semibold uppercase tracking-[.18em] text-slate-400">Admin workspace</p>
+                <h1 class="text-base font-bold text-[#0B2D4A] md:text-lg">Manage Payments</h1>
             </div>
         </div>
 
         <div id="content" class="flex flex-col w-full">
-            <div class="flex justify-between items-center mr-4 my-2">
-                <h2 class="text-lg ml-4"> Manage Applicant Payments</h2>
+            <div class="flex flex-col justify-between gap-4 px-5 pb-2 pt-6 md:flex-row md:items-end md:px-8">
+                <div>
+                    <p class="mb-1 text-xs font-semibold uppercase tracking-[.2em] text-[#1976D2]">Payment operations
+                    </p>
+                    <h2 class="text-3xl font-bold tracking-tight text-[#0B2D4A]">Applicant payments</h2>
+                    <p class="mt-1 text-sm text-slate-500">Review, verify, and manage applicant payment records.</p>
+                </div>
                 <div id="notification" class="hidden notification"></div>
-                <div class="flex gap-5">
+                <div class="flex flex-wrap items-center gap-2">
                     <form id="monthyearfilter">
-                        <div class="flex flex-row gap-4">
-                            <h3 class="flex items-center justify-center">Month / Year</h3>
+                        <div
+                            class="flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-white p-2 shadow-sm">
+                            <label for="monthyear"
+                                class="text-xs font-bold uppercase tracking-wide text-slate-500">Month</label>
                             <input type="month" id="monthyear" name="monthyear" min="1976-03"
-                             class="border-b-2 border-b-black " />
-                            <button type="submit" class="px-4 py-2 bg-blue-500 hover:bg-blue-800 text-white rounded">Filter</button>
+                                class="h-9 rounded-lg border border-slate-200 bg-white px-2 text-sm" />
+                            <button type="submit"
+                                class="rounded-lg bg-[#0B2D4A] px-3 py-2 text-xs font-bold text-white hover:bg-[#1976D2]">Filter</button>
                         </div>
                     </form>
                     <button id="add-payment-button"
-                        class="bg-blue-700 flex items-center hover:bg-gradient-to-t from-blue-400 to-blue-800 text-white rounded-lg px-2 py-1">
+                        class="flex items-center gap-1 rounded-lg bg-[#1976D2] px-3 py-2 text-sm font-bold text-white hover:bg-[#0B2D4A]">
                         <IMG src="/account/f-assets/solid/white/plus.svg" class="w-7 h-7" />
                         <span class="inline-block">Add Payment</span>
                     </button>
                 </div>
             </div>
 
-            <div id="payments-table" class="mt-3 mb-5 mx-3">
+            <div id="payments-table" class="payments-table-frame mx-5 mb-8 mt-4 md:mx-8">
 
             </div>
         </div>

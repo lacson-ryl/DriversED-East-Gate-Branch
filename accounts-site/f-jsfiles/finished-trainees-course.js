@@ -5,7 +5,7 @@ import {
   showBtnResult,
 } from "../utils/modal-feedback.js";
 
-import { openFileViewer } from "../utils/file-helper.js";
+import { openFileViewer, inputImageOnlyCheck } from "../utils/file-helper.js";
 
 // get current month-year in YYYY-MM format
 const currentMonthYear = new Date().toISOString().slice(0, 7);
@@ -337,6 +337,9 @@ function allButtons(data) {
           </form>
         `;
       modal.style.display = "flex";
+      const certInput = document.getElementById("certificate-completion-file");
+
+      certInput.addEventListener("change", inputImageOnlyCheck);
       const completedCertBtn = document.getElementById(
         "completion-submit-button",
       );
@@ -408,6 +411,9 @@ function allButtons(data) {
           </form>
         `;
       modal.style.display = "flex";
+      const gradeInput = document.getElementById("grade-completion-file");
+
+      gradeInput.addEventListener("change", inputImageOnlyCheck);
 
       const completedGradeBtn = document.getElementById(
         "completion-submit-button",

@@ -6,95 +6,421 @@ import {
   showBtnResult,
 } from "../utils/modal-feedback.js";
 
-import { openFileViewer } from "../utils/file-helper.js"
+import { openFileViewer, inputImageOnlyCheck } from "../utils/file-helper.js";
 
-//initialize modal elements;
+// ============================================================
+// RECENT USER SEARCH / DEXIE
+// ============================================================
+
+// ------------------------------------------------------------
+// MODAL ELEMENTS
+// ------------------------------------------------------------
 const modal = document.getElementById("myModal");
 const spanX = document.getElementsByClassName("close")[0];
 const modalDetails = document.getElementById("modal-details");
 const modalTitle = document.getElementById("title-details");
 
 const searchForm = document.getElementById("search-form");
+const userInfoCards = document.getElementById("user-infos");
+
+// ============================================================
+// DEXIE DATABASE
+// ============================================================
+
+const recentUsersDB = new Dexie("AdminRecentUsersDB");
+
+recentUsersDB.version(1).stores({
+  recentUsers: "id, lastAccessed",
+});
+
+const recentUsersTable = recentUsersDB.recentUsers;
+
+// Maximum number of users displayed in Recent Users
+const MAX_RECENT_USERS = 9;
+
+// ============================================================
+// INITIALIZE PAGE
+// ============================================================
+
+document.addEventListener("DOMContentLoaded", async () => {
+  await loadRecentUsers();
+});
+
+// ============================================================
+// SEARCH FORM
+// ============================================================
+
 searchForm.addEventListener("submit", async (event) => {
   event.preventDefault();
 
   const formData = new FormData(event.target);
-  const encrypting = await encryptData(formData);
-  showLoadingMessage(modalDetails, "Checking account records for a match");
-  modal.style.display = "flex";
 
-  const response = await fetch("/account/api/user-search", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ encryptedWithEncAesKey: encrypting }),
-  });
+  try {
+    const encrypting = await encryptData(formData);
 
-  const data = await response.json();
-  if (!response.ok || !data.encryptedProfile) {
-    searchForm.reset();
-    return showOperationResult(modalDetails, false, data.error);
-  }
-  showLoadingMessage(modalDetails, "Decrypting data...");
-  const decrypted = await decryptData(data.encryptedProfile);
-  console.log("decrypted", decrypted);
+    showLoadingMessage(modalDetails, "Checking account records for a match");
 
-  if (Object.keys(decrypted).length === 0) {
-    searchForm.reset();
-    return showOperationResult(modalDetails, false, "No match Found!");
-  }
-  setTimeout(() => {
-    modalDetails.innerHTML = "";
-    modal.style.display = "none";
-    searchForm.reset();
-    renderUserCards();
-  }, 4000);
+    modal.style.display = "flex";
 
-  function renderUserCards() {
-    const userInfoCards = document.getElementById("user-infos");
-    userInfoCards.innerHTML = decrypted
-      .map((profile) => {
-        let profilePic = "";
-        if (profile.profile_picture !== null) {
-          profilePic = profile.profile_picture;
-        } else {
-          profilePic = "/account/f-assets/solid/black/user.svg";
-        }
-
-        return `
-            <div class="bg-white p-5 rounded-lg shadow-md max-w-xs w-full mx-auto flex flex-col items-center space-y-4">
-                <img src="${profilePic}" alt="Profile Picture"
-                class="outline outline-2 outline-gray-500 w-20 h-20 rounded-full object-cover mx-auto" />
-                <div class="text-center w-full">
-                <h1 class="font-semibold text-lg truncate">${profile.name}</h1>
-                <h2 class="text-gray-600 text-sm truncate">${profile.email}</h2>
-                <p class="text-gray-400 text-xs">${profile.date_created}</p>
-                </div>
-                <button data-id="${profile.id}"
-                class="load-user-btn mt-2 w-full bg-blue-500 hover:bg-blue-700 text-white rounded-lg px-2 py-2 transition-colors duration-150">
-                Load User
-                </button>
-            </div>
-        `;
-      })
-      .join("");
-
-    // Add event listener for the confirm button
-    document.querySelectorAll(".load-user-btn").forEach((button) => {
-      button.addEventListener("click", (event) => {
-        event.preventDefault();
-        const userId = button.getAttribute("data-id");
-
-        showLoadingMessage(modalDetails, `generating the user info for you`);
-        modal.style.display = "flex";
-        userInfoCards.style.display = "none";
-        setTimeout(() => {
-          modal.style.display = "none";
-          renderUserInfo(userId);
-        }, 4000);
-      });
+    const response = await fetch("/account/api/user-search", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        encryptedWithEncAesKey: encrypting,
+      }),
     });
+
+    const data = await response.json();
+
+    if (!response.ok || !data.encryptedProfile) {
+      searchForm.reset();
+
+      return showOperationResult(modalDetails, false, data.error);
+    }
+
+    showLoadingMessage(modalDetails, "Decrypting data...");
+
+    const decrypted = await decryptData(data.encryptedProfile);
+
+    console.log("decrypted", decrypted);
+
+    if (!decrypted || Object.keys(decrypted).length === 0) {
+      searchForm.reset();
+
+      return showOperationResult(modalDetails, false, "No match Found!");
+    }
+
+    setTimeout(() => {
+      modalDetails.innerHTML = "";
+      modal.style.display = "none";
+
+      searchForm.reset();
+
+      // Display the normal search results
+      renderUserCards("search", decrypted);
+    }, 4000);
+  } catch (error) {
+    console.error("User search error:", error);
+
+    modal.style.display = "none";
+
+    searchForm.reset();
+
+    showOperationResult(
+      modalDetails,
+      false,
+      "An error occurred while searching for the user.",
+    );
   }
 });
+
+// ============================================================
+// LOAD RECENT USERS FROM DEXIE
+// ============================================================
+
+async function loadRecentUsers() {
+  try {
+    const recentUsers = await recentUsersTable
+      .orderBy("lastAccessed")
+      .reverse()
+      .limit(MAX_RECENT_USERS)
+      .toArray();
+
+    if (!recentUsers || recentUsers.length === 0) {
+      userInfoCards.innerHTML = `
+                <div class="col-span-full text-center py-10 text-gray-400">
+                    <p class="text-sm">
+                        No recently accessed users.
+                    </p>
+                </div>
+            `;
+
+      return;
+    }
+
+    renderRecentUserCards(recentUsers);
+  } catch (error) {
+    console.error("Failed to load recent users from Dexie:", error);
+
+    userInfoCards.innerHTML = "";
+  }
+}
+
+// ============================================================
+// SAVE USER TO DEXIE
+// ============================================================
+
+async function saveRecentUser(profile) {
+  if (!profile || !profile.id) {
+    console.warn("Cannot save recent user: missing user ID.", profile);
+
+    return;
+  }
+
+  try {
+    const recentUser = {
+      id: profile.id,
+      name: profile.name || "",
+      email: profile.email || "",
+      date_created: profile.date_created || "",
+      profile_picture: profile.profile_picture || null,
+
+      // Used for sorting recent users
+      lastAccessed: Date.now(),
+    };
+
+    // Because "id" is the primary key,
+    // put() automatically updates the existing user
+    // instead of creating a duplicate.
+    await recentUsersTable.put(recentUser);
+
+    // Keep the Dexie database from growing indefinitely.
+    await trimRecentUsers();
+
+    console.log("Recent user saved to Dexie:", recentUser);
+  } catch (error) {
+    console.error("Failed to save recent user:", error);
+  }
+}
+
+// ============================================================
+// REMOVE OLD RECENT USERS
+// ============================================================
+
+async function trimRecentUsers() {
+  try {
+    const users = await recentUsersTable
+      .orderBy("lastAccessed")
+      .reverse()
+      .toArray();
+
+    if (users.length <= MAX_RECENT_USERS) {
+      return;
+    }
+
+    const usersToDelete = users.slice(MAX_RECENT_USERS);
+
+    await recentUsersTable.bulkDelete(usersToDelete.map((user) => user.id));
+  } catch (error) {
+    console.error("Failed to trim recent users:", error);
+  }
+}
+
+// ============================================================
+// RENDER RECENT USER CARDS
+// ============================================================
+
+function renderRecentUserCards(users) {
+  if (!users || users.length === 0) {
+    userInfoCards.innerHTML = `
+            <div class="col-span-full text-center py-10 text-gray-400">
+                <p class="text-sm">
+                    No recently accessed users.
+                </p>
+            </div>
+        `;
+
+    return;
+  }
+
+  userInfoCards.innerHTML = `
+        <div class="col-span-full mb-2">
+            <h2 class="text-lg font-semibold text-gray-700">
+                Recently Accessed Users
+            </h2>
+        </div>
+
+        ${users.map((profile) => createUserCard(profile)).join("")}
+    `;
+}
+
+// ============================================================
+// CREATE USER CARD
+// ============================================================
+
+function createUserCard(profile) {
+  let profilePic = "";
+
+  if (profile.profile_picture && profile.profile_picture !== null) {
+    profilePic = profile.profile_picture;
+  } else {
+    profilePic = "/account/f-assets/solid/black/user.svg";
+  }
+
+  return `
+        <div
+            class="bg-white p-5 rounded-lg shadow-md max-w-xs w-full mx-auto flex flex-col items-center space-y-4"
+        >
+
+            <img
+                src="${profilePic}"
+                alt="Profile Picture"
+                class="outline outline-2 outline-gray-500 w-20 h-20 rounded-full object-cover mx-auto"
+            />
+
+            <div class="text-center w-full">
+
+                <h1
+                    class="font-semibold text-lg truncate"
+                    title="${profile.name || ""}"
+                >
+                    ${profile.name || "Unknown User"}
+                </h1>
+
+                <h2
+                    class="text-gray-600 text-sm truncate"
+                    title="${profile.email || ""}"
+                >
+                    ${profile.email || "No email"}
+                </h2>
+
+                <p class="text-gray-400 text-xs">
+                    ${profile.date_created || ""}
+                </p>
+
+            </div>
+
+            <button
+                type="button"
+                data-id="${profile.id}"
+                class="load-user-btn mt-2 w-full bg-blue-500 hover:bg-blue-700 text-white rounded-lg px-2 py-2 transition-colors duration-150"
+            >
+                Load User
+            </button>
+
+        </div>
+    `;
+}
+
+// ============================================================
+// RENDER NORMAL SEARCH RESULTS
+// ============================================================
+
+function renderUserCards(type, data) {
+  if (!Array.isArray(data)) {
+    console.error("Expected search data to be an array:", data);
+
+    userInfoCards.innerHTML = "";
+
+    return;
+  }
+
+  userInfoCards.innerHTML = data
+    .map((profile) => createUserCard(profile))
+    .join("");
+
+  // Store the search results temporarily in memory.
+  // This allows us to retrieve the complete profile object
+  // when the admin clicks "Load User".
+  currentSearchResults = data;
+}
+
+// ============================================================
+// CURRENT SEARCH RESULTS
+// ============================================================
+
+// This holds the decrypted search results from the current search.
+//
+// We intentionally do NOT store these in Dexie.
+// They are only needed while the admin is choosing a user.
+let currentSearchResults = [];
+
+// ============================================================
+// LOAD USER BUTTON
+// ============================================================
+
+userInfoCards.addEventListener("click", async (event) => {
+  const button = event.target.closest(".load-user-btn");
+
+  if (!button) {
+    return;
+  }
+
+  event.preventDefault();
+
+  const userId = button.dataset.id;
+
+  if (!userId) {
+    console.error("Load User button does not contain a user ID.");
+
+    return;
+  }
+
+  // --------------------------------------------------------
+  // Find the complete profile object
+  // --------------------------------------------------------
+
+  let selectedUser = currentSearchResults.find(
+    (profile) => String(profile.id) === String(userId),
+  );
+
+  // If the button came from a recent-user card,
+  // it won't necessarily exist in currentSearchResults.
+  //
+  // In that case, retrieve it from Dexie.
+  if (!selectedUser) {
+    try {
+      selectedUser = await recentUsersTable.get(userId);
+    } catch (error) {
+      console.error("Failed to retrieve recent user:", error);
+    }
+  }
+
+  // --------------------------------------------------------
+  // Show loading modal
+  // --------------------------------------------------------
+
+  showLoadingMessage(modalDetails, "Generating the user info for you");
+
+  modal.style.display = "flex";
+
+  userInfoCards.style.display = "none";
+
+  // --------------------------------------------------------
+  // Save/update recent user
+  // --------------------------------------------------------
+
+  if (selectedUser) {
+    await saveRecentUser(selectedUser);
+  } else {
+    console.warn("Selected user profile could not be found:", userId);
+  }
+
+  // --------------------------------------------------------
+  // Existing user-info generation
+  // --------------------------------------------------------
+
+  setTimeout(() => {
+    modal.style.display = "none";
+
+    // YOUR EXISTING FUNCTION
+    renderUserInfo(userId);
+  }, 4000);
+});
+
+// ============================================================
+// OPTIONAL: SHOW RECENT USERS AGAIN
+// ============================================================
+//
+// You can call this function whenever you want to return
+// to the Recent Users view.
+//
+// Example:
+//
+// showRecentUsers();
+//
+// ============================================================
+
+async function showRecentUsers() {
+  currentSearchResults = [];
+
+  userInfoCards.style.display = "";
+
+  await loadRecentUsers();
+}
+showRecentUsers();
 
 async function renderUserInfo(userId) {
   const response = await fetch(`/account/api/user-search/${userId}`);
@@ -107,7 +433,7 @@ async function renderUserInfo(userId) {
 
   // Decrypt the payload (await if decryptData is async)
   const { profile, courseList, courseAttendance } = await decryptData(
-    data.encryptedProfile
+    data.encryptedProfile,
   );
   // Destructure the expected data
   const user = profile[0];
@@ -193,7 +519,7 @@ async function renderUserInfo(userId) {
 
     // Attendance for this course
     const courseAttendance = attendance.filter(
-      (a) => a.user_course_id === course.course_id
+      (a) => a.user_course_id === course.course_id,
     );
 
     html += `
@@ -292,11 +618,11 @@ async function renderUserInfo(userId) {
                             a.status == "Present"
                               ? '<div class="text-green-900 hover:font-bold font-semibold rounded-md ">Present</div>'
                               : a.status == "Absent"
-                              ? '<div class="text-red-800 hover:font-bold font-semibold rounded-md">Absent</div>'
-                              : '<div class="text-gray-700 hover:font-bold font-semibold rounded-md">Pending</div>'
+                                ? '<div class="text-red-800 hover:font-bold font-semibold rounded-md">Absent</div>'
+                                : '<div class="text-gray-700 hover:font-bold font-semibold rounded-md">Pending</div>'
                           }
                           </button>
-                        </div>`
+                        </div>`,
                     )
                     .join("")
                 : `<div class="text-xs text-gray-400">No attendance records.</div>`
@@ -311,7 +637,7 @@ async function renderUserInfo(userId) {
 
   // Render to container
   const selectedUserContainer = document.getElementById(
-    "selected-user-info-container"
+    "selected-user-info-container",
   );
   selectedUserContainer.innerHTML = html;
   selectedUserContainer.style.display = "block";
@@ -381,6 +707,9 @@ async function renderUserInfo(userId) {
       modalDetails.innerHTML = "";
       modalDetails.innerHTML = modalform;
       modal.style.display = "flex";
+      const receiptInput = document.getElementById("screenshot-receipt");
+
+      receiptInput.addEventListener("change", inputImageOnlyCheck);
       const paymentSubmitBtn = document.getElementById("payment-submit-button");
 
       // Event listener for the form submission
@@ -422,7 +751,7 @@ async function renderUserInfo(userId) {
       const courseId = btn.getAttribute("data-course-id");
       const userCourse = courses.filter((arr) => arr.course_id == courseId);
       const userAttendance = attendance.filter(
-        (arr) => arr.user_course_id == courseId
+        (arr) => arr.user_course_id == courseId,
       );
 
       const modalForm = `
@@ -470,7 +799,7 @@ async function renderUserInfo(userId) {
       modalDetails.innerHTML = modalForm;
       modal.style.display = "flex";
       const addContinuationBtn = document.getElementById(
-        "add-continuation-btn"
+        "add-continuation-btn",
       );
       // Event listener for the form submission
       document
@@ -488,7 +817,7 @@ async function renderUserInfo(userId) {
               {
                 method: "POST",
                 body: formData,
-              }
+              },
             );
             const data = await response.json();
 
@@ -586,7 +915,7 @@ async function renderUserInfo(userId) {
                     dateStarted,
                     courseId,
                   }),
-                }
+                },
               );
               const result = await response.json();
               if (result.success) {
@@ -609,7 +938,7 @@ async function renderUserInfo(userId) {
               }, 3000);
             }
           },
-          { once: true }
+          { once: true },
         );
       }
 
@@ -656,7 +985,7 @@ async function renderUserInfo(userId) {
         presentBtn.classList.add(
           "disabled",
           "cursor-not-allowed",
-          "animate-pulse"
+          "animate-pulse",
         );
         const hoursAttended = document.getElementById("hours-attended").value;
         await changeStatus(userId, id, "Present", hoursAttended);
@@ -668,7 +997,7 @@ async function renderUserInfo(userId) {
         absentBtn.classList.add(
           "disabled",
           "cursor-not-allowed",
-          "animate-pulse"
+          "animate-pulse",
         );
         await changeStatus(userId, id, "Absent");
       });

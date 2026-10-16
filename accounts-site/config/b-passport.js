@@ -43,8 +43,8 @@ adminPassport.use(
       } catch (error) {
         return done(error, null);
       }
-    }
-  )
+    },
+  ),
 );
 
 adminPassport.serializeUser((user, done) => {
@@ -61,7 +61,7 @@ adminPassport.deserializeUser(async (obj, done) => {
     } else {
       return done(
         new Error("Invalid user type for admin deserialization"),
-        null
+        null,
       );
     }
   } catch (error) {
@@ -124,7 +124,7 @@ userPassport.use(
               "user",
               "Welcome!!",
               `Greetings to you, ${profile.displayName}!!
-                Thank you for choosing our driving school.`
+                Thank you for choosing our driving school.`,
             );
           } catch (notifErr) {
             console.error("Notification failed:", notifErr);
@@ -134,8 +134,8 @@ userPassport.use(
       } catch (error) {
         return done(error, null);
       }
-    }
-  )
+    },
+  ),
 );
 
 userPassport.serializeUser((user, done) => {
@@ -150,7 +150,7 @@ userPassport.deserializeUser(async (obj, done) => {
     } else {
       return done(
         new Error("Invalid user type for user deserialization"),
-        null
+        null,
       );
     }
   } catch (error) {
@@ -178,8 +178,8 @@ changePasswordPassport.use(
       } catch (error) {
         return done(error, null);
       }
-    }
-  )
+    },
+  ),
 );
 
 changePasswordPassport.serializeUser((user, done) => {
@@ -197,7 +197,7 @@ changePasswordPassport.deserializeUser(async (obj, done) => {
     } else {
       return done(
         new Error("Invalid user type for user deserialization"),
-        null
+        null,
       );
     }
   } catch (error) {

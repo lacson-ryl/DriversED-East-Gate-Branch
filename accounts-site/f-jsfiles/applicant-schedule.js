@@ -88,7 +88,7 @@ async function renderForm() {
 
       // Populate the instructor's assigned programs
       const assignedPrograms = assignedProgramToInstructor.filter(
-        (arr) => arr.instructor_id == instructorId
+        (arr) => arr.instructor_id == instructorId,
       );
 
       if (assignedPrograms.length === 0) {
@@ -143,7 +143,7 @@ async function renderForm() {
           showOperationResult(
             modalDetails,
             true,
-            "Application Successfully Submitted"
+            "Application Successfully Submitted",
           );
           updateCalendar(instructor); // Refresh the calendar to show updated availability
         } else {
@@ -159,7 +159,7 @@ async function renderForm() {
         console.error(error); // Log the error to the console for debugging
       }
     },
-    { once: true }
+    { once: true },
   );
 
   const setTdcDateBtn = document.getElementById("setTdcDate");
@@ -218,15 +218,18 @@ async function renderForm() {
       showBtnLoading(tdcDateBtn);
 
       try {
-        const response = await fetch("/account/api/user-application/setTdcDate", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            tdcInstructor,
-            tdcDate,
-            maxSlots,
-          }),
-        });
+        const response = await fetch(
+          "/account/api/user-application/setTdcDate",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              tdcInstructor,
+              tdcDate,
+              maxSlots,
+            }),
+          },
+        );
 
         if (response.ok) {
           showBtnResult(tdcDateBtn, true);
@@ -288,7 +291,7 @@ async function renderForm() {
     modal.style.display = "flex";
 
     const continuationInstructorOption = document.getElementById(
-      "instructor-continuation"
+      "instructor-continuation",
     );
     const transmissionType = document.getElementById("transmissionType");
     instructorsList.forEach((instructor) => {
@@ -351,7 +354,7 @@ async function renderForm() {
             {
               method: "POST",
               body: formData,
-            }
+            },
           );
           const data = await response.json();
 
@@ -436,7 +439,7 @@ async function updateCalendar(instructorId) {
   if (instructorId) {
     try {
       const response = await fetch(
-        `/account/api/instructors/${instructorId}/availability`
+        `/account/api/instructors/${instructorId}/availability`,
       );
       if (response.ok) {
         availability = await response.json();
@@ -465,7 +468,7 @@ async function updateCalendar(instructorId) {
       "flex",
       "flex-col",
       "items-center",
-      "justify-between"
+      "justify-between",
     );
 
     const dateLabel = document.createElement("span");
@@ -499,7 +502,7 @@ async function updateCalendar(instructorId) {
             "space-x-1",
             "mb-2",
             "text-xs",
-            "font-light"
+            "font-light",
           );
 
           if (slots.onsite >= 0 && slots.onsite != null) {
@@ -515,7 +518,7 @@ async function updateCalendar(instructorId) {
             const amCircle = document.createElement("div");
             amCircle.classList.add(
               "circle",
-              slots.am ? "available-am" : "unavailable"
+              slots.am ? "available-am" : "unavailable",
             );
             amCircle.textContent = "AM";
             circleContainer.appendChild(amCircle);
@@ -525,7 +528,7 @@ async function updateCalendar(instructorId) {
             const pmCircle = document.createElement("div");
             pmCircle.classList.add(
               "circle",
-              slots.pm ? "available-pm" : "unavailable"
+              slots.pm ? "available-pm" : "unavailable",
             );
             pmCircle.textContent = "PM";
             circleContainer.appendChild(pmCircle);

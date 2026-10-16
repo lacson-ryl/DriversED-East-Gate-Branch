@@ -90,7 +90,7 @@ module.exports = {
             backgroundColor: "transparent" /* Transparent track */,
           },
           ".sidebar-width": {
-            width: "220px",
+            width: "200px",
           },
           ".side-icons": {
             width: "30px",

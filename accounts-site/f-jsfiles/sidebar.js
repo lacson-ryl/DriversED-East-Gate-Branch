@@ -36,30 +36,10 @@ const sidebarContent = `
                 <span>Search</span>
             </a>
         </li>
-        <li id="requests"
-            class="flex flex-row items-center rounded-3xl hover:font-bold py-1 px-2 hover:hover-bg-custom">
-            <a class="side-nav-link flex flex-row items-center w-full gap-5" href="/account/requests">
-                <img src="/account/f-assets/solid/white/question-mark-circle.svg" class="side-icons" />
-                <span>Requests</span>
-            </a>
-        </li>
-        <li id="certificates"
-            class="flex flex-row items-center rounded-3xl hover:font-bold py-1 px-2 hover:hover-bg-custom">
-            <a class="side-nav-link flex flex-row items-center w-full gap-5" href="/account/certificates">
-                <img src="/account/f-assets/solid/white/star.svg" class="side-icons" />
-                <span>Certificates</span>
-            </a>
-        </li>
         <li id="payments" class="flex flex-row items-center rounded-3xl hover:font-bold py-1 px-2 hover:hover-bg-custom">
             <a class="side-nav-link flex flex-row items-center w-full gap-5" href="/account/payments">
                 <img src="/account/f-assets/solid/white/cash.svg" class="side-icons" />
                 <span>Payments</span>
-            </a>
-        </li>
-        <li id="reports" class="flex flex-row items-center rounded-3xl hover:font-bold py-1 px-2 hover:hover-bg-custom">
-            <a class="side-nav-link flex flex-row items-center w-full gap-5" href="/account/reports">
-                <img src="/account/f-assets/solid/white/exclamation-circle.svg" class="side-icons" />
-                <span>Reports</span>
             </a>
         </li>
         <li id="chatbox" class="flex flex-row items-center rounded-3xl hover:font-bold py-1 px-2 hover:hover-bg-custom">
@@ -89,7 +69,7 @@ const sidebarContent = `
         </div>
     </div>
 <div id="notificationDropdown"
-    class="hidden absolute w-72 max-h-80 overflow-auto bg-white shadow-lg rounded border border-black"
+    class="hidden absolute w-72 max-h-80  overflow-auto bg-white shadow-lg rounded border border-black"
     style="z-index: 99999;">
     <div class="p-2">
         <h3 class="font-semibold">Recent Notifications</h3>
@@ -109,9 +89,6 @@ const iconMap = {
   "/account/search": "/account/f-assets/solid/black/search-circle.svg",
   "/account/admin-chatbox":
     "/account/f-assets/solid/black/question-mark-circle.svg",
-  "/account/requests": "/account/f-assets/solid/black/question-mark-circle.svg",
-  "/account/reports": "/account/f-assets/solid/black/exclamation-circle.svg",
-  "/account/certificates": "/account/f-assets/solid/black/star.svg",
   "/account/payments": "/account/f-assets/solid/black/cash.svg",
   "/account/logout": "/account/f-assets/solid/black/logout.svg",
 };

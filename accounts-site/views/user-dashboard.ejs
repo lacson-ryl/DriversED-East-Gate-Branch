@@ -1,131 +1,287 @@
 <!DOCTYPE html>
-<html lang="en" class="scroll-smooth overflow-x-auto overflow-y-auto">
+<html lang="en" class="scroll-smooth overflow-x-hidden overflow-y-auto">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>User Dashboard</title>
+    <title>User Dashboard | Driver's Ed</title>
     <link href="/account/f-css/output.css" rel="stylesheet">
-    <!-- Swiper CSS -->
-    <link rel="stylesheet" href="https://unpkg.com/swiper/swiper-bundle.min.css" />
     <style>
-        .side-icons {
-            width: 30px;
-            height: 30px;
+        :root {
+            --dashboard-navy: #0B2D4A;
+            --dashboard-blue: #1976D2;
+            --dashboard-yellow: #FFC400;
+            --dashboard-bg: #F4F7FB;
+            --dashboard-ink: #17324D;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            min-width: 0;
+            background: var(--dashboard-bg);
+            color: var(--dashboard-ink);
+            font-family: "Montserrat", "Segoe UI", sans-serif;
+        }
+
+        #main-content {
+            min-width: 0;
+            max-width: 100%;
+            overflow-x: hidden;
         }
 
         body::before {
-            content: '';
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-image: url('/account/f-assets/solid/user-bg.jpg');
-            background-size: cover;
-            background-position: center;
-            opacity: 0.3;
-            z-index: -2;
-            filter: blur(2px);
+            display: none;
         }
-
-        .swiper-container {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            position: relative;
-            width: 100%;
-            overflow: hidden;
-        }
-
-        .swiper-wrapper {
-            display: flex;
-            align-items: center;
-        }
-
-        .swiper-slide {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-
         .card {
-            width: 200px;
-            height: 400px;
-            transition: transform 0.3s ease;
+            width: 100%;
+            height: auto;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
         }
 
-        .swiper-pagination-bullet {
-            background-color: white;
+        .course-slider {
+            --course-gap: 20px;
+            position: relative;
+            min-width: 0;
         }
 
-        .swiper-pagination-bullet-active {
-            background-color: gold;
-            opacity: 2;
+        .course-slider__viewport {
+            min-width: 0;
+            overflow: hidden;
+            padding: 0 0 1rem;
         }
 
-        .swiper-button-next,
-        .swiper-button-prev {
-            color: gold;
+        .course-slider__arrow {
+            position: absolute;
+            top: 40%;
+            z-index: 2;
+            opacity: .4;
+            transform: translateY(-40%);
+        }
+
+        .course-slider__arrow:hover:not(:disabled),
+        .course-slider__arrow:focus-visible {
+            opacity: 1;
+        }
+
+        #course-slider-prev,
+        #program-slider-prev {
+            left: -2rem;
+        }
+
+        #course-slider-next,
+        #program-slider-next {
+            right: -2rem;
+        }
+
+        .course-slider__track {
+            display: flex;
+            align-items: stretch;
+            gap: var(--course-gap);
+            min-width: 0;
+            transition: transform 240ms ease;
+            will-change: transform;
+        }
+
+        .course-slider__slide {
+            flex: 0 0 calc((100% - var(--course-gap)) / 2);
+            min-width: 0;
+        }
+
+        .course-slider__controls {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+            margin-top: .25rem;
+        }
+
+        .course-slider__arrow {
+            display: inline-flex;
+            width: 2rem;
+            height: 2rem;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid black;
+            border-radius: 999px;
+            background: #fff;
+            color: var(--dashboard-blue);
+            font-size: 1.25rem;
+            line-height: 1;
+            transition: background-color .2s ease, color .2s ease, opacity .2s ease, transform .2s ease;
+        }
+
+        .course-slider__arrow:hover:not(:disabled) {
+            background: var(--dashboard-blue);
+            color: #fff;
+        }
+
+        .course-slider__arrow:disabled {
+            cursor: not-allowed;
+            opacity: .08;
+        }
+
+        .course-slider__dots {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: .4rem;
+        }
+
+        .course-slider__dot {
+            width: .45rem;
+            height: .45rem;
+            padding: 0;
+            border: 0;
+            border-radius: 999px;
+            background: #c7d6e5;
+            transition: width .2s ease, background-color .2s ease;
+        }
+
+        .course-slider__dot.is-active {
+            width: 1.25rem;
+            background: var(--dashboard-blue);
+        }
+
+        .program-slider {
+            --program-gap: 20px;
+            position: relative;
+            min-width: 0;
+        }
+
+        .program-slider__viewport {
+            min-width: 0;
+            overflow: hidden;
+            padding-bottom: 1rem;
+        }
+
+        .program-slider__track {
+            display: flex;
+            gap: var(--program-gap);
+            transition: transform 240ms ease;
+        }
+
+        .program-slider__slide {
+            flex: 0 0 calc((100% - (var(--program-gap) * 2)) / 3);
+            min-width: 0;
+        }
+
+        .program-slider__controls {
+            position: relative;
+            min-height: 2rem;
+        }
+
+        .course-slider__arrow:focus-visible,
+        .course-slider__dot:focus-visible {
+            outline: 3px solid rgba(37, 133, 245, .35);
+            outline-offset: 2px;
         }
 
         /* Shrink buttons on screens smaller than 768px */
         @media (max-width: 767px) {
+            .course-slider {
+                --course-gap: 14px;
+            }
 
-            .swiper-button-next,
-            .swiper-button-prev {
-                width: 35px;
-                /* optional: reduce button size */
-                height: 35px;
+            .course-slider__slide {
+                flex-basis: 100%;
+            }
+
+            #course-slider-prev,
+            #program-slider-prev {
+                left: -1rem;
+            }
+
+            .program-slider {
+                --program-gap: 14px;
+            }
+
+            .program-slider__slide {
+                flex-basis: 100%;
             }
         }
     </style>
-    <!-- Swiper JS -->
-    <script src="https://unpkg.com/swiper/swiper-bundle.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </head>
 
-<body class="bg-black flex flex-row w-full">
-    <div id="sidebar-container" class="z-10">
-    </div>
-    <div id="main-content" class="ml-ml-64 h- phone-w-calc md:desktop-w-calc md:ml-[160px] space-y-2 animate-fadeIn">
-        <div id="top-bar" class="flex flex-row w-full sticky shadow-inner bg-white border-b-2 p-4 mb-5 opacity-95">
-            <div id="left-side" class="flex flex-row gap-4 relative">
+<body class="flex min-h-screen w-full flex-row">
+    <div id="sidebar-container" class="z-50"></div>
+    <main id="main-content" class="min-h-screen min-w-0 flex-1 md:ml-[180px] animate-fadeIn">
+        <header id="top-bar"
+            class="sticky top-0 z-30 flex min-h-[60px] items-center justify-between border-b border-slate-200 bg-white/95 px-5 py-3 shadow-sm backdrop-blur">
+            <div id="left-side" class="flex items-center gap-4">
+                <button id="notif-button"
+                    class="relative rounded-xl p-2 transition hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    aria-label="Open notifications">
+                    <img id="notif-logo" src="/account/f-assets/solid/bell.svg" class="h-6 w-6" alt="" />
+                    <span id="notif-new-indicator"
+                        class="absolute right-1 top-1 hidden min-h-4 min-w-4 -translate-y-1/2 translate-x-1/2 items-center justify-center rounded-full bg-blue-600 px-1 text-[10px] font-bold text-white shadow-sm"
+                        aria-live="polite"></span>
+                </button>
+                <img id="company-logo" src="/account/f-assets/solid/drivers_ed_logo-no-bg.png"
+                    class="h-8 w-auto object-contain" alt="Driver's Ed Driving School" />
+            </div>
+            <div id="right-side" class="text-right">
+                <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Client portal</p>
+                <h1 class="text-base font-bold text-[#0B2D4A] md:text-lg">Dashboard</h1>
+            </div>
+        </header>
+
+        <section class="mx-auto w-full max-w-[1500px] px-5 pb-10 pt-5 md:px-8 md:pt-6">
+            <div class="mb-5 flex flex-col justify-between gap-3 md:flex-row md:items-end">
                 <div>
-                    <button id="notif-button" class="relative">
-                        <img id="notif-logo" src="/account/f-assets/solid/bell.svg" class="w-7 h-7 inline-block" />
-                        <div id="notif-new-indicator"
-                            class="h-3 w-3 rounded-full bg-blue-900 absolute top-2 right-2 transform translate-x-1/2 -translate-y-1/2 animate-pulse hidden">
-                        </div>
-                    </button>
+                    <p class="mb-1 text-xs font-semibold uppercase tracking-[0.2em] text-[#1976D2]">Your learning
+                        journey</p>
+                    <h2 class="text-2xl font-bold tracking-tight text-[#0B2D4A] md:text-3xl">Dashboard</h2>
+                    <p class="mt-1 max-w-xl text-sm text-slate-500">Track your enrolled courses and progress.</p>
                 </div>
-                <img id="company-logo" src="/account/f-assets/solid/drivers_ed_logo-no-bg.png" class="w-20 h-8" />
+                <div class="rounded-xl border border-blue-100 bg-blue-50 px-3 py-2 text-xs text-[#0B2D4A] shadow-sm">
+                    <span class="font-semibold">Stay on track.</span> Your next milestone is within reach.
+                </div>
             </div>
-            <div id="right-side" class="absolute right-4 text-lg">Dashboard</div>
-        </div>
 
-        <div class="swiper-container swiper1" space-between="10">
-            <div class="swiper-wrapper">
-                <!-- Slides will be dynamically inserted here -->
+            <div class="mb-2 flex items-center justify-between px-2">
+                <div>
+                    <h3 class="text-lg font-bold text-[#0B2D4A]">Enrolled courses</h3>
+                    <p class="mt-0.5 text-xs text-slate-500">Your active courses and completion progress</p>
+                </div>
             </div>
-            <!-- Add Pagination -->
-            <div class="swiper-pagination swiper-pagination1"></div>
-            <!-- Add Navigation -->
-            <div class="swiper-button-next swiper-button-next1"></div>
-            <div class="swiper-button-prev swiper-button-prev1"></div>
-        </div>
 
-        <div class="swiper-container swiper2" space-between="10">
-            <div class="swiper-wrapper">
-                <!-- Slides will be dynamically inserted here -->
+            <div class="course-slider" id="course-slider" aria-label="Enrolled courses">
+                <div class="course-slider__viewport">
+                    <div class="course-slider__track" id="course-slider-track"></div>
+                    <button class="course-slider__arrow z-50" id="course-slider-prev" type="button"
+                        aria-label="Previous courses">&#8592;</button>
+                    <button class="course-slider__arrow z-50" id="course-slider-next" type="button"
+                        aria-label="Next courses">&#8594;</button>
+                </div>
+                <div class="course-slider__controls">
+                    <div class="course-slider__dots" id="course-slider-dots" aria-label="Course pages"></div>
+                </div>
             </div>
-            <!-- Add Pagination -->
-            <div class="swiper-pagination swiper-pagination2"></div>
-            <!-- Add Navigation -->
-            <div class="swiper-button-next swiper-button-next2"></div>
-            <div class="swiper-button-prev swiper-button-prev2"></div>
-        </div>
-    </div>
+
+            <div class="mt-4 border-t border-slate-200/80 pt-8">
+                <div class="mb-4 px-2">
+                    <h3 class="text-xl font-bold text-[#0B2D4A]">Explore programs</h3>
+                    <p class="mt-1 text-sm text-slate-500">Find the right training path for your goals</p>
+                </div>
+                <div class="program-slider" id="program-slider" aria-label="Available programs">
+                    <div class="program-slider__viewport">
+                        <div class="program-slider__track" id="program-slider-track"></div>
+                        <button class="course-slider__arrow" id="program-slider-prev" type="button"
+                            aria-label="Previous programs">&#8592;</button>
+                        <button class="course-slider__arrow" id="program-slider-next" type="button"
+                            aria-label="Next programs">&#8594;</button>
+                    </div>
+                    <div class="course-slider__controls program-slider__controls">
+                        <div class="course-slider__dots" id="program-slider-dots" aria-label="Program pages"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
     <script type="module" src="/account/utils/file-helper.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', async () => {
